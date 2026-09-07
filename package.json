@@ -1,6 +1,6 @@
 {
   "name": "poglive",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Compartilhamento de tela P2P em salas privadas",
   "type": "module",
