@@ -86,7 +86,7 @@ export function RoomLobby({ data, busy, command }: Props) {
               required
               spellCheck={false}
               autoComplete="off"
-              placeholder="VS1.…"
+              placeholder="PL1.…"
               onChange={(event) => setInvite(event.target.value)}
             />
           </label>

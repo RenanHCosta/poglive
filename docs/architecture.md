@@ -28,7 +28,7 @@ src/
     ipc.ts                   validação de origem/argumentos e comandos
     room/
       identity.ts            leitura e escrita atômica da identidade
-      invite.ts              geração e parsing de convites
+      invite.ts              geração e parsing de convites compactos PL1
       service.ts             coordenação de ações e estado local
       host.ts                admissão, roster e saída
       client.ts              entrada, snapshots e desconexão

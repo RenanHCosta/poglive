@@ -153,7 +153,12 @@ test('real TLS room: invite, 3 peers, duplicate refusal, wrong secret, leave and
     await host.listen('127.0.0.1');
     const invite = decodeInvite(host.invite);
     assert.equal(encodeInvite(invite), host.invite);
+    assert.match(host.invite, /^PL1\.[A-Za-z0-9_-]{94}$/);
+    assert.equal(host.invite.length, 98);
     assert.equal(Buffer.from(invite.secret, 'base64url').length, 32);
+    const legacyCode =
+      'VS1.' + Buffer.from(JSON.stringify(invite)).toString('base64url');
+    assert.deepEqual(decodeInvite(legacyCode), invite);
     let cDisconnected = false;
     const bIdentity = identity('B');
     await b.join(invite, bIdentity, () => {});

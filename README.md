@@ -348,8 +348,10 @@ ou política de segurança de terceiros.
 ## Formato do convite
 
 Formato: `VS1.<JSON codificado em base64url>`.
-O JSON contém `version`, `host` (IPv4), `port`, `roomId` (UUID),
-`secret` (32 bytes aleatórios em base64url) e `fingerprint` (SHA-256 do certificado).
+O formato compacto `PL1.` contém, em binário codificado como base64url, `host`
+(IPv4), `port`, `secret` (32 bytes aleatórios) e `fingerprint` (SHA-256 do
+certificado). O `roomId` é derivado do segredo e não precisa ser repetido no código.
+Convites legados no formato `VS1.` continuam aceitos.
 O código é longo por conter todos os dados sem depender de um serviço de lookup.
 Base64url não cifra o convite: trate o código inteiro como uma credencial.
 Ele não é uma URL aberta pelo navegador e não precisa de associação de protocolo do SO.
