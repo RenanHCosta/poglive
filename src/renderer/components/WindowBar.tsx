@@ -6,7 +6,7 @@ export function WindowBar() {
   return (
     <div className="window-bar">
       <div className="window-title">
-        <span className="window-dot" /> Poglive
+        <img className="app-icon" src="./poglive.svg" alt="" /> Poglive
       </div>
       <div className="window-actions">
         <button

@@ -193,7 +193,10 @@ async function createWindow(): Promise<void> {
           && typeof window.process === 'undefined'
           && window.__cspProbe !== true
           && getComputedStyle(document.body).margin === '0px'
-          && document.querySelector('h1')?.textContent === 'Sua tela. Sua companhia.'
+          && document.title === 'Poglive'
+          && document.querySelector('link[rel="icon"]')?.getAttribute('href') === './poglive.svg'
+          && document.querySelector('img.app-icon')?.complete === true
+          && document.querySelector('img.app-icon')?.naturalWidth > 0
           && document.querySelector('[data-testid="desktop-status"]')?.textContent.includes('Desktop pronto');
       })()
     `);

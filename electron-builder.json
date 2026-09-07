@@ -19,10 +19,11 @@
     }
   ],
   "win": {
+    "icon": "build/icon.ico",
     "target": [{ "target": "portable", "arch": ["x64"] }],
     "executableName": "Poglive",
     "requestedExecutionLevel": "asInvoker",
-    "signAndEditExecutable": false
+    "signExecutable": false
   },
   "portable": {
     "artifactName": "Poglive-${version}-win-${arch}-portable.${ext}",

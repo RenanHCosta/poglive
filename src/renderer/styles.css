@@ -572,11 +572,11 @@ main > * {
   font-size: 10px;
   letter-spacing: 0.2px;
 }
-.window-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 2px;
-  background: #8e7bc9;
+.app-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex: 0 0 18px;
 }
 .window-actions {
   display: flex;
