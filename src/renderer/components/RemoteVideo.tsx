@@ -16,6 +16,7 @@ export function RemoteVideo({
   );
   const [error, setError] = useState<string | null>(null);
   const [muted, setMuted] = useState(true);
+  const [volume, setVolume] = useState(100);
   const [pictureInPicture, setPictureInPicture] = useState(false);
   useEffect(() => {
     const element = video.current;
@@ -48,6 +49,9 @@ export function RemoteVideo({
       element.srcObject = null;
     };
   }, [stream]);
+  useEffect(() => {
+    if (video.current) video.current.volume = volume / 100;
+  }, [volume]);
 
   const togglePictureInPicture = async () => {
     const element = video.current;
@@ -111,6 +115,21 @@ export function RemoteVideo({
         >
           {muted ? 'Ativar áudio' : 'Silenciar'}
         </button>
+        <label className="volume-control">
+          <span>Volume</span>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={volume}
+            disabled={muted}
+            aria-label="Volume da transmissão"
+            aria-valuetext={`${volume}%`}
+            onChange={(event) => setVolume(Number(event.target.value))}
+          />
+          <output>{volume}%</output>
+        </label>
         <button
           className="secondary-button"
           onClick={() => {

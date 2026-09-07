@@ -525,6 +525,37 @@ h3 {
   }
 }
 
+.remote-player .room-tabs {
+  align-items: center;
+  flex-wrap: wrap;
+}
+.volume-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 190px;
+  color: #c9c4d6;
+  font-size: 11px;
+}
+.volume-control input[type='range'] {
+  width: 110px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  accent-color: var(--app-accent);
+  cursor: pointer;
+}
+.volume-control input[type='range']:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.volume-control output {
+  width: 34px;
+  color: var(--app-muted);
+  text-align: right;
+}
+
 /* Frameless Windows chrome: title area drags, controls remain interactive. */
 body {
   overflow-x: hidden;
