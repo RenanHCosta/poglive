@@ -40,7 +40,7 @@ export function useCapture() {
       release(stream.current);
       stream.current = null;
       void stopProcessAudio();
-      void window.voiceShare.captureCancel().catch(() => {});
+      void window.pogLive.captureCancel().catch(() => {});
     },
     [],
   );
@@ -50,7 +50,7 @@ export function useCapture() {
     release(stream.current);
     stream.current = null;
     void stopProcessAudio();
-    void window.voiceShare.captureCancel().catch(() => {});
+    void window.pogLive.captureCancel().catch(() => {});
     setState({ status: 'IDLE' });
   }
   async function list(): Promise<void> {
@@ -59,7 +59,7 @@ export function useCapture() {
     const current = ++generation.current;
     setState({ status: 'LOADING' });
     try {
-      const result = await window.voiceShare.captureSources();
+      const result = await window.pogLive.captureSources();
       if (generation.current !== current) return;
       setState(
         result.status === 'OK'
@@ -85,7 +85,7 @@ export function useCapture() {
     const current = ++generation.current;
     setState({ status: 'STARTING' });
     try {
-      const result = await window.voiceShare.captureSelect(source.id, options);
+      const result = await window.pogLive.captureSelect(source.id, options);
       if (generation.current !== current) return;
       if (result.status === 'ERROR') {
         setState(result);
@@ -182,7 +182,7 @@ export function useCapture() {
     } finally {
       if (generation.current === current) {
         locked.current = false;
-        void window.voiceShare.captureCancel().catch(() => {});
+        void window.pogLive.captureCancel().catch(() => {});
       }
     }
   }

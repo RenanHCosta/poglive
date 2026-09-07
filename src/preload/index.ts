@@ -101,4 +101,4 @@ const bridge: DesktopBridge = {
     return appInfoSchema.parse(result);
   },
 };
-contextBridge.exposeInMainWorld('voiceShare', Object.freeze(bridge));
+contextBridge.exposeInMainWorld('pogLive', Object.freeze(bridge));

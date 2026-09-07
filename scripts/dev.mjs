@@ -10,8 +10,8 @@ const server = await createServer({ html: { cspNonce: nonce } });
 await server.listen();
 const env = {
   ...process.env,
-  VOICE_SHARE_DEV: '1',
-  VOICE_SHARE_CSP_NONCE: nonce,
+  POGLIVE_DEV: '1',
+  POGLIVE_CSP_NONCE: nonce,
 };
 delete env.ELECTRON_RUN_AS_NODE;
 const args = process.argv.includes('--smoke-test')

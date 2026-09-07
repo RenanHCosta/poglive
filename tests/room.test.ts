@@ -110,7 +110,7 @@ test('wrong certificate pin fails before sending secret or identity', async () =
 });
 
 test('identity persists UUID, changes name and isolates profiles', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'voice-share-test-'));
+  const directory = await mkdtemp(join(tmpdir(), 'poglive-test-'));
   try {
     const store = new IdentityStore(directory);
     await store.load();

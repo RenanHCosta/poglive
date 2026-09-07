@@ -35,8 +35,16 @@ events:
     found: "C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeCXXCompilerId.cpp.in"
     search_context:
       ENV{PATH}:
-        - "C:\\Users\\Renan\\.codex\\tmp\\arg0\\codex-arg0eALpch"
-        - "C:\\Users\\Renan\\.codex\\packages\\standalone\\releases\\0.153.0-x86_64-pc-windows-msvc\\codex-path"
+        - "C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\Documents\\Work\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\Documents\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\node_modules\\.bin"
+        - "C:\\Users\\node_modules\\.bin"
+        - "C:\\node_modules\\.bin"
+        - "C:\\Program Files\\nodejs\\node_modules\\npm\\node_modules\\@npmcli\\run-script\\lib\\node-gyp-bin"
+        - "C:\\Users\\Renan\\.sbx-denybin"
+        - "C:\\Users\\Renan\\.codex\\tmp\\arg0\\codex-arg0aTq5Ba"
+        - "C:\\Users\\Renan\\.codex\\packages\\standalone\\releases\\0.153.4-x86_64-pc-windows-msvc\\codex-path"
         - "C:\\Program Files\\Lapce\\"
         - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath"
         - "C:\\WINDOWS\\system32"
@@ -52,7 +60,6 @@ events:
         - "C:\\Program Files\\CMake\\bin"
         - "C:\\Tools\\Ninja"
         - "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\"
-        - "C:\\Program Files\\WireSock Secure Connect\\sdk\\"
         - "C:\\Users\\Renan\\AppData\\Local\\Programs\\OpenAI\\Codex\\bin"
         - "C:\\Users\\Renan\\AppData\\Local\\Microsoft\\WindowsApps"
         - "C:\\Users\\Renan\\AppData\\Roaming\\npm"
@@ -74,7 +81,7 @@ events:
       The output was:
       0
       Vers├úo do MSBuild 18.9.1+a81b43525 para .NET Framework
-      Compila├º├úo de 06/09/2026 23:41:43 iniciada.
+      Compila├º├úo de 07/09/2026 16:58:25 iniciada.
       
       Projeto "C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\native\\process-audio\\build\\CMakeFiles\\4.4.0\\CompilerIdCXX\\CompilerIdCXX.vcxproj" no n├│ 1 (destinos padr├úo).
       PrepareForBuild:
@@ -103,7 +110,7 @@ events:
           0 Aviso(s)
           0 Erro(s)
       
-      Tempo Decorrido 00:00:01.10
+      Tempo Decorrido 00:00:02.00
       
       
       Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CompilerIdCXX.exe"
@@ -136,8 +143,16 @@ events:
       - "link"
     candidate_directories:
       - "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/"
-      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0eALpch/"
-      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.0-x86_64-pc-windows-msvc/codex-path/"
+      - "C:/Users/Renan/Documents/Work/Nova pasta (3)/node_modules/.bin/"
+      - "C:/Users/Renan/Documents/Work/node_modules/.bin/"
+      - "C:/Users/Renan/Documents/node_modules/.bin/"
+      - "C:/Users/Renan/node_modules/.bin/"
+      - "C:/Users/node_modules/.bin/"
+      - "C:/node_modules/.bin/"
+      - "C:/Program Files/nodejs/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/"
+      - "C:/Users/Renan/.sbx-denybin/"
+      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0aTq5Ba/"
+      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.4-x86_64-pc-windows-msvc/codex-path/"
       - "C:/Program Files/Lapce/"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/"
       - "C:/Windows/System32/"
@@ -153,7 +168,6 @@ events:
       - "C:/Program Files/CMake/bin/"
       - "C:/Tools/Ninja/"
       - "C:/Program Files/Cloudflare/Cloudflare WARP/"
-      - "C:/Program Files/WireSock Secure Connect/sdk/"
       - "C:/Users/Renan/AppData/Local/Programs/OpenAI/Codex/bin/"
       - "C:/Users/Renan/AppData/Local/Microsoft/WindowsApps/"
       - "C:/Users/Renan/AppData/Roaming/npm/"
@@ -164,8 +178,16 @@ events:
     found: "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/link.exe"
     search_context:
       ENV{PATH}:
-        - "C:\\Users\\Renan\\.codex\\tmp\\arg0\\codex-arg0eALpch"
-        - "C:\\Users\\Renan\\.codex\\packages\\standalone\\releases\\0.153.0-x86_64-pc-windows-msvc\\codex-path"
+        - "C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\Documents\\Work\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\Documents\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\node_modules\\.bin"
+        - "C:\\Users\\node_modules\\.bin"
+        - "C:\\node_modules\\.bin"
+        - "C:\\Program Files\\nodejs\\node_modules\\npm\\node_modules\\@npmcli\\run-script\\lib\\node-gyp-bin"
+        - "C:\\Users\\Renan\\.sbx-denybin"
+        - "C:\\Users\\Renan\\.codex\\tmp\\arg0\\codex-arg0aTq5Ba"
+        - "C:\\Users\\Renan\\.codex\\packages\\standalone\\releases\\0.153.4-x86_64-pc-windows-msvc\\codex-path"
         - "C:\\Program Files\\Lapce\\"
         - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath"
         - "C:\\WINDOWS\\system32"
@@ -181,7 +203,6 @@ events:
         - "C:\\Program Files\\CMake\\bin"
         - "C:\\Tools\\Ninja"
         - "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\"
-        - "C:\\Program Files\\WireSock Secure Connect\\sdk\\"
         - "C:\\Users\\Renan\\AppData\\Local\\Programs\\OpenAI\\Codex\\bin"
         - "C:\\Users\\Renan\\AppData\\Local\\Microsoft\\WindowsApps"
         - "C:\\Users\\Renan\\AppData\\Roaming\\npm"
@@ -210,8 +231,16 @@ events:
       - "lld-link"
     candidate_directories:
       - "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/"
-      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0eALpch/"
-      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.0-x86_64-pc-windows-msvc/codex-path/"
+      - "C:/Users/Renan/Documents/Work/Nova pasta (3)/node_modules/.bin/"
+      - "C:/Users/Renan/Documents/Work/node_modules/.bin/"
+      - "C:/Users/Renan/Documents/node_modules/.bin/"
+      - "C:/Users/Renan/node_modules/.bin/"
+      - "C:/Users/node_modules/.bin/"
+      - "C:/node_modules/.bin/"
+      - "C:/Program Files/nodejs/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/"
+      - "C:/Users/Renan/.sbx-denybin/"
+      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0aTq5Ba/"
+      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.4-x86_64-pc-windows-msvc/codex-path/"
       - "C:/Program Files/Lapce/"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/"
       - "C:/Windows/System32/"
@@ -227,7 +256,6 @@ events:
       - "C:/Program Files/CMake/bin/"
       - "C:/Tools/Ninja/"
       - "C:/Program Files/Cloudflare/Cloudflare WARP/"
-      - "C:/Program Files/WireSock Secure Connect/sdk/"
       - "C:/Users/Renan/AppData/Local/Programs/OpenAI/Codex/bin/"
       - "C:/Users/Renan/AppData/Local/Microsoft/WindowsApps/"
       - "C:/Users/Renan/AppData/Roaming/npm/"
@@ -237,12 +265,36 @@ events:
       - "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/lld-link.com"
       - "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/lld-link.exe"
       - "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/lld-link"
-      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0eALpch/lld-link.com"
-      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0eALpch/lld-link.exe"
-      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0eALpch/lld-link"
-      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.0-x86_64-pc-windows-msvc/codex-path/lld-link.com"
-      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.0-x86_64-pc-windows-msvc/codex-path/lld-link.exe"
-      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.0-x86_64-pc-windows-msvc/codex-path/lld-link"
+      - "C:/Users/Renan/Documents/Work/Nova pasta (3)/node_modules/.bin/lld-link.com"
+      - "C:/Users/Renan/Documents/Work/Nova pasta (3)/node_modules/.bin/lld-link.exe"
+      - "C:/Users/Renan/Documents/Work/Nova pasta (3)/node_modules/.bin/lld-link"
+      - "C:/Users/Renan/Documents/Work/node_modules/.bin/lld-link.com"
+      - "C:/Users/Renan/Documents/Work/node_modules/.bin/lld-link.exe"
+      - "C:/Users/Renan/Documents/Work/node_modules/.bin/lld-link"
+      - "C:/Users/Renan/Documents/node_modules/.bin/lld-link.com"
+      - "C:/Users/Renan/Documents/node_modules/.bin/lld-link.exe"
+      - "C:/Users/Renan/Documents/node_modules/.bin/lld-link"
+      - "C:/Users/Renan/node_modules/.bin/lld-link.com"
+      - "C:/Users/Renan/node_modules/.bin/lld-link.exe"
+      - "C:/Users/Renan/node_modules/.bin/lld-link"
+      - "C:/Users/node_modules/.bin/lld-link.com"
+      - "C:/Users/node_modules/.bin/lld-link.exe"
+      - "C:/Users/node_modules/.bin/lld-link"
+      - "C:/node_modules/.bin/lld-link.com"
+      - "C:/node_modules/.bin/lld-link.exe"
+      - "C:/node_modules/.bin/lld-link"
+      - "C:/Program Files/nodejs/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/lld-link.com"
+      - "C:/Program Files/nodejs/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/lld-link.exe"
+      - "C:/Program Files/nodejs/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/lld-link"
+      - "C:/Users/Renan/.sbx-denybin/lld-link.com"
+      - "C:/Users/Renan/.sbx-denybin/lld-link.exe"
+      - "C:/Users/Renan/.sbx-denybin/lld-link"
+      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0aTq5Ba/lld-link.com"
+      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0aTq5Ba/lld-link.exe"
+      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0aTq5Ba/lld-link"
+      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.4-x86_64-pc-windows-msvc/codex-path/lld-link.com"
+      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.4-x86_64-pc-windows-msvc/codex-path/lld-link.exe"
+      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.4-x86_64-pc-windows-msvc/codex-path/lld-link"
       - "C:/Program Files/Lapce/lld-link.com"
       - "C:/Program Files/Lapce/lld-link.exe"
       - "C:/Program Files/Lapce/lld-link"
@@ -288,9 +340,6 @@ events:
       - "C:/Program Files/Cloudflare/Cloudflare WARP/lld-link.com"
       - "C:/Program Files/Cloudflare/Cloudflare WARP/lld-link.exe"
       - "C:/Program Files/Cloudflare/Cloudflare WARP/lld-link"
-      - "C:/Program Files/WireSock Secure Connect/sdk/lld-link.com"
-      - "C:/Program Files/WireSock Secure Connect/sdk/lld-link.exe"
-      - "C:/Program Files/WireSock Secure Connect/sdk/lld-link"
       - "C:/Users/Renan/AppData/Local/Programs/OpenAI/Codex/bin/lld-link.com"
       - "C:/Users/Renan/AppData/Local/Programs/OpenAI/Codex/bin/lld-link.exe"
       - "C:/Users/Renan/AppData/Local/Programs/OpenAI/Codex/bin/lld-link"
@@ -309,8 +358,16 @@ events:
     found: false
     search_context:
       ENV{PATH}:
-        - "C:\\Users\\Renan\\.codex\\tmp\\arg0\\codex-arg0eALpch"
-        - "C:\\Users\\Renan\\.codex\\packages\\standalone\\releases\\0.153.0-x86_64-pc-windows-msvc\\codex-path"
+        - "C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\Documents\\Work\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\Documents\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\node_modules\\.bin"
+        - "C:\\Users\\node_modules\\.bin"
+        - "C:\\node_modules\\.bin"
+        - "C:\\Program Files\\nodejs\\node_modules\\npm\\node_modules\\@npmcli\\run-script\\lib\\node-gyp-bin"
+        - "C:\\Users\\Renan\\.sbx-denybin"
+        - "C:\\Users\\Renan\\.codex\\tmp\\arg0\\codex-arg0aTq5Ba"
+        - "C:\\Users\\Renan\\.codex\\packages\\standalone\\releases\\0.153.4-x86_64-pc-windows-msvc\\codex-path"
         - "C:\\Program Files\\Lapce\\"
         - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath"
         - "C:\\WINDOWS\\system32"
@@ -326,7 +383,6 @@ events:
         - "C:\\Program Files\\CMake\\bin"
         - "C:\\Tools\\Ninja"
         - "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\"
-        - "C:\\Program Files\\WireSock Secure Connect\\sdk\\"
         - "C:\\Users\\Renan\\AppData\\Local\\Programs\\OpenAI\\Codex\\bin"
         - "C:\\Users\\Renan\\AppData\\Local\\Microsoft\\WindowsApps"
         - "C:\\Users\\Renan\\AppData\\Roaming\\npm"
@@ -353,8 +409,16 @@ events:
       - "link"
     candidate_directories:
       - "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/"
-      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0eALpch/"
-      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.0-x86_64-pc-windows-msvc/codex-path/"
+      - "C:/Users/Renan/Documents/Work/Nova pasta (3)/node_modules/.bin/"
+      - "C:/Users/Renan/Documents/Work/node_modules/.bin/"
+      - "C:/Users/Renan/Documents/node_modules/.bin/"
+      - "C:/Users/Renan/node_modules/.bin/"
+      - "C:/Users/node_modules/.bin/"
+      - "C:/node_modules/.bin/"
+      - "C:/Program Files/nodejs/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/"
+      - "C:/Users/Renan/.sbx-denybin/"
+      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0aTq5Ba/"
+      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.4-x86_64-pc-windows-msvc/codex-path/"
       - "C:/Program Files/Lapce/"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/"
       - "C:/Windows/System32/"
@@ -370,7 +434,6 @@ events:
       - "C:/Program Files/CMake/bin/"
       - "C:/Tools/Ninja/"
       - "C:/Program Files/Cloudflare/Cloudflare WARP/"
-      - "C:/Program Files/WireSock Secure Connect/sdk/"
       - "C:/Users/Renan/AppData/Local/Programs/OpenAI/Codex/bin/"
       - "C:/Users/Renan/AppData/Local/Microsoft/WindowsApps/"
       - "C:/Users/Renan/AppData/Roaming/npm/"
@@ -381,8 +444,16 @@ events:
     found: "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/link.exe"
     search_context:
       ENV{PATH}:
-        - "C:\\Users\\Renan\\.codex\\tmp\\arg0\\codex-arg0eALpch"
-        - "C:\\Users\\Renan\\.codex\\packages\\standalone\\releases\\0.153.0-x86_64-pc-windows-msvc\\codex-path"
+        - "C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\Documents\\Work\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\Documents\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\node_modules\\.bin"
+        - "C:\\Users\\node_modules\\.bin"
+        - "C:\\node_modules\\.bin"
+        - "C:\\Program Files\\nodejs\\node_modules\\npm\\node_modules\\@npmcli\\run-script\\lib\\node-gyp-bin"
+        - "C:\\Users\\Renan\\.sbx-denybin"
+        - "C:\\Users\\Renan\\.codex\\tmp\\arg0\\codex-arg0aTq5Ba"
+        - "C:\\Users\\Renan\\.codex\\packages\\standalone\\releases\\0.153.4-x86_64-pc-windows-msvc\\codex-path"
         - "C:\\Program Files\\Lapce\\"
         - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath"
         - "C:\\WINDOWS\\system32"
@@ -398,7 +469,6 @@ events:
         - "C:\\Program Files\\CMake\\bin"
         - "C:\\Tools\\Ninja"
         - "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\"
-        - "C:\\Program Files\\WireSock Secure Connect\\sdk\\"
         - "C:\\Users\\Renan\\AppData\\Local\\Programs\\OpenAI\\Codex\\bin"
         - "C:\\Users\\Renan\\AppData\\Local\\Microsoft\\WindowsApps"
         - "C:\\Users\\Renan\\AppData\\Roaming\\npm"
@@ -425,8 +495,16 @@ events:
       - "mt"
     candidate_directories:
       - "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/"
-      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0eALpch/"
-      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.0-x86_64-pc-windows-msvc/codex-path/"
+      - "C:/Users/Renan/Documents/Work/Nova pasta (3)/node_modules/.bin/"
+      - "C:/Users/Renan/Documents/Work/node_modules/.bin/"
+      - "C:/Users/Renan/Documents/node_modules/.bin/"
+      - "C:/Users/Renan/node_modules/.bin/"
+      - "C:/Users/node_modules/.bin/"
+      - "C:/node_modules/.bin/"
+      - "C:/Program Files/nodejs/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/"
+      - "C:/Users/Renan/.sbx-denybin/"
+      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0aTq5Ba/"
+      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.4-x86_64-pc-windows-msvc/codex-path/"
       - "C:/Program Files/Lapce/"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/"
       - "C:/Windows/System32/"
@@ -442,7 +520,6 @@ events:
       - "C:/Program Files/CMake/bin/"
       - "C:/Tools/Ninja/"
       - "C:/Program Files/Cloudflare/Cloudflare WARP/"
-      - "C:/Program Files/WireSock Secure Connect/sdk/"
       - "C:/Users/Renan/AppData/Local/Programs/OpenAI/Codex/bin/"
       - "C:/Users/Renan/AppData/Local/Microsoft/WindowsApps/"
       - "C:/Users/Renan/AppData/Roaming/npm/"
@@ -452,12 +529,36 @@ events:
       - "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/mt.com"
       - "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/mt.exe"
       - "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/mt"
-      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0eALpch/mt.com"
-      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0eALpch/mt.exe"
-      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0eALpch/mt"
-      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.0-x86_64-pc-windows-msvc/codex-path/mt.com"
-      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.0-x86_64-pc-windows-msvc/codex-path/mt.exe"
-      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.0-x86_64-pc-windows-msvc/codex-path/mt"
+      - "C:/Users/Renan/Documents/Work/Nova pasta (3)/node_modules/.bin/mt.com"
+      - "C:/Users/Renan/Documents/Work/Nova pasta (3)/node_modules/.bin/mt.exe"
+      - "C:/Users/Renan/Documents/Work/Nova pasta (3)/node_modules/.bin/mt"
+      - "C:/Users/Renan/Documents/Work/node_modules/.bin/mt.com"
+      - "C:/Users/Renan/Documents/Work/node_modules/.bin/mt.exe"
+      - "C:/Users/Renan/Documents/Work/node_modules/.bin/mt"
+      - "C:/Users/Renan/Documents/node_modules/.bin/mt.com"
+      - "C:/Users/Renan/Documents/node_modules/.bin/mt.exe"
+      - "C:/Users/Renan/Documents/node_modules/.bin/mt"
+      - "C:/Users/Renan/node_modules/.bin/mt.com"
+      - "C:/Users/Renan/node_modules/.bin/mt.exe"
+      - "C:/Users/Renan/node_modules/.bin/mt"
+      - "C:/Users/node_modules/.bin/mt.com"
+      - "C:/Users/node_modules/.bin/mt.exe"
+      - "C:/Users/node_modules/.bin/mt"
+      - "C:/node_modules/.bin/mt.com"
+      - "C:/node_modules/.bin/mt.exe"
+      - "C:/node_modules/.bin/mt"
+      - "C:/Program Files/nodejs/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/mt.com"
+      - "C:/Program Files/nodejs/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/mt.exe"
+      - "C:/Program Files/nodejs/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/mt"
+      - "C:/Users/Renan/.sbx-denybin/mt.com"
+      - "C:/Users/Renan/.sbx-denybin/mt.exe"
+      - "C:/Users/Renan/.sbx-denybin/mt"
+      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0aTq5Ba/mt.com"
+      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0aTq5Ba/mt.exe"
+      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0aTq5Ba/mt"
+      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.4-x86_64-pc-windows-msvc/codex-path/mt.com"
+      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.4-x86_64-pc-windows-msvc/codex-path/mt.exe"
+      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.4-x86_64-pc-windows-msvc/codex-path/mt"
       - "C:/Program Files/Lapce/mt.com"
       - "C:/Program Files/Lapce/mt.exe"
       - "C:/Program Files/Lapce/mt"
@@ -503,9 +604,6 @@ events:
       - "C:/Program Files/Cloudflare/Cloudflare WARP/mt.com"
       - "C:/Program Files/Cloudflare/Cloudflare WARP/mt.exe"
       - "C:/Program Files/Cloudflare/Cloudflare WARP/mt"
-      - "C:/Program Files/WireSock Secure Connect/sdk/mt.com"
-      - "C:/Program Files/WireSock Secure Connect/sdk/mt.exe"
-      - "C:/Program Files/WireSock Secure Connect/sdk/mt"
       - "C:/Users/Renan/AppData/Local/Programs/OpenAI/Codex/bin/mt.com"
       - "C:/Users/Renan/AppData/Local/Programs/OpenAI/Codex/bin/mt.exe"
       - "C:/Users/Renan/AppData/Local/Programs/OpenAI/Codex/bin/mt"
@@ -524,8 +622,16 @@ events:
     found: false
     search_context:
       ENV{PATH}:
-        - "C:\\Users\\Renan\\.codex\\tmp\\arg0\\codex-arg0eALpch"
-        - "C:\\Users\\Renan\\.codex\\packages\\standalone\\releases\\0.153.0-x86_64-pc-windows-msvc\\codex-path"
+        - "C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\Documents\\Work\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\Documents\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\node_modules\\.bin"
+        - "C:\\Users\\node_modules\\.bin"
+        - "C:\\node_modules\\.bin"
+        - "C:\\Program Files\\nodejs\\node_modules\\npm\\node_modules\\@npmcli\\run-script\\lib\\node-gyp-bin"
+        - "C:\\Users\\Renan\\.sbx-denybin"
+        - "C:\\Users\\Renan\\.codex\\tmp\\arg0\\codex-arg0aTq5Ba"
+        - "C:\\Users\\Renan\\.codex\\packages\\standalone\\releases\\0.153.4-x86_64-pc-windows-msvc\\codex-path"
         - "C:\\Program Files\\Lapce\\"
         - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath"
         - "C:\\WINDOWS\\system32"
@@ -541,7 +647,6 @@ events:
         - "C:\\Program Files\\CMake\\bin"
         - "C:\\Tools\\Ninja"
         - "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\"
-        - "C:\\Program Files\\WireSock Secure Connect\\sdk\\"
         - "C:\\Users\\Renan\\AppData\\Local\\Programs\\OpenAI\\Codex\\bin"
         - "C:\\Users\\Renan\\AppData\\Local\\Microsoft\\WindowsApps"
         - "C:\\Users\\Renan\\AppData\\Roaming\\npm"
@@ -568,8 +673,16 @@ events:
       - "lib"
     candidate_directories:
       - "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/"
-      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0eALpch/"
-      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.0-x86_64-pc-windows-msvc/codex-path/"
+      - "C:/Users/Renan/Documents/Work/Nova pasta (3)/node_modules/.bin/"
+      - "C:/Users/Renan/Documents/Work/node_modules/.bin/"
+      - "C:/Users/Renan/Documents/node_modules/.bin/"
+      - "C:/Users/Renan/node_modules/.bin/"
+      - "C:/Users/node_modules/.bin/"
+      - "C:/node_modules/.bin/"
+      - "C:/Program Files/nodejs/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/"
+      - "C:/Users/Renan/.sbx-denybin/"
+      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0aTq5Ba/"
+      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.4-x86_64-pc-windows-msvc/codex-path/"
       - "C:/Program Files/Lapce/"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/"
       - "C:/Windows/System32/"
@@ -585,7 +698,6 @@ events:
       - "C:/Program Files/CMake/bin/"
       - "C:/Tools/Ninja/"
       - "C:/Program Files/Cloudflare/Cloudflare WARP/"
-      - "C:/Program Files/WireSock Secure Connect/sdk/"
       - "C:/Users/Renan/AppData/Local/Programs/OpenAI/Codex/bin/"
       - "C:/Users/Renan/AppData/Local/Microsoft/WindowsApps/"
       - "C:/Users/Renan/AppData/Roaming/npm/"
@@ -596,8 +708,16 @@ events:
     found: "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/lib.exe"
     search_context:
       ENV{PATH}:
-        - "C:\\Users\\Renan\\.codex\\tmp\\arg0\\codex-arg0eALpch"
-        - "C:\\Users\\Renan\\.codex\\packages\\standalone\\releases\\0.153.0-x86_64-pc-windows-msvc\\codex-path"
+        - "C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\Documents\\Work\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\Documents\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\node_modules\\.bin"
+        - "C:\\Users\\node_modules\\.bin"
+        - "C:\\node_modules\\.bin"
+        - "C:\\Program Files\\nodejs\\node_modules\\npm\\node_modules\\@npmcli\\run-script\\lib\\node-gyp-bin"
+        - "C:\\Users\\Renan\\.sbx-denybin"
+        - "C:\\Users\\Renan\\.codex\\tmp\\arg0\\codex-arg0aTq5Ba"
+        - "C:\\Users\\Renan\\.codex\\packages\\standalone\\releases\\0.153.4-x86_64-pc-windows-msvc\\codex-path"
         - "C:\\Program Files\\Lapce\\"
         - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath"
         - "C:\\WINDOWS\\system32"
@@ -613,7 +733,6 @@ events:
         - "C:\\Program Files\\CMake\\bin"
         - "C:\\Tools\\Ninja"
         - "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\"
-        - "C:\\Program Files\\WireSock Secure Connect\\sdk\\"
         - "C:\\Users\\Renan\\AppData\\Local\\Programs\\OpenAI\\Codex\\bin"
         - "C:\\Users\\Renan\\AppData\\Local\\Microsoft\\WindowsApps"
         - "C:\\Users\\Renan\\AppData\\Roaming\\npm"
@@ -642,8 +761,16 @@ events:
     names:
       - "rc"
     candidate_directories:
-      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0eALpch/"
-      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.0-x86_64-pc-windows-msvc/codex-path/"
+      - "C:/Users/Renan/Documents/Work/Nova pasta (3)/node_modules/.bin/"
+      - "C:/Users/Renan/Documents/Work/node_modules/.bin/"
+      - "C:/Users/Renan/Documents/node_modules/.bin/"
+      - "C:/Users/Renan/node_modules/.bin/"
+      - "C:/Users/node_modules/.bin/"
+      - "C:/node_modules/.bin/"
+      - "C:/Program Files/nodejs/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/"
+      - "C:/Users/Renan/.sbx-denybin/"
+      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0aTq5Ba/"
+      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.4-x86_64-pc-windows-msvc/codex-path/"
       - "C:/Program Files/Lapce/"
       - "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/"
       - "C:/Windows/System32/"
@@ -659,7 +786,6 @@ events:
       - "C:/Program Files/CMake/bin/"
       - "C:/Tools/Ninja/"
       - "C:/Program Files/Cloudflare/Cloudflare WARP/"
-      - "C:/Program Files/WireSock Secure Connect/sdk/"
       - "C:/Users/Renan/AppData/Local/Programs/OpenAI/Codex/bin/"
       - "C:/Users/Renan/AppData/Local/Microsoft/WindowsApps/"
       - "C:/Users/Renan/AppData/Roaming/npm/"
@@ -674,16 +800,40 @@ events:
       - "C:/Program Files/CMake/bin/"
       - "C:/Program Files/CMake/sbin/"
       - "C:/Program Files/CMake/"
-      - "C:/Program Files/VoiceShareProcessAudio/bin/"
-      - "C:/Program Files/VoiceShareProcessAudio/sbin/"
-      - "C:/Program Files/VoiceShareProcessAudio/"
+      - "C:/Program Files/PogLiveProcessAudio/bin/"
+      - "C:/Program Files/PogLiveProcessAudio/sbin/"
+      - "C:/Program Files/PogLiveProcessAudio/"
     searched_directories:
-      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0eALpch/rc.com"
-      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0eALpch/rc.exe"
-      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0eALpch/rc"
-      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.0-x86_64-pc-windows-msvc/codex-path/rc.com"
-      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.0-x86_64-pc-windows-msvc/codex-path/rc.exe"
-      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.0-x86_64-pc-windows-msvc/codex-path/rc"
+      - "C:/Users/Renan/Documents/Work/Nova pasta (3)/node_modules/.bin/rc.com"
+      - "C:/Users/Renan/Documents/Work/Nova pasta (3)/node_modules/.bin/rc.exe"
+      - "C:/Users/Renan/Documents/Work/Nova pasta (3)/node_modules/.bin/rc"
+      - "C:/Users/Renan/Documents/Work/node_modules/.bin/rc.com"
+      - "C:/Users/Renan/Documents/Work/node_modules/.bin/rc.exe"
+      - "C:/Users/Renan/Documents/Work/node_modules/.bin/rc"
+      - "C:/Users/Renan/Documents/node_modules/.bin/rc.com"
+      - "C:/Users/Renan/Documents/node_modules/.bin/rc.exe"
+      - "C:/Users/Renan/Documents/node_modules/.bin/rc"
+      - "C:/Users/Renan/node_modules/.bin/rc.com"
+      - "C:/Users/Renan/node_modules/.bin/rc.exe"
+      - "C:/Users/Renan/node_modules/.bin/rc"
+      - "C:/Users/node_modules/.bin/rc.com"
+      - "C:/Users/node_modules/.bin/rc.exe"
+      - "C:/Users/node_modules/.bin/rc"
+      - "C:/node_modules/.bin/rc.com"
+      - "C:/node_modules/.bin/rc.exe"
+      - "C:/node_modules/.bin/rc"
+      - "C:/Program Files/nodejs/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/rc.com"
+      - "C:/Program Files/nodejs/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/rc.exe"
+      - "C:/Program Files/nodejs/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin/rc"
+      - "C:/Users/Renan/.sbx-denybin/rc.com"
+      - "C:/Users/Renan/.sbx-denybin/rc.exe"
+      - "C:/Users/Renan/.sbx-denybin/rc"
+      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0aTq5Ba/rc.com"
+      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0aTq5Ba/rc.exe"
+      - "C:/Users/Renan/.codex/tmp/arg0/codex-arg0aTq5Ba/rc"
+      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.4-x86_64-pc-windows-msvc/codex-path/rc.com"
+      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.4-x86_64-pc-windows-msvc/codex-path/rc.exe"
+      - "C:/Users/Renan/.codex/packages/standalone/releases/0.153.4-x86_64-pc-windows-msvc/codex-path/rc"
       - "C:/Program Files/Lapce/rc.com"
       - "C:/Program Files/Lapce/rc.exe"
       - "C:/Program Files/Lapce/rc"
@@ -729,9 +879,6 @@ events:
       - "C:/Program Files/Cloudflare/Cloudflare WARP/rc.com"
       - "C:/Program Files/Cloudflare/Cloudflare WARP/rc.exe"
       - "C:/Program Files/Cloudflare/Cloudflare WARP/rc"
-      - "C:/Program Files/WireSock Secure Connect/sdk/rc.com"
-      - "C:/Program Files/WireSock Secure Connect/sdk/rc.exe"
-      - "C:/Program Files/WireSock Secure Connect/sdk/rc"
       - "C:/Users/Renan/AppData/Local/Programs/OpenAI/Codex/bin/rc.com"
       - "C:/Users/Renan/AppData/Local/Programs/OpenAI/Codex/bin/rc.exe"
       - "C:/Users/Renan/AppData/Local/Programs/OpenAI/Codex/bin/rc"
@@ -774,20 +921,28 @@ events:
       - "C:/Program Files/CMake/rc.com"
       - "C:/Program Files/CMake/rc.exe"
       - "C:/Program Files/CMake/rc"
-      - "C:/Program Files/VoiceShareProcessAudio/bin/rc.com"
-      - "C:/Program Files/VoiceShareProcessAudio/bin/rc.exe"
-      - "C:/Program Files/VoiceShareProcessAudio/bin/rc"
-      - "C:/Program Files/VoiceShareProcessAudio/sbin/rc.com"
-      - "C:/Program Files/VoiceShareProcessAudio/sbin/rc.exe"
-      - "C:/Program Files/VoiceShareProcessAudio/sbin/rc"
-      - "C:/Program Files/VoiceShareProcessAudio/rc.com"
-      - "C:/Program Files/VoiceShareProcessAudio/rc.exe"
-      - "C:/Program Files/VoiceShareProcessAudio/rc"
+      - "C:/Program Files/PogLiveProcessAudio/bin/rc.com"
+      - "C:/Program Files/PogLiveProcessAudio/bin/rc.exe"
+      - "C:/Program Files/PogLiveProcessAudio/bin/rc"
+      - "C:/Program Files/PogLiveProcessAudio/sbin/rc.com"
+      - "C:/Program Files/PogLiveProcessAudio/sbin/rc.exe"
+      - "C:/Program Files/PogLiveProcessAudio/sbin/rc"
+      - "C:/Program Files/PogLiveProcessAudio/rc.com"
+      - "C:/Program Files/PogLiveProcessAudio/rc.exe"
+      - "C:/Program Files/PogLiveProcessAudio/rc"
     found: false
     search_context:
       ENV{PATH}:
-        - "C:\\Users\\Renan\\.codex\\tmp\\arg0\\codex-arg0eALpch"
-        - "C:\\Users\\Renan\\.codex\\packages\\standalone\\releases\\0.153.0-x86_64-pc-windows-msvc\\codex-path"
+        - "C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\Documents\\Work\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\Documents\\node_modules\\.bin"
+        - "C:\\Users\\Renan\\node_modules\\.bin"
+        - "C:\\Users\\node_modules\\.bin"
+        - "C:\\node_modules\\.bin"
+        - "C:\\Program Files\\nodejs\\node_modules\\npm\\node_modules\\@npmcli\\run-script\\lib\\node-gyp-bin"
+        - "C:\\Users\\Renan\\.sbx-denybin"
+        - "C:\\Users\\Renan\\.codex\\tmp\\arg0\\codex-arg0aTq5Ba"
+        - "C:\\Users\\Renan\\.codex\\packages\\standalone\\releases\\0.153.4-x86_64-pc-windows-msvc\\codex-path"
         - "C:\\Program Files\\Lapce\\"
         - "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath"
         - "C:\\WINDOWS\\system32"
@@ -803,18 +958,17 @@ events:
         - "C:\\Program Files\\CMake\\bin"
         - "C:\\Tools\\Ninja"
         - "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\"
-        - "C:\\Program Files\\WireSock Secure Connect\\sdk\\"
         - "C:\\Users\\Renan\\AppData\\Local\\Programs\\OpenAI\\Codex\\bin"
         - "C:\\Users\\Renan\\AppData\\Local\\Microsoft\\WindowsApps"
         - "C:\\Users\\Renan\\AppData\\Roaming\\npm"
         - "C:\\Users\\Renan\\AppData\\Local\\Programs\\Zed\\bin"
         - "C:\\Users\\Renan\\.deno\\bin"
-      CMAKE_INSTALL_PREFIX: "C:/Program Files/VoiceShareProcessAudio"
+      CMAKE_INSTALL_PREFIX: "C:/Program Files/PogLiveProcessAudio"
       CMAKE_SYSTEM_PREFIX_PATH:
         - "C:/Program Files"
         - "C:/Program Files (x86)"
         - "C:/Program Files/CMake"
-        - "C:/Program Files/VoiceShareProcessAudio"
+        - "C:/Program Files/PogLiveProcessAudio"
   -
     kind: "try_compile-v1"
     backtrace:
@@ -824,8 +978,8 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/CMakeScratch/TryCompile-42sptf"
-      binary: "C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/CMakeScratch/TryCompile-42sptf"
+      source: "C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/CMakeScratch/TryCompile-qnhs82"
+      binary: "C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/CMakeScratch/TryCompile-qnhs82"
     cmakeVariables:
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
@@ -836,39 +990,39 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: false
       stdout: |
-        Change Dir: 'C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/CMakeScratch/TryCompile-42sptf'
+        Change Dir: 'C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/CMakeScratch/TryCompile-qnhs82'
         
-        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/18/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_91001.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=18.0 /v:n
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/18/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_f1b41.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=18.0 /v:n
         Vers├úo do MSBuild 18.9.1+a81b43525 para .NET Framework
-        Compila├º├úo de 06/09/2026 23:41:44 iniciada.
+        Compila├º├úo de 07/09/2026 16:58:27 iniciada.
         
-        Projeto "C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\native\\process-audio\\build\\CMakeFiles\\CMakeScratch\\TryCompile-42sptf\\cmTC_91001.vcxproj" no n├│ 1 (destinos padr├úo).
+        Projeto "C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\native\\process-audio\\build\\CMakeFiles\\CMakeScratch\\TryCompile-qnhs82\\cmTC_f1b41.vcxproj" no n├│ 1 (destinos padr├úo).
         PrepareForBuild:
           A sa├¡da estruturada est├í habilitada. A formata├º├úo do diagn├│stico do compilador refletir├í a hierarquia de erros. Consulte https://aka.ms/cpp/structured-output para obter mais detalhes.
-          Criando o diret├│rio "C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\native\\process-audio\\build\\CMakeFiles\\CMakeScratch\\TryCompile-42sptf\\Debug\\".
-          Criando o diret├│rio "cmTC_91001.dir\\Debug\\cmTC_91001.tlog\\".
+          Criando o diret├│rio "C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\native\\process-audio\\build\\CMakeFiles\\CMakeScratch\\TryCompile-qnhs82\\Debug\\".
+          Criando o diret├│rio "cmTC_f1b41.dir\\Debug\\cmTC_f1b41.tlog\\".
         InitializeBuildStatus:
-          Criando "cmTC_91001.dir\\Debug\\cmTC_91001.tlog\\unsuccessfulbuild" porque "AlwaysCreate" foi especificado.
-          Tocando "cmTC_91001.dir\\Debug\\cmTC_91001.tlog\\unsuccessfulbuild".
+          Criando "cmTC_f1b41.dir\\Debug\\cmTC_f1b41.tlog\\unsuccessfulbuild" porque "AlwaysCreate" foi especificado.
+          Tocando "cmTC_f1b41.dir\\Debug\\cmTC_f1b41.tlog\\unsuccessfulbuild".
         ClCompile:
-          C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D _MBCS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /Fo"cmTC_91001.dir\\Debug\\\\" /Fd"cmTC_91001.dir\\Debug\\vc145.pdb" /external:W1 /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.4\\Modules\\CMakeCXXCompilerABI.cpp"
+          C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D _MBCS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /Fo"cmTC_f1b41.dir\\Debug\\\\" /Fd"cmTC_f1b41.dir\\Debug\\vc145.pdb" /external:W1 /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.4\\Modules\\CMakeCXXCompilerABI.cpp"
           Microsoft (R) C/C++ Optimizing Compiler Version 19.51.36256 for x64
           Copyright (C) Microsoft Corporation. Todos os direitos reservados.
-          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D _MBCS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /Fo"cmTC_91001.dir\\Debug\\\\" /Fd"cmTC_91001.dir\\Debug\\vc145.pdb" /external:W1 /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.4\\Modules\\CMakeCXXCompilerABI.cpp"
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D _MBCS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /Fo"cmTC_f1b41.dir\\Debug\\\\" /Fd"cmTC_f1b41.dir\\Debug\\vc145.pdb" /external:W1 /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.4\\Modules\\CMakeCXXCompilerABI.cpp"
           CMakeCXXCompilerABI.cpp
         Link:
-          C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\native\\process-audio\\build\\CMakeFiles\\CMakeScratch\\TryCompile-42sptf\\Debug\\cmTC_91001.exe" /INCREMENTAL /ILK:"cmTC_91001.dir\\Debug\\cmTC_91001.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/CMakeScratch/TryCompile-42sptf/Debug/cmTC_91001.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/CMakeScratch/TryCompile-42sptf/Debug/cmTC_91001.lib" /MACHINE:X64  /machine:x64 cmTC_91001.dir\\Debug\\CMakeCXXCompilerABI.obj
-          cmTC_91001.vcxproj -> C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\native\\process-audio\\build\\CMakeFiles\\CMakeScratch\\TryCompile-42sptf\\Debug\\cmTC_91001.exe
+          C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\native\\process-audio\\build\\CMakeFiles\\CMakeScratch\\TryCompile-qnhs82\\Debug\\cmTC_f1b41.exe" /INCREMENTAL /ILK:"cmTC_f1b41.dir\\Debug\\cmTC_f1b41.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/CMakeScratch/TryCompile-qnhs82/Debug/cmTC_f1b41.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/CMakeScratch/TryCompile-qnhs82/Debug/cmTC_f1b41.lib" /MACHINE:X64  /machine:x64 cmTC_f1b41.dir\\Debug\\CMakeCXXCompilerABI.obj
+          cmTC_f1b41.vcxproj -> C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\native\\process-audio\\build\\CMakeFiles\\CMakeScratch\\TryCompile-qnhs82\\Debug\\cmTC_f1b41.exe
         FinalizeBuildStatus:
-          Excluindo o arquivo "cmTC_91001.dir\\Debug\\cmTC_91001.tlog\\unsuccessfulbuild".
-          Tocando "cmTC_91001.dir\\Debug\\cmTC_91001.tlog\\cmTC_91001.lastbuildstate".
-        Projeto de compila├º├úo pronto "C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\native\\process-audio\\build\\CMakeFiles\\CMakeScratch\\TryCompile-42sptf\\cmTC_91001.vcxproj" (destinos padr├úo).
+          Excluindo o arquivo "cmTC_f1b41.dir\\Debug\\cmTC_f1b41.tlog\\unsuccessfulbuild".
+          Tocando "cmTC_f1b41.dir\\Debug\\cmTC_f1b41.tlog\\cmTC_f1b41.lastbuildstate".
+        Projeto de compila├º├úo pronto "C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\native\\process-audio\\build\\CMakeFiles\\CMakeScratch\\TryCompile-qnhs82\\cmTC_f1b41.vcxproj" (destinos padr├úo).
         
         Compila├º├úo com ├¬xito.
             0 Aviso(s)
             0 Erro(s)
         
-        Tempo Decorrido 00:00:00.50
+        Tempo Decorrido 00:00:01.97
         
       exitCode: 0
   -
@@ -881,7 +1035,7 @@ events:
       Parsed CXX implicit link information:
         link line regex: [^( *|.*[/\\])(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|link\\.exe|lld-link(\\.exe)?|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
         linker tool regex: [^[ 	]*(->|"|[0-9]+>[ 	-]*Build:[ 	0-9]+ ms[ 	]*)?[ 	]*(([^"]*[/\\])?(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|link\\.exe|lld-link(\\.exe)?))("|,| |$)]
-        link line: [  C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\native\\process-audio\\build\\CMakeFiles\\CMakeScratch\\TryCompile-42sptf\\Debug\\cmTC_91001.exe" /INCREMENTAL /ILK:"cmTC_91001.dir\\Debug\\cmTC_91001.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/CMakeScratch/TryCompile-42sptf/Debug/cmTC_91001.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/CMakeScratch/TryCompile-42sptf/Debug/cmTC_91001.lib" /MACHINE:X64  /machine:x64 cmTC_91001.dir\\Debug\\CMakeCXXCompilerABI.obj] ==> linker [C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\HostX64\\x64\\link.exe]
+        link line: [  C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Users\\Renan\\Documents\\Work\\Nova pasta (3)\\native\\process-audio\\build\\CMakeFiles\\CMakeScratch\\TryCompile-qnhs82\\Debug\\cmTC_f1b41.exe" /INCREMENTAL /ILK:"cmTC_f1b41.dir\\Debug\\cmTC_f1b41.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/CMakeScratch/TryCompile-qnhs82/Debug/cmTC_f1b41.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/CMakeScratch/TryCompile-qnhs82/Debug/cmTC_f1b41.lib" /MACHINE:X64  /machine:x64 cmTC_f1b41.dir\\Debug\\CMakeCXXCompilerABI.obj] ==> linker [C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\HostX64\\x64\\link.exe]
         linker tool for 'CXX': C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/HostX64/x64/link.exe 
         implicit libs: []
         implicit objs: []

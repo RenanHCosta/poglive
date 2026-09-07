@@ -50,4 +50,4 @@ class ProcessAudioProcessor extends AudioWorkletProcessor {
     return true;
   }
 }
-registerProcessor('voice-share-process-audio', ProcessAudioProcessor);
+registerProcessor('poglive-process-audio', ProcessAudioProcessor);

@@ -18,7 +18,7 @@ export function useRoom() {
     let timer: ReturnType<typeof setTimeout>;
     async function poll(): Promise<void> {
       try {
-        const data = await window.voiceShare.getState();
+        const data = await window.pogLive.getState();
         if (active) setView({ status: 'READY', data });
       } catch {
         if (active)
@@ -41,10 +41,10 @@ export function useRoom() {
   const command = useCallback(async (value: RoomCommand): Promise<void> => {
     setAction({ status: 'BUSY' });
     try {
-      const result = await window.voiceShare.command(value);
+      const result = await window.pogLive.command(value);
       if (result.status === 'ERROR') setAction(result);
       else {
-        setView({ status: 'READY', data: await window.voiceShare.getState() });
+        setView({ status: 'READY', data: await window.pogLive.getState() });
         setAction({
           status: 'DONE',
           message:

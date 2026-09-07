@@ -217,7 +217,7 @@ Filas de entrada têm limite de 128 sinais/512 KB; polling IPC a cada 250 ms.
 SDP local precede o envio de ICE; ICE remoto aguarda remoteDescription em fila
 limitada. Saída encerra os recursos e remove negociações do peer.
 
-DataChannel voice-share-control troca HELLO/ACK e controle de mídia validado, com
+DataChannel poglive-control troca HELLO/ACK e controle de mídia validado, com
 limite de tamanho e quantidade. A UI só indica WebRTC conectado após confirmação por esse
 canal direto. Não comprova desempenho de vídeo; apenas estabelecimento do caminho.
 Timeout inicial de 25 segundos gera erro. Sem ICE restart/reconexão automática
@@ -326,7 +326,7 @@ loopbackWithMute.
 
 WINDOW não solicita áudio ao Chromium. O ID `window:HWND:...` documentado pelo Electron
 é validado contra a lista recém-autorizada e encaminhado como argumento numérico fixo
-ao helper C++ `voice-share-process-audio`, iniciado sem shell/janela. Ele resolve HWND
+ao helper C++ `poglive-process-audio`, iniciado sem shell/janela. Ele resolve HWND
 para PID e usa `AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK` com
 `INCLUDE_TARGET_PROCESS_TREE`. PCM estéreo 48 kHz/16-bit segue por stdout para IPC
 unidirecional limitado; AudioWorklet mantém buffer limitado e cria a MediaStreamTrack.

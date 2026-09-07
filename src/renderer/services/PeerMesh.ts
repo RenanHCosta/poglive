@@ -94,7 +94,7 @@ export class PeerMesh {
         this.links.get(signal.toPeerId)?.negotiationId !== signal.negotiationId
       )
         return;
-      const result = await window.voiceShare.sendSignal(signal);
+      const result = await window.pogLive.sendSignal(signal);
       if (result.status !== 'OK') throw new Error('Signal delivery failed');
       await new Promise((resolve) => setTimeout(resolve, 35));
     });
@@ -118,7 +118,7 @@ export class PeerMesh {
   }
   private async poll(): Promise<void> {
     try {
-      const batch = await window.voiceShare.pollSignals(this.roomId);
+      const batch = await window.pogLive.pollSignals(this.roomId);
       if (this.stopped) return;
       if (!batch.room) {
         this.publish('A sessão de conexão foi encerrada.');

@@ -22,11 +22,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{2D9EF24A-393F-364A-BE15-C271386B04D7}</ProjectGuid>
+    <ProjectGuid>{EB89060C-93EF-36D9-8D84-E5A1CFCBC02A}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0.28000.0</WindowsTargetPlatformVersion>
     <Platform>x64</Platform>
-    <ProjectName>voice-share-process-audio</ProjectName>
+    <ProjectName>poglive-process-audio</ProjectName>
     <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -60,26 +60,26 @@
   <PropertyGroup>
     <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\Renan\Documents\Work\Nova pasta (3)\native\process-audio\build\Debug\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">voice-share-process-audio.dir\Debug\</IntDir>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">voice-share-process-audio</TargetName>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">poglive-process-audio.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">poglive-process-audio</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.exe</TargetExt>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateManifest>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\Renan\Documents\Work\Nova pasta (3)\native\process-audio\build\bin\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">voice-share-process-audio.dir\Release\</IntDir>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">voice-share-process-audio</TargetName>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">poglive-process-audio.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">poglive-process-audio</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.exe</TargetExt>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateManifest>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\Renan\Documents\Work\Nova pasta (3)\native\process-audio\build\MinSizeRel\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">voice-share-process-audio.dir\MinSizeRel\</IntDir>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">voice-share-process-audio</TargetName>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">poglive-process-audio.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">poglive-process-audio</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.exe</TargetExt>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">true</GenerateManifest>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\Renan\Documents\Work\Nova pasta (3)\native\process-audio\build\RelWithDebInfo\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">voice-share-process-audio.dir\RelWithDebInfo\</IntDir>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">voice-share-process-audio</TargetName>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">poglive-process-audio.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">poglive-process-audio</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.exe</TargetExt>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</GenerateManifest>
@@ -127,9 +127,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
-      <ImportLibrary>C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/Debug/voice-share-process-audio.lib</ImportLibrary>
+      <ImportLibrary>C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/Debug/poglive-process-audio.lib</ImportLibrary>
       <LinkErrorReporting></LinkErrorReporting>
-      <ProgramDataBaseFile>C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/Debug/voice-share-process-audio.pdb</ProgramDataBaseFile>
+      <ProgramDataBaseFile>C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/Debug/poglive-process-audio.pdb</ProgramDataBaseFile>
       <RandomizedBaseAddress></RandomizedBaseAddress>
       <SubSystem>Console</SubSystem>
     </Link>
@@ -181,9 +181,9 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
-      <ImportLibrary>C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/Release/voice-share-process-audio.lib</ImportLibrary>
+      <ImportLibrary>C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/Release/poglive-process-audio.lib</ImportLibrary>
       <LinkErrorReporting></LinkErrorReporting>
-      <ProgramDataBaseFile>C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/bin/voice-share-process-audio.pdb</ProgramDataBaseFile>
+      <ProgramDataBaseFile>C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/bin/poglive-process-audio.pdb</ProgramDataBaseFile>
       <RandomizedBaseAddress></RandomizedBaseAddress>
       <SubSystem>Console</SubSystem>
     </Link>
@@ -235,9 +235,9 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
-      <ImportLibrary>C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/MinSizeRel/voice-share-process-audio.lib</ImportLibrary>
+      <ImportLibrary>C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/MinSizeRel/poglive-process-audio.lib</ImportLibrary>
       <LinkErrorReporting></LinkErrorReporting>
-      <ProgramDataBaseFile>C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/MinSizeRel/voice-share-process-audio.pdb</ProgramDataBaseFile>
+      <ProgramDataBaseFile>C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/MinSizeRel/poglive-process-audio.pdb</ProgramDataBaseFile>
       <RandomizedBaseAddress></RandomizedBaseAddress>
       <SubSystem>Console</SubSystem>
     </Link>
@@ -288,9 +288,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
-      <ImportLibrary>C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/RelWithDebInfo/voice-share-process-audio.lib</ImportLibrary>
+      <ImportLibrary>C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/RelWithDebInfo/poglive-process-audio.lib</ImportLibrary>
       <LinkErrorReporting></LinkErrorReporting>
-      <ProgramDataBaseFile>C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/RelWithDebInfo/voice-share-process-audio.pdb</ProgramDataBaseFile>
+      <ProgramDataBaseFile>C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/RelWithDebInfo/poglive-process-audio.pdb</ProgramDataBaseFile>
       <RandomizedBaseAddress></RandomizedBaseAddress>
       <SubSystem>Console</SubSystem>
     </Link>

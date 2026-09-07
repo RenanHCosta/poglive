@@ -174,9 +174,9 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </ProjectReference>
-    <ProjectReference Include="C:\Users\Renan\Documents\Work\Nova pasta (3)\native\process-audio\build\voice-share-process-audio.vcxproj">
-      <Project>{2D9EF24A-393F-364A-BE15-C271386B04D7}</Project>
-      <Name>voice-share-process-audio</Name>
+    <ProjectReference Include="C:\Users\Renan\Documents\Work\Nova pasta (3)\native\process-audio\build\poglive-process-audio.vcxproj">
+      <Project>{EB89060C-93EF-36D9-8D84-E5A1CFCBC02A}</Project>
+      <Name>poglive-process-audio</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

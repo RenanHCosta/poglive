@@ -12,7 +12,7 @@ export function useAppInfo(): DesktopState {
     let active = true;
     async function load(): Promise<void> {
       try {
-        const info = await window.voiceShare.getAppInfo();
+        const info = await window.pogLive.getAppInfo();
         if (active) setState({ status: 'READY', info });
       } catch {
         if (active)

@@ -14,8 +14,8 @@
   ],
   "extraResources": [
     {
-      "from": "native/process-audio/build/bin/voice-share-process-audio.exe",
-      "to": "voice-share-process-audio.exe"
+      "from": "native/process-audio/build/bin/poglive-process-audio.exe",
+      "to": "poglive-process-audio.exe"
     }
   ],
   "win": {

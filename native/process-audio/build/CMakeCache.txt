@@ -59,7 +59,7 @@ CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO:STRING=/debug /INCREMENTAL
 CMAKE_FIND_PACKAGE_REDIRECTS_DIR:STATIC=C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/pkgRedirects
 
 //Install path prefix, prepended onto install directories.
-CMAKE_INSTALL_PREFIX:PATH=C:/Program Files/VoiceShareProcessAudio
+CMAKE_INSTALL_PREFIX:PATH=C:/Program Files/PogLiveProcessAudio
 
 //Path to a program.
 CMAKE_LINKER:FILEPATH=C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/link.exe
@@ -97,7 +97,7 @@ CMAKE_PROJECT_DESCRIPTION:STATIC=
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=VoiceShareProcessAudio
+CMAKE_PROJECT_NAME:STATIC=PogLiveProcessAudio
 
 //Value Computed by CMake
 CMAKE_PROJECT_SPDX_LICENSE:STATIC=
@@ -174,13 +174,13 @@ CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
 //Value Computed by CMake
-VoiceShareProcessAudio_BINARY_DIR:STATIC=C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build
+PogLiveProcessAudio_BINARY_DIR:STATIC=C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build
 
 //Value Computed by CMake
-VoiceShareProcessAudio_IS_TOP_LEVEL:STATIC=ON
+PogLiveProcessAudio_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
-VoiceShareProcessAudio_SOURCE_DIR:STATIC=C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio
+PogLiveProcessAudio_SOURCE_DIR:STATIC=C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio
 
 
 ########################

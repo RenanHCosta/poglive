@@ -34,7 +34,7 @@ function configureLanWebRtc(): void {
 // This must run before app readiness and before any renderer process starts.
 configureLanWebRtc();
 
-const development = !app.isPackaged && process.env.VOICE_SHARE_DEV === '1';
+const development = !app.isPackaged && process.env.POGLIVE_DEV === '1';
 const smoke = !app.isPackaged && process.argv.includes('--smoke-test');
 const profile = process.argv
   .find((arg) => arg.startsWith('--profile='))
@@ -60,7 +60,7 @@ app.on('second-instance', () => {
 });
 const rendererUrl = development
   ? 'http://127.0.0.1:5173/'
-  : 'app://voice-share/index.html';
+  : 'app://poglive/index.html';
 let window: BrowserWindow | null = null;
 const capture = new CaptureService(() => window, rendererUrl);
 const processAudio = new ProcessAudioService();
@@ -73,7 +73,7 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 function configureSession(): void {
-  const nonce = process.env.VOICE_SHARE_CSP_NONCE;
+  const nonce = process.env.POGLIVE_CSP_NONCE;
   if (development && (!nonce || !/^[A-Za-z0-9+/]{32}$/.test(nonce))) {
     throw new Error('Development CSP nonce missing');
   }
@@ -113,12 +113,12 @@ function configureProtocol(): void {
   protocol.handle('app', async (request) => {
     try {
       const url = new URL(request.url);
-      if (url.hostname !== 'voice-share' || request.method !== 'GET')
+      if (url.hostname !== 'poglive' || request.method !== 'GET')
         return new Response(null, { status: 403 });
       const file = resolve(root, `.${decodeURIComponent(url.pathname)}`);
       if (
         !file.startsWith(`${root}${sep}`) ||
-        !['.html', '.js', '.css', '.svg'].includes(extname(file))
+        !['.html', '.js', '.css', '.svg', '.mp3'].includes(extname(file))
       ) {
         return new Response(null, { status: 403 });
       }
@@ -179,10 +179,10 @@ async function createWindow(): Promise<void> {
     // Fixed local diagnostic only; no user-supplied script is evaluated.
     const passed: unknown = await window.webContents.executeJavaScript(`
       (async () => {
-        const info = await window.voiceShare.getAppInfo();
-        const saved = await window.voiceShare.command({ type: 'SAVE_IDENTITY', displayName: 'Teste local' });
+        const info = await window.pogLive.getAppInfo();
+        const saved = await window.pogLive.command({ type: 'SAVE_IDENTITY', displayName: 'Teste local' });
         if (saved.status !== 'OK') throw new Error(saved.message);
-        const created = await window.voiceShare.command({ type: 'CREATE_ROOM', name: 'Sala de teste', address: '127.0.0.1' });
+        const created = await window.pogLive.command({ type: 'CREATE_ROOM', name: 'Sala de teste', address: '127.0.0.1' });
         if (created.status !== 'OK') throw new Error(created.message);
         await new Promise(resolve => setTimeout(resolve, 300));
         const probe = document.createElement('script');

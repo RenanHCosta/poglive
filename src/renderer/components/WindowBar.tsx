@@ -13,7 +13,7 @@ export function WindowBar() {
           type="button"
           className="window-action"
           aria-label="Minimizar"
-          onClick={() => void window.voiceShare.windowMinimize()}
+          onClick={() => void window.pogLive.windowMinimize()}
         >
           <span className="minimize-glyph" />
         </button>
@@ -22,7 +22,7 @@ export function WindowBar() {
           className="window-action"
           aria-label={maximized ? 'Restaurar' : 'Maximizar'}
           onClick={() =>
-            void window.voiceShare.windowToggleMaximize().then(setMaximized)
+            void window.pogLive.windowToggleMaximize().then(setMaximized)
           }
         >
           <Icon name={maximized ? 'collapse' : 'expand'} size={13} />
@@ -31,7 +31,7 @@ export function WindowBar() {
           type="button"
           className="window-action close-action"
           aria-label="Fechar"
-          onClick={() => void window.voiceShare.windowClose()}
+          onClick={() => void window.pogLive.windowClose()}
         >
           <span className="close-glyph" />
         </button>

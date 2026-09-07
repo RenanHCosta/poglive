@@ -13,7 +13,7 @@ export async function startProcessAudio(
     latencyHint: 'interactive',
   });
   await context.audioWorklet.addModule(workletUrl);
-  const node = new AudioWorkletNode(context, 'voice-share-process-audio', {
+  const node = new AudioWorkletNode(context, 'poglive-process-audio', {
     numberOfInputs: 0,
     numberOfOutputs: 1,
     outputChannelCount: [2],
@@ -21,7 +21,7 @@ export async function startProcessAudio(
   const destination = context.createMediaStreamDestination();
   node.connect(destination);
   let remainder = new Uint8Array();
-  const unsubscribeData = window.voiceShare.onProcessAudioData((incoming) => {
+  const unsubscribeData = window.pogLive.onProcessAudioData((incoming) => {
     const joined = new Uint8Array(remainder.length + incoming.length);
     joined.set(remainder);
     joined.set(incoming, remainder.length);
@@ -34,7 +34,7 @@ export async function startProcessAudio(
       samples[offset / 2] = view.getInt16(offset, true) / 32768;
     node.port.postMessage(samples, [samples.buffer]);
   });
-  const unsubscribeEnded = window.voiceShare.onProcessAudioEnded(() => {
+  const unsubscribeEnded = window.pogLive.onProcessAudioEnded(() => {
     destination.stream.getAudioTracks().forEach((track) => track.stop());
     void context.close();
   });
@@ -45,7 +45,7 @@ export async function startProcessAudio(
     destination.stream.getTracks().forEach((track) => track.stop());
     void context.close();
   };
-  const result = await window.voiceShare.processAudioStart(target);
+  const result = await window.pogLive.processAudioStart(target);
   if (result.status === 'ERROR') {
     await stopProcessAudio();
     throw new Error(result.message);
@@ -61,5 +61,5 @@ export async function startProcessAudio(
 export async function stopProcessAudio(): Promise<void> {
   cleanup?.();
   cleanup = null;
-  await window.voiceShare.processAudioStop().catch(() => {});
+  await window.pogLive.processAudioStop().catch(() => {});
 }

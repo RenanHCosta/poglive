@@ -15,10 +15,10 @@ export class ProcessAudioService {
   ): void {
     this.stop();
     const executable = app.isPackaged
-      ? resolve(process.resourcesPath, 'voice-share-process-audio.exe')
+      ? resolve(process.resourcesPath, 'poglive-process-audio.exe')
       : resolve(
           app.getAppPath(),
-          'native/process-audio/build/bin/voice-share-process-audio.exe',
+          'native/process-audio/build/bin/poglive-process-audio.exe',
         );
     const child = spawn(
       executable,
