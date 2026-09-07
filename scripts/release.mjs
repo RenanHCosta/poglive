@@ -3,8 +3,8 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const gh = process.platform === 'win32' ? 'gh.exe' : 'gh';
+const npmCli = process.env.npm_execpath;
 
 function execute(command, args, capture = false) {
   const result = spawnSync(command, args, {
@@ -28,6 +28,12 @@ function optional(command, args) {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   });
+}
+
+function executeNpm(args) {
+  if (!npmCli)
+    throw new Error('Execute este script por meio de npm run release.');
+  return execute(process.execPath, [npmCli, ...args]);
 }
 
 function parseVersion(value) {
@@ -92,10 +98,10 @@ if (remoteTag.status !== 2)
   );
 
 console.log(`\nPreparando Poglive ${tag} a partir da branch ${branch}.\n`);
-execute(npm, ['version', version, '--no-git-tag-version']);
-execute(npm, ['run', 'check']);
-execute(npm, ['test']);
-execute(npm, ['run', 'dist:win']);
+executeNpm(['version', version, '--no-git-tag-version']);
+executeNpm(['run', 'check']);
+executeNpm(['test']);
+executeNpm(['run', 'dist:win']);
 
 const executable = resolve(
   'release',
