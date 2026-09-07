@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { SessionCard } from '../components/SessionCard';
 import { IdentityForm } from '../components/IdentityForm';
 import { RoomLobby } from '../components/RoomLobby';
@@ -10,6 +11,7 @@ import { WindowBar } from '../components/WindowBar';
 export function HomePage() {
   const desktop = useAppInfo();
   const { view, action, command } = useRoom();
+  const [stream, setStream] = useState<MediaStream | null>(null);
   const data = view.status === 'READY' ? view.data : null;
   const inRoom =
     data?.room.status === 'HOSTING' || data?.room.status === 'JOINED';
@@ -44,11 +46,23 @@ export function HomePage() {
               )}
               {data.identity && (
                 <div className="workspace">
-                  {inRoom ? (
-                    <SessionCard data={data} busy={busy} command={command} />
-                  ) : (
-                    <RoomLobby data={data} busy={busy} command={command} />
-                  )}
+                  <div className="room-sidebar">
+                    {inRoom ? (
+                      <SessionCard data={data} busy={busy} command={command} />
+                    ) : (
+                      <RoomLobby data={data} busy={busy} command={command} />
+                    )}
+                    {data.room.status === 'HOSTING' ||
+                    data.room.status === 'JOINED' ? (
+                      <CapturePanel
+                        key={data.room.room.roomId}
+                        enabled
+                        onStream={setStream}
+                      />
+                    ) : (
+                      <CapturePanel key="disabled" enabled={false} />
+                    )}
+                  </div>
                   {data.room.status === 'HOSTING' ||
                   data.room.status === 'JOINED' ? (
                     <RoomMedia
@@ -56,14 +70,15 @@ export function HomePage() {
                       roomId={data.room.room.roomId}
                       selfId={data.identity.peerId}
                       rtcEndpoint={data.room.room.rtcEndpoint}
+                      capture={stream}
                     />
-                  ) : (
-                    <CapturePanel enabled={false} />
-                  )}
+                  ) : null}
                 </div>
               )}
             </>
           )}
+        </main>
+        <div className="bottom-bar">
           <div
             className={
               action.status === 'ERROR'
@@ -78,17 +93,17 @@ export function HomePage() {
                 ? action.message
                 : ''}
           </div>
-        </main>
-        <footer className="app-footer">
-          <span data-testid="desktop-status" role="status">
-            {desktop.status === 'READY'
-              ? `Desktop pronto · v${desktop.info.version} · ${desktop.info.platform}/${desktop.info.arch}`
-              : desktop.status === 'ERROR'
-                ? desktop.message
-                : 'Conectando ao desktop…'}
-          </span>
-          <span>Salas locais · Sem conta</span>
-        </footer>
+          <footer className="app-footer">
+            <span data-testid="desktop-status" role="status">
+              {desktop.status === 'READY'
+                ? `Desktop pronto · v${desktop.info.version} · ${desktop.info.platform}/${desktop.info.arch}`
+                : desktop.status === 'ERROR'
+                  ? desktop.message
+                  : 'Conectando ao desktop…'}
+            </span>
+            <span>Salas locais · Sem conta</span>
+          </footer>
+        </div>
       </div>
     </div>
   );

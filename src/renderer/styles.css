@@ -1075,10 +1075,92 @@ main {
   overflow: visible !important;
 }
 main > * {
-  width: min(100%, 1100px);
+  width: min(100%, 1440px);
   margin-inline: auto;
 }
 .window-bar {
-  width: min(100%, 1100px);
+  width: min(100%, 1440px);
   margin-inline: auto;
+}
+
+/* Room controls stay in a compact side column while remote media gets priority. */
+.workspace {
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  gap: 24px;
+}
+.room-sidebar {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 24px;
+}
+.room-media {
+  min-width: 0;
+}
+.room-media .connection-panel {
+  margin-top: 0;
+}
+.workspace:has(.room-media.theater) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.workspace:has(.room-media.theater) .room-sidebar {
+  display: none;
+}
+
+/* Fixed status strip mirrors the sticky titlebar and never covers page content. */
+main {
+  padding-bottom: 64px;
+}
+.bottom-bar {
+  position: fixed;
+  z-index: 20;
+  right: 44px;
+  bottom: 0;
+  left: 44px;
+  max-width: 1440px;
+  min-height: 44px;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  border-top: 1px solid var(--app-line);
+  background: color-mix(in srgb, var(--app-bg) 96%, transparent);
+  backdrop-filter: blur(10px);
+}
+.bottom-bar .action-status {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  font-size: 10px;
+}
+.bottom-bar .app-footer {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  white-space: nowrap;
+}
+
+@media (max-width: 980px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .room-media {
+    order: -1;
+  }
+}
+
+@media (max-width: 850px) {
+  .bottom-bar {
+    right: 24px;
+    left: 24px;
+  }
+  .bottom-bar .app-footer > :last-child {
+    display: none;
+  }
 }
