@@ -14,6 +14,7 @@
     "build": "npm run typecheck && node scripts/build.mjs",
     "build:native:audio": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/build-native-audio.ps1",
     "dist:win": "npm run build:native:audio && npm run build && electron-builder --config electron-builder.json --win portable --x64 --publish never",
+    "release": "node scripts/release.mjs",
     "start": "electron .",
     "smoke": "electron . --smoke-test",
     "typecheck": "tsc --noEmit",

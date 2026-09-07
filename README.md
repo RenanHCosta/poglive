@@ -349,6 +349,20 @@ endereços. `Radmin=1/1` e `STUN=1/1` confirmam que ambos descobriram um candida
 interface virtual. Só depois dessa confirmação uma nova falha aponta para firewall UDP
 ou política de segurança de terceiros.
 
+## Publicar uma versão
+
+Com a árvore Git limpa, GitHub CLI instalado e autenticado, execute no Windows:
+
+```powershell
+npm run release -- patch
+```
+
+Também é possível usar `minor`, `major` ou uma versão exata, como `0.2.0`. O comando
+atualiza `package.json` e `package-lock.json`, executa check/test/build nativo, gera o
+executável portátil e seu SHA-256, cria commit e tag, envia ambos atomicamente e publica
+os arquivos no GitHub Release. Se alguma validação ou build falhar antes do commit,
+revise o erro e restaure manualmente os arquivos de versão antes de tentar novamente.
+
 ## Formato do convite
 
 Formato: `VS1.<JSON codificado em base64url>`.
