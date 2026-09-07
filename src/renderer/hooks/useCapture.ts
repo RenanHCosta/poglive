@@ -115,7 +115,14 @@ export function useCapture() {
       if (options.audioMode === 'WINDOW') {
         if (source.kind !== 'window')
           throw new Error('Window audio requires a window source');
-        media.addTrack(await startProcessAudio(source.id));
+        media.addTrack(
+          await startProcessAudio({ mode: 'WINDOW', sourceId: source.id }),
+        );
+      }
+      if (options.audioMode === 'SYSTEM_EXCEPT_DISCORD') {
+        media.addTrack(
+          await startProcessAudio({ mode: 'SYSTEM_EXCEPT_DISCORD' }),
+        );
       }
       stream.current = media;
       const track = media.getVideoTracks()[0];

@@ -6,6 +6,7 @@ import { signalSchema, signalBatchSchema } from '../shared/protocols/signaling';
 import {
   captureSourcesResultSchema,
   captureSelectionSchema,
+  processAudioTargetSchema,
 } from '../shared/schemas/capture';
 import {
   commandSchema,
@@ -52,10 +53,10 @@ const bridge: DesktopBridge = {
   captureCancel: async () => {
     await ipcRenderer.invoke(IPC.captureCancel);
   },
-  processAudioStart: async (sourceId) => {
+  processAudioStart: async (target) => {
     const result: unknown = await ipcRenderer.invoke(
       IPC.processAudioStart,
-      z.string().min(1).max(256).parse(sourceId),
+      processAudioTargetSchema.parse(target),
     );
     return commandResultSchema.parse(result);
   },

@@ -10,6 +10,7 @@ import type { ProcessAudioService } from './capture/process-audio';
 import {
   captureSourcesResultSchema,
   captureSelectionSchema,
+  processAudioTargetSchema,
 } from '../shared/schemas/capture';
 
 const noArguments = z.tuple([]);
@@ -106,16 +107,23 @@ export function registerIpc(
     IPC.processAudioStart,
     (event, ...args: unknown[]): CommandResult => {
       authorize(event);
-      const parsed = z.tuple([z.string().min(1).max(256)]).safeParse(args);
+      const parsed = z.tuple([processAudioTargetSchema]).safeParse(args);
       if (!parsed.success)
-        return { status: 'ERROR', message: 'Janela de áudio inválida.' };
+        return { status: 'ERROR', message: 'Modo de áudio inválido.' };
       try {
-        processAudio.start(capture.windowHandle(parsed.data[0]), event.sender);
+        const target = parsed.data[0];
+        processAudio.start(
+          target.mode === 'WINDOW'
+            ? capture.windowHandle(target.sourceId)
+            : null,
+          target.mode === 'SYSTEM_EXCEPT_DISCORD',
+          event.sender,
+        );
         return { status: 'OK' };
       } catch {
         return {
           status: 'ERROR',
-          message: 'Áudio desta janela não está disponível neste Windows.',
+          message: 'Este modo de áudio não está disponível neste Windows.',
         };
       }
     },

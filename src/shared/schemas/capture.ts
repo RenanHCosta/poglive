@@ -4,9 +4,14 @@ export const sourceIdSchema = z.string().min(1).max(256);
 export const captureOptionsSchema = z.strictObject({
   quality: z.enum(['720p', '1080p']),
   frameRate: z.union([z.literal(30), z.literal(60)]),
-  audioMode: z.enum(['NONE', 'SYSTEM', 'WINDOW']),
+  audioMode: z.enum(['NONE', 'SYSTEM', 'WINDOW', 'SYSTEM_EXCEPT_DISCORD']),
 });
 export type CaptureOptions = z.infer<typeof captureOptionsSchema>;
+export const processAudioTargetSchema = z.discriminatedUnion('mode', [
+  z.strictObject({ mode: z.literal('WINDOW'), sourceId: sourceIdSchema }),
+  z.strictObject({ mode: z.literal('SYSTEM_EXCEPT_DISCORD') }),
+]);
+export type ProcessAudioTarget = z.infer<typeof processAudioTargetSchema>;
 export const CAPTURE_PROFILES = {
   '720p': { width: 1280, height: 720, maxBitrate: 2500000 },
   '1080p': { width: 1920, height: 1080, maxBitrate: 5000000 },

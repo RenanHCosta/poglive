@@ -101,7 +101,8 @@ export function CapturePanel({
                 if (
                   audioMode === 'NONE' ||
                   audioMode === 'SYSTEM' ||
-                  audioMode === 'WINDOW'
+                  audioMode === 'WINDOW' ||
+                  audioMode === 'SYSTEM_EXCEPT_DISCORD'
                 )
                   setOptions({ ...options, audioMode });
                 if (audioMode === 'WINDOW') setKind('window');
@@ -109,13 +110,16 @@ export function CapturePanel({
             >
               <option value="NONE">Sem áudio</option>
               <option value="WINDOW">Somente a janela escolhida</option>
+              <option value="SYSTEM_EXCEPT_DISCORD">
+                Tudo menos o Discord
+              </option>
               <option value="SYSTEM">Todo o áudio do sistema</option>
             </select>
           </label>
           <p className="helper">
-            “Somente a janela” também inclui processos filhos e não transmite
-            Discord ou notificações. Requer Windows 11/build 20348+. Áudio do
-            sistema continua incluindo todos os aplicativos.
+            “Somente a janela” também inclui processos filhos. “Tudo menos o
+            Discord” transmite os demais aplicativos, notificações e sons do
+            sistema. Os modos com filtro requerem Windows 10/build 20348+.
           </p>
         </fieldset>
       )}

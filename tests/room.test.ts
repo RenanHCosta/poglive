@@ -19,6 +19,10 @@ import { MAX_FRAME, TLS_OPTIONS } from '../src/main/transport/channel';
 import { networkMessageSchema } from '../src/shared/protocols/network';
 import type { Invite } from '../src/shared/schemas/room';
 import {
+  captureOptionsSchema,
+  processAudioTargetSchema,
+} from '../src/shared/schemas/capture';
+import {
   matchesCertificate,
   createCertificate,
 } from '../src/main/transport/certificate';
@@ -199,6 +203,21 @@ test('untrusted schemas reject extra fields, malformed invitation and oversized 
   assert.throws(() => decodeInvite('VS1.invalid'));
   assert.throws(() => decodeInvite('VS2.invalid'));
   assert.throws(() => decodeInvite('a'.repeat(2000)));
+  assert.equal(
+    captureOptionsSchema.safeParse({
+      quality: '720p',
+      frameRate: 30,
+      audioMode: 'SYSTEM_EXCEPT_DISCORD',
+    }).success,
+    true,
+  );
+  assert.equal(
+    processAudioTargetSchema.safeParse({
+      mode: 'SYSTEM_EXCEPT_DISCORD',
+      sourceId: 'not-allowed',
+    }).success,
+    false,
+  );
   assert.equal(
     networkMessageSchema.safeParse({
       version: 1,

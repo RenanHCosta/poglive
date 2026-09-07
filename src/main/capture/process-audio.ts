@@ -8,7 +8,11 @@ import { IPC } from '../../shared/contracts';
 export class ProcessAudioService {
   private child: ChildProcessWithoutNullStreams | null = null;
 
-  start(windowHandle: string, contents: WebContents): void {
+  start(
+    windowHandle: string | null,
+    excludeDiscord: boolean,
+    contents: WebContents,
+  ): void {
     this.stop();
     const executable = app.isPackaged
       ? resolve(process.resourcesPath, 'voice-share-process-audio.exe')
@@ -16,10 +20,14 @@ export class ProcessAudioService {
           app.getAppPath(),
           'native/process-audio/build/bin/voice-share-process-audio.exe',
         );
-    const child = spawn(executable, [windowHandle], {
-      windowsHide: true,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
+    const child = spawn(
+      executable,
+      excludeDiscord ? ['--exclude-discord'] : [windowHandle!],
+      {
+        windowsHide: true,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      },
+    );
     this.child = child;
     let errorCode = '';
     child.stdout.on('data', (chunk: Buffer) => {

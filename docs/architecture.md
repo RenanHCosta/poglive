@@ -309,7 +309,7 @@ STUN público e TURN continuam ausentes. Presets e áudio opcional são descrito
 
 CAPTURE_PROFILES centraliza 720p (1280×720) e 1080p (1920×1080).
 captureOptionsSchema valida frameRate como 30 ou 60 e audioMode como
-NONE/SYSTEM/WINDOW, ponta a ponta no IPC.
+NONE/SYSTEM/WINDOW/SYSTEM_EXCEPT_DISCORD, ponta a ponta no IPC.
 CapturePanel seleciona opções antes da fonte; useCapture aplica constraints máximas
 e mostra getSettings (configuração da captura, não estatística do RTP remoto).
 Sem upscale garantido e sem troca dinâmica; uma captura nova mantém o fluxo de
@@ -321,8 +321,8 @@ e microfone continuam negadas: a compatibilidade media/empty mediaTypes do Elect
 44 foi mantida, sem liberar pedidos de dispositivos de áudio.
 No Windows, o handler usa audio: loopback apenas com consentimento explícito.
 Referência: [Electron setDisplayMediaRequestHandler](https://www.electronjs.org/docs/latest/api/session#sessetdisplaymediarequesthandlerhandler-opts).
-Captura todo o som do sistema, inclusive fora da janela selecionada. Sem isolamento
-por aplicativo nesse modo, exclusão do próprio app ou microfone. Não usa loopbackWithMute.
+SYSTEM captura todo o som, inclusive fora da janela selecionada. Não usa
+loopbackWithMute.
 
 WINDOW não solicita áudio ao Chromium. O ID `window:HWND:...` documentado pelo Electron
 é validado contra a lista recém-autorizada e encaminhado como argumento numérico fixo
@@ -331,6 +331,11 @@ para PID e usa `AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK` com
 `INCLUDE_TARGET_PROCESS_TREE`. PCM estéreo 48 kHz/16-bit segue por stdout para IPC
 unidirecional limitado; AudioWorklet mantém buffer limitado e cria a MediaStreamTrack.
 Encerrar captura mata o helper, remove listeners e fecha AudioContext/tracks.
+
+SYSTEM_EXCEPT_DISCORD também não solicita áudio ao Chromium. O helper enumera processos,
+reconhece Discord Stable/Canary/PTB/Development, encontra a raiz da árvore e usa
+`EXCLUDE_TARGET_PROCESS_TREE`. Sem Discord aberto, exclui a própria árvore silenciosa do
+helper, equivalendo ao loopback global. O filtro atua sobre processos, não títulos de janela.
 
 O helper é um sidecar separado para preservar isolamento e facilitar futura migração
 para Rust/Tauri. É compilado via CMake/MSVC antes do empacotamento e incluído em
@@ -387,9 +392,8 @@ dados e não altera as limitações LAN/áudio. Validação de funcionamento emp
    usuário confirmou funcionamento.
 5. Concluído: streaming entre participantes autorizados, confirmado pelo usuário.
 6. Áudio opcional, 720p/1080p e 30 FPS validados inicialmente pelo usuário.
-   60 FPS implementado, aguardando teste manual. Exclusão de áudio por processo
-   depende de adaptador nativo Windows adicional, ainda não implementado;
-   proposta e limites de compatibilidade estão no README.
+   60 FPS e exclusão da árvore do Discord implementados, aguardando teste manual
+   em dois PCs.
 7. Internet: STUN, NAT traversal, TURN e signaling mínimo conforme necessidade.
 
 Testes automatizados exercitam TLS real em loopback e runtime Electron, segurança

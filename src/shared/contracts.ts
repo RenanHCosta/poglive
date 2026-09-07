@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import type { LocalState, RoomCommand, CommandResult } from './schemas/room';
-import type { CaptureSourcesResult, CaptureOptions } from './schemas/capture';
+import type {
+  CaptureSourcesResult,
+  CaptureOptions,
+  ProcessAudioTarget,
+} from './schemas/capture';
 import type { Signal, SignalBatch } from './protocols/signaling';
 
 export const IPC = {
@@ -39,7 +43,7 @@ export interface DesktopBridge {
     options: CaptureOptions,
   ) => Promise<CommandResult>;
   captureCancel: () => Promise<void>;
-  processAudioStart: (sourceId: string) => Promise<CommandResult>;
+  processAudioStart: (target: ProcessAudioTarget) => Promise<CommandResult>;
   processAudioStop: () => Promise<void>;
   onProcessAudioData: (listener: (data: Uint8Array) => void) => () => void;
   onProcessAudioEnded: (listener: (reason: string) => void) => () => void;

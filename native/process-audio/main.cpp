@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <TlHelp32.h>
 #include <audioclient.h>
 #include <audioclientactivationparams.h>
 #include <mmdeviceapi.h>
@@ -8,6 +9,7 @@
 
 #include <cstdio>
 #include <cstdint>
+#include <cwchar>
 #include <string>
 #include <vector>
 
@@ -51,16 +53,64 @@ static int Fail(const char* code) {
   return 1;
 }
 
+struct ProcessEntry {
+  DWORD id;
+  DWORD parent_id;
+};
+
+static bool IsDiscordExecutable(const wchar_t* name) {
+  return _wcsicmp(name, L"Discord.exe") == 0 ||
+         _wcsicmp(name, L"DiscordCanary.exe") == 0 ||
+         _wcsicmp(name, L"DiscordPTB.exe") == 0 ||
+         _wcsicmp(name, L"DiscordDevelopment.exe") == 0;
+}
+
+static DWORD FindDiscordRootProcess() {
+  const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+  if (snapshot == INVALID_HANDLE_VALUE) return 0;
+  std::vector<ProcessEntry> discord_processes;
+  PROCESSENTRY32W entry{};
+  entry.dwSize = sizeof(entry);
+  if (Process32FirstW(snapshot, &entry)) {
+    do {
+      if (IsDiscordExecutable(entry.szExeFile))
+        discord_processes.push_back(
+            {entry.th32ProcessID, entry.th32ParentProcessID});
+    } while (Process32NextW(snapshot, &entry));
+  }
+  CloseHandle(snapshot);
+  if (discord_processes.empty()) return 0;
+  for (const auto& process : discord_processes) {
+    bool parent_is_discord = false;
+    for (const auto& candidate : discord_processes) {
+      if (process.parent_id == candidate.id) {
+        parent_is_discord = true;
+        break;
+      }
+    }
+    if (!parent_is_discord) return process.id;
+  }
+  return discord_processes.front().id;
+}
+
 int wmain(int argc, wchar_t** argv) {
   if (argc != 2) return Fail("INVALID_ARGUMENTS");
-  wchar_t* end = nullptr;
-  const unsigned long long raw_handle = std::wcstoull(argv[1], &end, 10);
-  if (!raw_handle || !end || *end != L'\0') return Fail("INVALID_WINDOW");
-  const HWND window = reinterpret_cast<HWND>(static_cast<uintptr_t>(raw_handle));
-  if (!IsWindow(window)) return Fail("WINDOW_CLOSED");
-
   DWORD process_id = 0;
-  GetWindowThreadProcessId(window, &process_id);
+  PROCESS_LOOPBACK_MODE loopback_mode =
+      PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE;
+  if (std::wcscmp(argv[1], L"--exclude-discord") == 0) {
+    process_id = FindDiscordRootProcess();
+    if (!process_id) process_id = GetCurrentProcessId();
+    loopback_mode = PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE;
+  } else {
+    wchar_t* end = nullptr;
+    const unsigned long long raw_handle = std::wcstoull(argv[1], &end, 10);
+    if (!raw_handle || !end || *end != L'\0') return Fail("INVALID_WINDOW");
+    const HWND window =
+        reinterpret_cast<HWND>(static_cast<uintptr_t>(raw_handle));
+    if (!IsWindow(window)) return Fail("WINDOW_CLOSED");
+    GetWindowThreadProcessId(window, &process_id);
+  }
   if (!process_id) return Fail("PROCESS_NOT_FOUND");
 
   HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -87,8 +137,7 @@ int wmain(int argc, wchar_t** argv) {
   AUDIOCLIENT_ACTIVATION_PARAMS parameters{};
   parameters.ActivationType = AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK;
   parameters.ProcessLoopbackParams.TargetProcessId = process_id;
-  parameters.ProcessLoopbackParams.ProcessLoopbackMode =
-      PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE;
+  parameters.ProcessLoopbackParams.ProcessLoopbackMode = loopback_mode;
 
   PROPVARIANT activation{};
   activation.vt = VT_BLOB;

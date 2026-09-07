@@ -1,9 +1,11 @@
+import type { ProcessAudioTarget } from '../../shared/schemas/capture';
+
 const workletUrl = new URL('./process-audio-worklet.js', import.meta.url).href;
 
 let cleanup: (() => void) | null = null;
 
 export async function startProcessAudio(
-  sourceId: string,
+  target: ProcessAudioTarget,
 ): Promise<MediaStreamTrack> {
   await stopProcessAudio();
   const context = new AudioContext({
@@ -43,7 +45,7 @@ export async function startProcessAudio(
     destination.stream.getTracks().forEach((track) => track.stop());
     void context.close();
   };
-  const result = await window.voiceShare.processAudioStart(sourceId);
+  const result = await window.voiceShare.processAudioStart(target);
   if (result.status === 'ERROR') {
     await stopProcessAudio();
     throw new Error(result.message);

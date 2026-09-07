@@ -283,18 +283,22 @@ Taxa de quadros → 60 FPS. Teste uma animação/vídeo com movimento e compare 
 encerrando a captura para alterar o preset. Repita em 720p e 1080p. A captura e o
 sender recebem o limite escolhido; fonte, monitor, carga e rede podem reduzir o FPS.
 
-### Áudio somente da janela
+### Áudio filtrado por aplicativo
 
-O seletor oferece Sem áudio, Somente a janela escolhida e Todo o áudio do sistema.
+O seletor oferece Sem áudio, Somente a janela escolhida, Tudo menos o Discord e
+Todo o áudio do sistema.
 Somente a janela exige escolher uma fonte do tipo Janela e captura a árvore de processos
 associada ao HWND dessa fonte. Assim, compartilhar League of Legends não inclui Discord,
-navegador ou notificações. Não existe integração ou regra específica para Discord.
+navegador ou notificações. Tudo menos o Discord faz o inverso: transmite o áudio do
+sistema, mas exclui a árvore do Discord detectada (Stable, Canary, PTB ou Development).
+Se o Discord não estiver aberto, os demais sons do sistema continuam sendo capturados.
 
 A [API documentada do Electron](https://www.electronjs.org/docs/latest/api/session#sessetdisplaymediarequesthandlerhandler-opts)
 continua fornecendo apenas loopback global. Para o modo isolado, o executável inclui um
 helper C++ x64 que usa a API Application Loopback do Windows em modo
-`INCLUDE_TARGET_PROCESS_TREE`. O Electron documenta que o identificador da fonte contém
-o HWND no Windows; o helper resolve esse HWND para PID sem comparar títulos.
+`INCLUDE_TARGET_PROCESS_TREE` para uma janela ou `EXCLUDE_TARGET_PROCESS_TREE` para o
+Discord. O Electron documenta que o identificador da fonte contém o HWND no Windows;
+o helper resolve esse HWND para PID sem comparar títulos.
 
 A [API Application Loopback do Windows](https://learn.microsoft.com/en-us/samples/microsoft/windows-classic-samples/applicationloopbackaudio-sample/)
 produz PCM estéreo 48 kHz/16-bit. O main encaminha blocos limitados pelo IPC; um
