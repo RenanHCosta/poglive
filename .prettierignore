@@ -1,0 +1,8 @@
+node_modules
+.artifacts
+dist
+release
+.npm-cache
+.electron-cache
+native/process-audio/build
+package-lock.json

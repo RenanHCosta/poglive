@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "app.poglive.desktop",
+  "productName": "Poglive",
+  "asar": true,
+  "npmRebuild": false,
+  "directories": { "output": "release" },
+  "files": [
+    "dist/main/**/*.cjs",
+    "dist/preload/**/*.cjs",
+    "dist/renderer/**/*",
+    "!**/*.map",
+    "!node_modules/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "native/process-audio/build/bin/voice-share-process-audio.exe",
+      "to": "voice-share-process-audio.exe"
+    }
+  ],
+  "win": {
+    "target": [{ "target": "portable", "arch": ["x64"] }],
+    "executableName": "Poglive",
+    "requestedExecutionLevel": "asInvoker",
+    "signAndEditExecutable": false
+  },
+  "portable": {
+    "artifactName": "Poglive-${version}-win-${arch}-portable.${ext}",
+    "requestExecutionLevel": "user"
+  },
+  "publish": null
+}

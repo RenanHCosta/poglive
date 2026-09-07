@@ -1,0 +1,3 @@
+C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/voice-share-process-audio.dir
+C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/Renan/Documents/Work/Nova pasta (3)/native/process-audio/build/CMakeFiles/ZERO_CHECK.dir

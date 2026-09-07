@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="18.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Renan\Documents\Work\Nova pasta (3)\native\process-audio\build\CMakeFiles\916c28d257152ca6cff4d767918d9214\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{D1BEC9B7-9FD4-3BD7-89AD-E4008F1252DD}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

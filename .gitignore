@@ -1,0 +1,10 @@
+node_modules/
+.artifacts/
+dist/
+release/
+.npm-cache/
+.electron-cache/
+*.log
+.env
+.env.*
+!.env.example
