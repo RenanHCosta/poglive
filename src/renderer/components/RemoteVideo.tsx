@@ -19,6 +19,7 @@ export function RemoteVideo({
   const [pictureInPicture, setPictureInPicture] = useState(false);
   useEffect(() => {
     const element = video.current;
+    const player = container.current;
     if (!element) return;
     let active = true;
     element.srcObject = stream;
@@ -42,6 +43,8 @@ export function RemoteVideo({
       element.onleavepictureinpicture = null;
       if (document.pictureInPictureElement === element)
         void document.exitPictureInPicture();
+      if (document.fullscreenElement === player)
+        void document.exitFullscreen().catch(() => {});
       element.srcObject = null;
     };
   }, [stream]);

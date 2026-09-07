@@ -33,6 +33,9 @@ export function PeerConnections({
     peers: PeerConnectionView[];
     error: string | null;
   }>({ peers: [], error: null });
+  const hasVisibleStream = view.peers.some(
+    (peer) => peer.streamId && peer.status === 'CONNECTED',
+  );
   useEffect(() => {
     const mesh = new PeerMesh(
       roomId,
@@ -50,6 +53,9 @@ export function PeerConnections({
   useEffect(() => {
     meshRef.current?.setCapture(capture);
   }, [capture, roomId, selfId]);
+  useEffect(() => {
+    if (theater && !hasVisibleStream) onTheater(false);
+  }, [hasVisibleStream, onTheater, theater]);
   return (
     <section className="panel connection-panel">
       <div className="section-heading">
