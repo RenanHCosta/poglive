@@ -16,6 +16,7 @@ export function RemoteVideo({
   );
   const [error, setError] = useState<string | null>(null);
   const [muted, setMuted] = useState(true);
+  const [pictureInPicture, setPictureInPicture] = useState(false);
   useEffect(() => {
     const element = video.current;
     if (!element) return;
@@ -28,6 +29,8 @@ export function RemoteVideo({
       clearTimeout(timeout);
       setPlayback('PLAYING');
     };
+    element.onenterpictureinpicture = () => setPictureInPicture(true);
+    element.onleavepictureinpicture = () => setPictureInPicture(false);
     void element.play().catch(() => {
       if (active) setPlayback('ERROR');
     });
@@ -35,9 +38,39 @@ export function RemoteVideo({
       active = false;
       clearTimeout(timeout);
       element.onplaying = null;
+      element.onenterpictureinpicture = null;
+      element.onleavepictureinpicture = null;
+      if (document.pictureInPictureElement === element)
+        void document.exitPictureInPicture();
       element.srcObject = null;
     };
   }, [stream]);
+
+  const togglePictureInPicture = async () => {
+    const element = video.current;
+    if (!element) return;
+    try {
+      setError(null);
+      if (document.pictureInPictureElement === element) {
+        await document.exitPictureInPicture();
+      } else {
+        await element.requestPictureInPicture();
+      }
+    } catch {
+      setError('Não foi possível abrir o modo picture-in-picture.');
+    }
+  };
+
+  const leaveTransmission = async () => {
+    if (document.pictureInPictureElement === video.current) {
+      await document.exitPictureInPicture().catch(() => {});
+    }
+    leave();
+  };
+
+  const pictureInPictureAvailable =
+    document.pictureInPictureEnabled &&
+    typeof HTMLVideoElement.prototype.requestPictureInPicture === 'function';
   return (
     <div className="remote-player" ref={container}>
       <h3>{name}</h3>
@@ -88,13 +121,26 @@ export function RemoteVideo({
         >
           Tela cheia
         </button>
-        <button className="secondary-button" onClick={leave}>
+        <button
+          className="secondary-button"
+          aria-pressed={pictureInPicture}
+          disabled={!pictureInPictureAvailable || playback !== 'PLAYING'}
+          title="Abre um player flutuante, redimensionável e sempre no topo"
+          onClick={() => void togglePictureInPicture()}
+        >
+          {pictureInPicture ? 'Fechar mini player' : 'Mini player'}
+        </button>
+        <button
+          className="secondary-button"
+          onClick={() => void leaveTransmission()}
+        >
           Sair da transmissão
         </button>
       </div>
       <p className="helper">
         Som disponível apenas se o transmissor habilitou áudio. Ao compartilhar
         e assistir ao mesmo tempo, silenciar evita recapturar o áudio recebido.
+        O mini player fica sempre no topo e pode ser redimensionado.
       </p>
       {error && (
         <p role="alert" className="error-message">
