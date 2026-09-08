@@ -329,7 +329,10 @@ WINDOW não solicita áudio ao Chromium. O ID `window:HWND:...` documentado pelo
 ao helper C++ `poglive-process-audio`, iniciado sem shell/janela. Ele resolve HWND
 para PID e usa `AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK` com
 `INCLUDE_TARGET_PROCESS_TREE`. PCM estéreo 48 kHz/16-bit segue por stdout para IPC
-unidirecional limitado; AudioWorklet mantém buffer limitado e cria a MediaStreamTrack.
+unidirecional limitado; AudioWorklet mantém jitter buffer adaptativo de 40–160 ms,
+inicia em 80 ms, aumenta após underrun e reduz lentamente após reprodução estável.
+Correção de taxa de ±0,5% com interpolação aproxima a fila do alvo sem saltos abruptos.
+O worklet cria a MediaStreamTrack com fila máxima limitada a um segundo.
 Encerrar captura mata o helper, remove listeners e fecha AudioContext/tracks.
 
 SYSTEM_EXCEPT_DISCORD também não solicita áudio ao Chromium. O helper enumera processos,

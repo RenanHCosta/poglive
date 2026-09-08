@@ -302,7 +302,8 @@ o helper resolve esse HWND para PID sem comparar títulos.
 
 A [API Application Loopback do Windows](https://learn.microsoft.com/en-us/samples/microsoft/windows-classic-samples/applicationloopbackaudio-sample/)
 produz PCM estéreo 48 kHz/16-bit. O main encaminha blocos limitados pelo IPC; um
-AudioWorklet converte para uma track Web Audio usada pelo WebRTC. Não usa driver,
+AudioWorklet usa jitter buffer adaptativo de 40–160 ms (inicialmente 80 ms) e converte
+para uma track Web Audio usada pelo WebRTC. Não usa driver,
 injeção, leitura de memória, token ou modificação do aplicativo capturado.
 
 A amostra oficial exige build 20348+, portanto não podemos prometer suporte ao
