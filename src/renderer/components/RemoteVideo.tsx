@@ -15,7 +15,6 @@ export function RemoteVideo({
     'LOADING',
   );
   const [error, setError] = useState<string | null>(null);
-  const [muted, setMuted] = useState(true);
   const [volume, setVolume] = useState(100);
   const [pictureInPicture, setPictureInPicture] = useState(false);
   useEffect(() => {
@@ -50,7 +49,10 @@ export function RemoteVideo({
     };
   }, [stream]);
   useEffect(() => {
-    if (video.current) video.current.volume = volume / 100;
+    if (video.current) {
+      video.current.volume = volume / 100;
+      video.current.muted = volume === 0;
+    }
   }, [volume]);
 
   const togglePictureInPicture = async () => {
@@ -85,7 +87,7 @@ export function RemoteVideo({
         className="capture-video"
         ref={video}
         autoPlay
-        muted={muted}
+        muted={volume === 0}
         playsInline
         aria-label={`Tela de ${name}`}
       />
@@ -96,25 +98,6 @@ export function RemoteVideo({
         </p>
       )}
       <div className="room-tabs">
-        <button
-          className="secondary-button"
-          aria-pressed={!muted}
-          onClick={() => {
-            const element = video.current;
-            if (!element) return;
-            element.muted = !muted;
-            setMuted(!muted);
-            void element
-              .play()
-              .catch(() =>
-                setError(
-                  'Não foi possível reproduzir. Tente silenciar e ativar o áudio novamente.',
-                ),
-              );
-          }}
-        >
-          {muted ? 'Ativar áudio' : 'Silenciar'}
-        </button>
         <label className="volume-control">
           <span>Volume</span>
           <input
@@ -123,10 +106,22 @@ export function RemoteVideo({
             max="100"
             step="1"
             value={volume}
-            disabled={muted}
             aria-label="Volume da transmissão"
             aria-valuetext={`${volume}%`}
-            onChange={(event) => setVolume(Number(event.target.value))}
+            onChange={(event) => {
+              const nextVolume = Number(event.target.value);
+              setVolume(nextVolume);
+              if (nextVolume > 0) {
+                setError(null);
+                void video.current
+                  ?.play()
+                  .catch(() =>
+                    setError(
+                      'Não foi possível reproduzir o áudio. Ajuste o volume e tente novamente.',
+                    ),
+                  );
+              }
+            }}
           />
           <output>{volume}%</output>
         </label>
@@ -161,8 +156,9 @@ export function RemoteVideo({
       </div>
       <p className="helper">
         Som disponível apenas se o transmissor habilitou áudio. Ao compartilhar
-        e assistir ao mesmo tempo, silenciar evita recapturar o áudio recebido.
-        O mini player fica sempre no topo e pode ser redimensionado.
+        e assistir ao mesmo tempo, reduza o volume a zero para evitar recapturar
+        o áudio recebido. O mini player fica sempre no topo e pode ser
+        redimensionado.
       </p>
       {error && (
         <p role="alert" className="error-message">

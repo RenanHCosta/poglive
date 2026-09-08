@@ -546,10 +546,6 @@ h3 {
   accent-color: var(--app-accent);
   cursor: pointer;
 }
-.volume-control input[type='range']:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-}
 .volume-control output {
   width: 34px;
   color: var(--app-muted);
