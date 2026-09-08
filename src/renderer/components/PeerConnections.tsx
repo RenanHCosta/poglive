@@ -191,14 +191,14 @@ export function PeerConnections({
                 key={peer.streamId}
                 stream={peer.media}
                 name={peer.displayName}
-                leave={() => meshRef.current?.stopWatching()}
+                leave={() => meshRef.current?.stopWatching(peer.peerId)}
               />
             ) : (
               <>
                 <p role="status">Conectando vídeo…</p>
                 <button
                   className="secondary-button"
-                  onClick={() => meshRef.current?.stopWatching()}
+                  onClick={() => meshRef.current?.stopWatching(peer.peerId)}
                 >
                   Cancelar
                 </button>
@@ -234,8 +234,8 @@ export function PeerConnections({
         ))}
       <p className="helper">
         Vídeo e áudio opcional direto entre os participantes. Você pode assistir
-        a uma transmissão por vez. Quem possui o convite pode compartilhar e
-        assistir.
+        a várias transmissões ao mesmo tempo. Quem possui o convite pode
+        compartilhar e assistir.
       </p>
     </section>
   );

@@ -240,9 +240,9 @@ visual; prefira outra janela/monitor para avaliar movimento.
 Anúncios e pedidos Assistir/Sair usam o DataChannel P2P; o host continua com
 admissão, presença e offer/answer/ICE. Cada espectador recebe uma cópia direta do
 vídeo; não há relay de mídia. Novos peers recebem o anúncio ao conectar.
-Uma fonte por participante e uma transmissão assistida por vez; compartilhar e
-assistir simultaneamente é permitido. Até 7 espectadores por transmissor (limite
-da sala), sem garantia de desempenho: upload e processamento crescem por espectador.
+Uma fonte por participante e várias transmissões assistidas ao mesmo tempo; compartilhar
+e assistir simultaneamente é permitido. Até 7 espectadores por transmissor (limite da
+sala), sem garantia de desempenho: upload e processamento crescem por espectador.
 Timeout de início do vídeo: 15 s. Falha de conexão exige sair e entrar novamente.
 O M6 acrescenta áudio opcional e presets; não há medição de latência ou bitrate editável.
 Build/lint não comprovam captura ou streaming entre PCs; esse teste é manual.

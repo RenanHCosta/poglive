@@ -54,11 +54,10 @@ export class PeerMesh {
   watch(peerId: string): void {
     const target = this.links.get(peerId);
     if (target?.status !== 'CONNECTED') return;
-    for (const link of this.links.values()) link.media.stopWatching();
     target.media.watch();
   }
-  stopWatching(): void {
-    for (const link of this.links.values()) link.media.stopWatching();
+  stopWatching(peerId: string): void {
+    this.links.get(peerId)?.media.stopWatching();
   }
   private publish(error: string | null = null): void {
     if (this.stopped) return;
