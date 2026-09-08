@@ -12,12 +12,21 @@ export class PeerMedia {
   watchState: WatchState = 'IDLE';
   private local: LocalStream | null = null;
   private subscribedId: string | null = null;
+  private sendingId: string | null = null;
   private ready = false;
   private closed = false;
   private accepted = false;
   private updates = Promise.resolve();
   private pendingUpdates = 0;
   private timeout: ReturnType<typeof setTimeout> | undefined;
+  get watchingLocal(): boolean {
+    return (
+      this.ready &&
+      !this.closed &&
+      this.local?.streamId === this.subscribedId &&
+      this.sendingId === this.subscribedId
+    );
+  }
   constructor(
     private readonly pc: RTCPeerConnection,
     private readonly send: (message: MediaMessage) => void,
@@ -186,17 +195,23 @@ export class PeerMedia {
           await sender.replaceTrack(mediaTrack);
           if (mediaTrack) await configureSender(sender, mediaTrack);
         }
-        if (
+        const sendingId =
           !this.closed &&
           track &&
           local &&
           this.local === local &&
           this.subscribedId === local.streamId
-        )
+            ? local.streamId
+            : null;
+        if (!this.closed && this.sendingId !== sendingId) {
+          this.sendingId = sendingId;
+          this.changed();
+        }
+        if (sendingId)
           this.send({
             version: 1,
             type: 'WATCH_ACCEPTED',
-            streamId: local.streamId,
+            streamId: sendingId,
           });
       })
       .catch(() => {
@@ -210,6 +225,7 @@ export class PeerMedia {
     this.closed = true;
     clearTimeout(this.timeout);
     this.local = null;
+    this.sendingId = null;
     this.remoteId = null;
     this.watchState = 'IDLE';
     this.remoteStream?.getTracks().forEach((track) => {

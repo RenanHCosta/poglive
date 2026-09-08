@@ -43,6 +43,9 @@ export function PeerConnections({
   const hasVisibleStream = view.peers.some(
     (peer) => peer.streamId && peer.status === 'CONNECTED',
   );
+  const viewers = view.peers.filter(
+    (peer) => peer.watchingLocal && peer.status === 'CONNECTED',
+  );
   useEffect(() => {
     const mesh = new PeerMesh(
       roomId,
@@ -124,6 +127,31 @@ export function PeerConnections({
           </li>
         ))}
       </ul>
+      {capture && (
+        <div className="live-viewers" aria-live="polite">
+          <div className="stream-heading">
+            <p>
+              <span className="live-dot" />
+              Assistindo sua Live
+            </p>
+            <span className="count">{viewers.length}</span>
+          </div>
+          {viewers.length ? (
+            <ul className="viewer-list">
+              {viewers.map((peer) => (
+                <li key={peer.peerId}>
+                  <span className="viewer-avatar" aria-hidden="true">
+                    {Array.from(peer.displayName)[0]?.toUpperCase()}
+                  </span>
+                  {peer.displayName}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="helper">Ninguém está assistindo ainda.</p>
+          )}
+        </div>
+      )}
       {view.peers
         .filter((peer) => peer.streamId && peer.status === 'CONNECTED')
         .map((peer) => (

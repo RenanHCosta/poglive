@@ -11,6 +11,7 @@ export interface PeerConnectionView {
   streamId: string | null;
   media: MediaStream | null;
   watchState: WatchState;
+  watchingLocal: boolean;
   diagnostic: string | null;
 }
 export class PeerMesh {
@@ -70,6 +71,8 @@ export class PeerMesh {
           streamId: this.links.get(peer.peerId)?.media.remoteId ?? null,
           media: this.links.get(peer.peerId)?.media.remoteStream ?? null,
           watchState: this.links.get(peer.peerId)?.media.watchState ?? 'IDLE',
+          watchingLocal:
+            this.links.get(peer.peerId)?.media.watchingLocal ?? false,
           diagnostic:
             this.links.get(peer.peerId)?.diagnostic ??
             (!this.links.has(peer.peerId) &&

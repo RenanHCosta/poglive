@@ -253,7 +253,8 @@ vídeo e áudio mesmo quando a captura não contém som).
    podem produzir dimensões menores; os presets são limites, não upscale obrigatório.
 3. Encerre, marque Compartilhar áudio do sistema e selecione a fonte novamente.
    Reproduza um som conhecido no PC transmissor. Confira “Com áudio do sistema”.
-4. No receptor, clique Assistir e depois Ativar áudio. Teste Silenciar e Sair.
+4. No receptor, clique Assistir, ajuste o volume e teste Sair. No transmissor,
+   confirme que o receptor aparece em “Assistindo sua Live” enquanto recebe a mídia.
 5. Encerre a transmissão: vídeo e áudio devem parar. Repita com áudio desmarcado
    e confirme que não há som recebido. Teste também compartilhar uma janela.
 6. Repita em dois PCs na LAN para validar áudio de verdade: duas instâncias no
@@ -262,8 +263,9 @@ vídeo e áudio mesmo quando a captura não contém som).
 **Privacidade:** loopback captura o áudio do sistema, incluindo notificações e
 outros aplicativos, não somente a janela escolhida. Microfone/câmera não são
 autorizados. Som local do transmissor continua tocando. O preview não reproduz
-áudio; o receptor inicia mudo. Se compartilhar enquanto assiste, silencie o player
-para não recapturar o áudio recebido — fones não impedem essa recaptura por software.
+áudio; o receptor inicia com volume em 100%. Se compartilhar enquanto assiste,
+reduza o player a 0% para não recapturar o áudio recebido — fones não impedem essa
+recaptura por software.
 
 Se o Windows não fornecer track de áudio, aparece aviso e o vídeo continua. Se
 o pedido inteiro falhar, desligue áudio e tente novamente; não há nova tentativa

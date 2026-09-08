@@ -551,6 +551,48 @@ h3 {
   color: var(--app-muted);
   text-align: right;
 }
+.live-viewers {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--app-line);
+  border-radius: 9px;
+  background: var(--app-raised);
+}
+.live-viewers .stream-heading {
+  margin-bottom: 9px;
+}
+.live-viewers .stream-heading p,
+.live-viewers .helper {
+  margin: 0;
+}
+.viewer-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.viewer-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 5px;
+  border-radius: 999px;
+  background: #24202f;
+  color: #d9d3e8;
+  font-size: 11px;
+}
+.viewer-avatar {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #403455;
+  color: #d7c7f6;
+  font-size: 9px;
+}
 
 /* Frameless Windows chrome: title area drags, controls remain interactive. */
 body {

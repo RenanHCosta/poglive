@@ -299,6 +299,9 @@ evento ended continua exigindo encerramento manual.
 Assistir envia solicitação explícita. Estado remoto: IDLE, CONNECTING, WATCHING,
 ERROR; timeout de início de 15 s. O player também aguarda reprodução e oferece
 erro se vídeo não iniciar. Assistir a outro peer cancela a assinatura anterior.
+No transmissor, cada peer aparece em “Assistindo sua Live” somente após as tracks
+serem ligadas ao sender com sucesso; WATCH_STOP, troca de captura, falha ou saída
+do peer removem o espectador da lista.
 Sair do player não sai da sala nem encerra o stream para outros espectadores.
 Uma captura por participante, um player remoto por instância; até 7 cópias de vídeo
 por transmissor. Não há garantia de capacidade/latência nessa cardinalidade.
