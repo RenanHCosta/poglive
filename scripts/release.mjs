@@ -1,9 +1,6 @@
-import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { basename, resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
-const gh = process.platform === 'win32' ? 'gh.exe' : 'gh';
 const npmCli = process.env.npm_execpath;
 
 function execute(command, args, capture = false) {
@@ -37,13 +34,13 @@ function executeNpm(args) {
 }
 
 function parseVersion(value) {
-  const match = /^(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z.-]+)?$/.exec(value);
-  if (!match) throw new Error(`Versão inválida: ${value}`);
+  const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(value);
+  if (!match)
+    throw new Error(`Versão inválida: ${value}. Use uma versão estável 1.2.3.`);
   return {
     major: Number(match[1]),
     minor: Number(match[2]),
     patch: Number(match[3]),
-    suffix: match[4] ?? '',
   };
 }
 
@@ -73,10 +70,13 @@ if (initialStatus)
     'A árvore Git precisa estar limpa antes de criar uma release.',
   );
 
-execute(gh, ['auth', 'status']);
 const branch = execute('git', ['branch', '--show-current'], true);
 if (!branch)
   throw new Error('Não é possível publicar a partir de detached HEAD.');
+if (branch !== 'main')
+  throw new Error(
+    'Releases assinadas devem ser criadas a partir da branch main.',
+  );
 
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
 const version = nextVersion(packageJson.version, requested);
@@ -101,21 +101,6 @@ console.log(`\nPreparando Poglive ${tag} a partir da branch ${branch}.\n`);
 executeNpm(['version', version, '--no-git-tag-version']);
 executeNpm(['run', 'check']);
 executeNpm(['test']);
-executeNpm(['run', 'dist:win']);
-
-const executable = resolve(
-  'release',
-  `Poglive-${version}-win-x64-portable.exe`,
-);
-const installer = resolve('release', `Poglive-${version}-win-x64-setup.exe`);
-const blockmap = `${installer}.blockmap`;
-const updateManifest = resolve('release', 'latest.yml');
-if (!existsSync(executable))
-  throw new Error(`Executável esperado não foi gerado: ${executable}`);
-
-for (const artifact of [installer, blockmap, updateManifest])
-  if (!existsSync(artifact))
-    throw new Error(`Expected update artifact was not generated: ${artifact}`);
 
 const unexpectedChanges = execute('git', ['diff', '--name-only'], true)
   .split(/\r?\n/)
@@ -126,34 +111,11 @@ if (unexpectedChanges.length)
     `O build alterou arquivos inesperados: ${unexpectedChanges.join(', ')}`,
   );
 
-const checksum = resolve('release', `Poglive-${version}-SHA256.txt`);
-const checksums = [executable, installer]
-  .map((artifact) => {
-    const digest = createHash('sha256')
-      .update(readFileSync(artifact))
-      .digest('hex');
-    return `${digest}  ${basename(artifact)}`;
-  })
-  .join('\n');
-writeFileSync(checksum, `${checksums}\n`, 'utf8');
-
 execute('git', ['add', 'package.json', 'package-lock.json']);
 execute('git', ['commit', '-m', `chore: release ${tag}`]);
 execute('git', ['tag', '-a', tag, '-m', `Poglive ${tag}`]);
 execute('git', ['push', '--atomic', 'origin', 'HEAD', `refs/tags/${tag}`]);
-execute(gh, [
-  'release',
-  'create',
-  tag,
-  executable,
-  installer,
-  blockmap,
-  updateManifest,
-  checksum,
-  '--verify-tag',
-  '--title',
-  `Poglive ${tag}`,
-  '--generate-notes',
-]);
 
-console.log(`\nRelease ${tag} publicada com sucesso.`);
+console.log(
+  `\nTag ${tag} enviada. O GitHub Actions vai compilar, solicitar as aprovações do SignPath e publicar a release assinada.`,
+);

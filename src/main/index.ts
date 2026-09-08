@@ -126,7 +126,7 @@ function configureProtocol(): void {
       const file = resolve(root, `.${decodeURIComponent(url.pathname)}`);
       if (
         !file.startsWith(`${root}${sep}`) ||
-        !['.html', '.js', '.css', '.svg', '.mp3'].includes(extname(file))
+        !['.html', '.js', '.css', '.svg'].includes(extname(file))
       ) {
         return new Response(null, { status: 403 });
       }

@@ -2,6 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   "appId": "app.poglive.desktop",
   "productName": "Poglive",
+  "copyright": "Copyright © 2026 Renan Costa",
   "asar": true,
   "npmRebuild": false,
   "directories": { "output": "release" },
@@ -16,6 +17,10 @@
     {
       "from": "native/process-audio/build/bin/poglive-process-audio.exe",
       "to": "poglive-process-audio.exe"
+    },
+    {
+      "from": "build/THIRD_PARTY_NOTICES.txt",
+      "to": "THIRD_PARTY_NOTICES.txt"
     }
   ],
   "win": {
@@ -26,6 +31,9 @@
     ],
     "executableName": "Poglive",
     "requestedExecutionLevel": "asInvoker",
+    "signtoolOptions": {
+      "publisherName": "SignPath Foundation"
+    },
     "signExecutable": false
   },
   "nsis": {

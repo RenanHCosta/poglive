@@ -3,6 +3,19 @@
   "version": "0.2.0",
   "private": true,
   "description": "Compartilhamento de tela P2P em salas privadas",
+  "license": "MIT",
+  "author": {
+    "name": "Renan Costa",
+    "url": "https://github.com/RenanHCosta"
+  },
+  "homepage": "https://github.com/RenanHCosta/poglive#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RenanHCosta/poglive.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RenanHCosta/poglive/issues"
+  },
   "type": "module",
   "main": "dist/main/index.cjs",
   "engines": {
@@ -11,7 +24,8 @@
   "scripts": {
     "test": "node scripts/test.mjs",
     "dev": "node scripts/dev.mjs",
-    "build": "npm run typecheck && node scripts/build.mjs",
+    "build": "npm run license:notices && npm run typecheck && node scripts/build.mjs",
+    "license:notices": "node scripts/generate-third-party-notices.mjs",
     "build:native:audio": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/build-native-audio.ps1",
     "dist:win": "npm run build:native:audio && npm run build && electron-builder --config electron-builder.json --win --x64 --publish never",
     "release": "node scripts/release.mjs",

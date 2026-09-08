@@ -3,8 +3,7 @@ import { PeerMesh } from '../services/PeerMesh';
 import type { PeerConnectionView } from '../services/PeerMesh';
 import { RemoteVideo } from './RemoteVideo';
 import { Icon } from './Icon';
-import streamStartSound from '../assets/discord-stream-start.mp3';
-import streamStopSound from '../assets/discord-stream-stop.mp3';
+import { playStreamSound } from '../services/streamSounds';
 
 const labels = {
   WAITING: 'Aguardando conexão',
@@ -31,10 +30,6 @@ export function PeerConnections({
   const rtcHost = rtcEndpoint.host;
   const rtcPort = rtcEndpoint.port;
   const meshRef = useRef<PeerMesh | null>(null);
-  const soundPlayers = useRef<{
-    start: HTMLAudioElement;
-    stop: HTMLAudioElement;
-  } | null>(null);
   const previousStreams = useRef(new Map<string, string>());
   const [view, setView] = useState<{
     peers: PeerConnectionView[];
@@ -64,20 +59,6 @@ export function PeerConnections({
     meshRef.current?.setCapture(capture);
   }, [capture, roomId, selfId]);
   useEffect(() => {
-    const players = {
-      start: new Audio(streamStartSound),
-      stop: new Audio(streamStopSound),
-    };
-    players.start.preload = 'auto';
-    players.stop.preload = 'auto';
-    soundPlayers.current = players;
-    return () => {
-      players.start.pause();
-      players.stop.pause();
-      soundPlayers.current = null;
-    };
-  }, []);
-  useEffect(() => {
     const currentStreams = new Map<string, string>();
     for (const peer of view.peers)
       if (peer.streamId) currentStreams.set(peer.peerId, peer.streamId);
@@ -93,13 +74,8 @@ export function PeerConnections({
       if (!currentStreams.has(peerId)) stopped = true;
 
     previousStreams.current = currentStreams;
-    const play = (audio: HTMLAudioElement | undefined) => {
-      if (!audio) return;
-      audio.currentTime = 0;
-      void audio.play().catch(() => {});
-    };
-    if (stopped) play(soundPlayers.current?.stop);
-    if (started) play(soundPlayers.current?.start);
+    if (stopped) void playStreamSound('stop').catch(() => {});
+    if (started) void playStreamSound('start').catch(() => {});
   }, [view.peers]);
   useEffect(() => {
     if (theater && !hasVisibleStream) onTheater(false);

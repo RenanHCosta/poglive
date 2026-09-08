@@ -1,0 +1,179 @@
+name: Signed Windows release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    environment: signpath-release
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Read and validate version
+        id: version
+        shell: powershell
+        run: |
+          $version = (node scripts/assert-release-version.mjs $env:GITHUB_REF_NAME).Trim()
+          $windowsVersion = "$version.0"
+          "app_version=$version" >> $env:GITHUB_OUTPUT
+          "windows_version=$windowsVersion" >> $env:GITHUB_OUTPUT
+
+      - name: Require a commit from main
+        shell: powershell
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor $env:GITHUB_SHA origin/main
+          if ($LASTEXITCODE -ne 0) {
+            throw 'The release tag must point to a commit contained in origin/main.'
+          }
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check source
+        run: npm run check
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build native audio helper
+        shell: powershell
+        run: npm run build:native:audio
+
+      - name: Build application
+        run: npm run build
+
+      - name: Create unpacked application
+        run: npx electron-builder --config electron-builder.json --win dir --x64 --publish never
+
+      - name: Prepare Poglive-owned executables for signing
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force signpath-inner | Out-Null
+          Copy-Item release\win-unpacked\Poglive.exe signpath-inner\Poglive.exe
+          Copy-Item release\win-unpacked\resources\poglive-process-audio.exe signpath-inner\poglive-process-audio.exe
+
+      - name: Upload Poglive-owned executables
+        id: upload-inner
+        uses: actions/upload-artifact@v7
+        with:
+          name: poglive-inner-unsigned-${{ github.sha }}
+          path: signpath-inner
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Sign Poglive-owned executables
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: '${{ secrets.SIGNPATH_ORGANIZATION_ID }}'
+          project-slug: poglive
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: windows-app-v1
+          github-artifact-id: '${{ steps.upload-inner.outputs.artifact-id }}'
+          wait-for-completion: true
+          output-artifact-directory: '${{ github.workspace }}\signed-inner'
+          parameters: |
+            windowsVersion: "${{ steps.version.outputs.windows_version }}"
+
+      - name: Install signed Poglive executables
+        shell: powershell
+        run: |
+          Copy-Item signed-inner\Poglive.exe release\win-unpacked\Poglive.exe -Force
+          Copy-Item signed-inner\poglive-process-audio.exe release\win-unpacked\resources\poglive-process-audio.exe -Force
+          .\scripts\verify-signatures.ps1 -Path @(
+            'release\win-unpacked\Poglive.exe',
+            'release\win-unpacked\resources\poglive-process-audio.exe'
+          )
+
+      - name: Configure signed update verification
+        run: node scripts/create-app-update-config.mjs release/win-unpacked/resources
+
+      - name: Package signed application
+        run: npx electron-builder --config electron-builder.json --win nsis portable --x64 --prepackaged release/win-unpacked --publish never
+
+      - name: Prepare packages for signing
+        shell: powershell
+        run: |
+          $version = '${{ steps.version.outputs.app_version }}'
+          New-Item -ItemType Directory -Force signpath-packages | Out-Null
+          Copy-Item "release\Poglive-$version-win-x64-setup.exe" signpath-packages
+          Copy-Item "release\Poglive-$version-win-x64-portable.exe" signpath-packages
+
+      - name: Upload unsigned packages
+        id: upload-packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: poglive-packages-unsigned-${{ github.sha }}
+          path: signpath-packages
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Sign installer and portable executable
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: '${{ secrets.SIGNPATH_ORGANIZATION_ID }}'
+          project-slug: poglive
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: windows-packages-v1
+          github-artifact-id: '${{ steps.upload-packages.outputs.artifact-id }}'
+          wait-for-completion: true
+          output-artifact-directory: '${{ github.workspace }}\signed-packages'
+          parameters: |
+            appVersion: "${{ steps.version.outputs.app_version }}"
+
+      - name: Finalize signed release files
+        shell: powershell
+        run: |
+          $version = '${{ steps.version.outputs.app_version }}'
+          Copy-Item "signed-packages\Poglive-$version-win-x64-setup.exe" release -Force
+          Copy-Item "signed-packages\Poglive-$version-win-x64-portable.exe" release -Force
+          .\scripts\verify-signatures.ps1 -Path @(
+            "release\Poglive-$version-win-x64-setup.exe",
+            "release\Poglive-$version-win-x64-portable.exe"
+          )
+          node scripts/create-release-metadata.mjs $version release
+
+      - name: Upload final signed artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: poglive-${{ steps.version.outputs.app_version }}-signed
+          path: |
+            release/Poglive-${{ steps.version.outputs.app_version }}-win-x64-setup.exe
+            release/Poglive-${{ steps.version.outputs.app_version }}-win-x64-setup.exe.blockmap
+            release/Poglive-${{ steps.version.outputs.app_version }}-win-x64-portable.exe
+            release/Poglive-${{ steps.version.outputs.app_version }}-SHA256.txt
+            release/latest.yml
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = '${{ steps.version.outputs.app_version }}'
+          $files = @(
+            "release\Poglive-$version-win-x64-setup.exe",
+            "release\Poglive-$version-win-x64-setup.exe.blockmap",
+            "release\Poglive-$version-win-x64-portable.exe",
+            "release\Poglive-$version-SHA256.txt",
+            'release\latest.yml'
+          )
+          gh release create $env:GITHUB_REF_NAME $files --verify-tag --title "Poglive $env:GITHUB_REF_NAME" --generate-notes

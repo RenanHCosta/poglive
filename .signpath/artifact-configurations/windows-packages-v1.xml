@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="appVersion" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file path="Poglive-${appVersion}-win-x64-setup.exe"
+             product-name="Poglive" product-version="${appVersion}"
+             company-name="Renan Costa">
+      <authenticode-sign description="Poglive installer"
+                         description-url="https://github.com/RenanHCosta/poglive" />
+    </pe-file>
+    <pe-file path="Poglive-${appVersion}-win-x64-portable.exe"
+             product-name="Poglive" product-version="${appVersion}"
+             company-name="Renan Costa">
+      <authenticode-sign description="Poglive portable"
+                         description-url="https://github.com/RenanHCosta/poglive" />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

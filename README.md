@@ -9,7 +9,9 @@ Milestone 5 confirmado pelo usuário: anúncio de transmissão, Assistir e víde
 Milestone 6: 720p/1080p e áudio do sistema opcional validados inicialmente pelo usuário.
 Agora também há seleção 30/60 FPS e atualização automática para instalações NSIS.
 
-[Arquitetura, segurança, protocolo e roadmap](docs/architecture.md).
+[Arquitetura, segurança, protocolo e roadmap](docs/architecture.md) ·
+[Privacidade](PRIVACY.md) · [Segurança](SECURITY.md) ·
+[Política de assinatura](CODE_SIGNING_POLICY.md) · [Licença MIT](LICENSE).
 
 ## Instalar e executar
 
@@ -62,10 +64,16 @@ o perfil e cache continuam em AppData do usuário do Windows. O executável não
 sua identidade, credenciais ou sessões. Apagar o .exe não apaga os dados locais.
 Não envie pastas de perfis junto; distribuir o mesmo UUID causaria conflitos na sala.
 
-Os pacotes possuem ícone próprio, mas ainda não têm assinatura digital.
-Windows/SmartScreen ou antivírus podem apresentar aviso; não desative proteções.
-Compartilhe apenas pelo GitHub oficial ou por outro canal confiável. Assinatura
-Authenticode permanece uma etapa futura recomendada.
+Os builds locais gerados por `dist:win` não possuem assinatura pública. A assinatura
+gratuita pelo SignPath Foundation está em preparação; consulte o status explícito na
+[política de assinatura](CODE_SIGNING_POLICY.md). Enquanto a aprovação estiver
+pendente, Windows/SmartScreen ou antivírus podem apresentar aviso. Não desative
+proteções e compartilhe somente pela página oficial de Releases.
+
+Depois da aceitação, releases oficiais serão compiladas em runners hospedados pelo
+GitHub, assinadas em duas etapas e publicadas somente se todas as assinaturas forem
+válidas. `latest.yml`, blockmap e checksums serão calculados a partir dos arquivos já
+assinados.
 
 ### Teste manual dos pacotes
 
@@ -359,20 +367,23 @@ endereços. `Radmin=1/1` e `STUN=1/1` confirmam que ambos descobriram um candida
 interface virtual. Só depois dessa confirmação uma nova falha aponta para firewall UDP
 ou política de segurança de terceiros.
 
-## Publicar uma versão
+## Publicar uma versão assinada
 
-Com a árvore Git limpa, GitHub CLI instalado e autenticado, execute no Windows:
+Não crie uma nova tag enquanto a candidatura do SignPath e os secrets documentados em
+[`docs/signpath-application.md`](docs/signpath-application.md) não estiverem
+configurados. Depois disso, com a árvore Git limpa, execute no Windows:
 
 ```powershell
 npm run release -- patch
 ```
 
-Também é possível usar `minor`, `major` ou uma versão exata, como `0.2.0`. O comando
-atualiza `package.json` e `package-lock.json`, executa check/test/build nativo, gera o
-instalador NSIS, `.blockmap`, `latest.yml`, executável portátil e SHA-256 dos dois
-executáveis, cria commit e tag, envia ambos atomicamente e publica todos os artefatos
-na GitHub Release. Se alguma validação ou build falhar antes do commit, revise o erro
-e restaure manualmente os arquivos de versão antes de tentar novamente.
+Também é possível usar `minor`, `major` ou uma versão exata, como `0.3.0`. O comando
+atualiza `package.json` e `package-lock.json`, executa check/test, cria commit e tag e
+envia ambos atomicamente. O workflow `Signed Windows release` compila a partir da tag,
+solicita as duas aprovações manuais no SignPath, valida as assinaturas, gera os
+metadados finais e só então cria a GitHub Release. Se uma validação falhar antes do
+commit, revise o erro e restaure manualmente os arquivos de versão antes de tentar
+novamente.
 
 ## Formato do convite
 
@@ -430,3 +441,9 @@ Electron, React, Vite, TypeScript, esbuild, Zod, ESLint e Prettier foram preserv
 Foi adicionada selfsigned para gerar certificados X.509 temporários usando crypto
 nativo; isso evita implementar ASN.1/certificados manualmente. TLS é fornecido pelo
 Node integrado ao Electron. Versões e dependências estão travadas no lockfile.
+
+## Licença
+
+O código do Poglive é distribuído sob a [licença MIT](LICENSE), copyright 2026 Renan
+Costa. Componentes de terceiros continuam sob suas próprias licenças; os builds geram
+e incluem os respectivos avisos conforme [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

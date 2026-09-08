@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check source
+        run: npm run check
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build native audio helper
+        shell: powershell
+        run: npm run build:native:audio
+
+      - name: Build application
+        run: npm run build
+
+      - name: Package unsigned CI artifact
+        run: npx electron-builder --config electron-builder.json --win dir --x64 --publish never
+
+      - name: Upload CI artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: poglive-windows-${{ github.sha }}
+          path: release/win-unpacked
+          if-no-files-found: error
+          retention-days: 7

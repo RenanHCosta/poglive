@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="windowsVersion" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file path="Poglive.exe" product-name="Poglive"
+             product-version="${windowsVersion}" company-name="Renan Costa">
+      <authenticode-sign description="Poglive"
+                         description-url="https://github.com/RenanHCosta/poglive" />
+    </pe-file>
+    <pe-file path="poglive-process-audio.exe" product-name="Poglive"
+             product-version="${windowsVersion}" company-name="Renan Costa">
+      <authenticode-sign description="Poglive process audio helper"
+                         description-url="https://github.com/RenanHCosta/poglive" />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>
