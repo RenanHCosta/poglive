@@ -107,8 +107,15 @@ const executable = resolve(
   'release',
   `Poglive-${version}-win-x64-portable.exe`,
 );
+const installer = resolve('release', `Poglive-${version}-win-x64-setup.exe`);
+const blockmap = `${installer}.blockmap`;
+const updateManifest = resolve('release', 'latest.yml');
 if (!existsSync(executable))
   throw new Error(`Executável esperado não foi gerado: ${executable}`);
+
+for (const artifact of [installer, blockmap, updateManifest])
+  if (!existsSync(artifact))
+    throw new Error(`Expected update artifact was not generated: ${artifact}`);
 
 const unexpectedChanges = execute('git', ['diff', '--name-only'], true)
   .split(/\r?\n/)
@@ -119,11 +126,16 @@ if (unexpectedChanges.length)
     `O build alterou arquivos inesperados: ${unexpectedChanges.join(', ')}`,
   );
 
-const digest = createHash('sha256')
-  .update(readFileSync(executable))
-  .digest('hex');
 const checksum = resolve('release', `Poglive-${version}-SHA256.txt`);
-writeFileSync(checksum, `${digest}  ${basename(executable)}\n`, 'utf8');
+const checksums = [executable, installer]
+  .map((artifact) => {
+    const digest = createHash('sha256')
+      .update(readFileSync(artifact))
+      .digest('hex');
+    return `${digest}  ${basename(artifact)}`;
+  })
+  .join('\n');
+writeFileSync(checksum, `${checksums}\n`, 'utf8');
 
 execute('git', ['add', 'package.json', 'package-lock.json']);
 execute('git', ['commit', '-m', `chore: release ${tag}`]);
@@ -134,6 +146,9 @@ execute(gh, [
   'create',
   tag,
   executable,
+  installer,
+  blockmap,
+  updateManifest,
   checksum,
   '--verify-tag',
   '--title',

@@ -1214,6 +1214,40 @@ main {
   gap: 18px;
   white-space: nowrap;
 }
+.update-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+  color: var(--app-muted);
+  font-size: 9px;
+  white-space: nowrap;
+}
+.update-status .error-message {
+  margin: 0;
+  font-size: 9px;
+}
+.update-button {
+  border: 0;
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: transparent;
+  color: #979eac;
+  font-size: 9px;
+  cursor: pointer;
+}
+.update-button:hover {
+  background: var(--app-raised);
+  color: #e0d9f5;
+}
+.update-button.update-ready {
+  border: 1px solid #594d78;
+  color: #cdbff5;
+}
+.update-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
 
 @media (max-width: 980px) {
   .workspace {
@@ -1230,6 +1264,9 @@ main {
     left: 24px;
   }
   .bottom-bar .app-footer > :last-child {
+    display: none;
+  }
+  .update-status {
     display: none;
   }
 }

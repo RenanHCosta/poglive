@@ -10,6 +10,7 @@ import { decodeInvite } from './room/invite';
 import { randomUUID } from 'node:crypto';
 import { CaptureService } from './capture/service';
 import { ProcessAudioService } from './capture/process-audio';
+import { UpdateService } from './update/service';
 
 const WEBRTC_MDNS_FEATURE = 'WebRtcHideLocalIpsWithMdns';
 const WEBRTC_UDP_PORT_RANGE = { min: 52000, max: 52100 } as const;
@@ -64,6 +65,13 @@ const rendererUrl = development
 let window: BrowserWindow | null = null;
 const capture = new CaptureService(() => window, rendererUrl);
 const processAudio = new ProcessAudioService();
+const updates = new UpdateService(
+  () => window,
+  () => {
+    const status = rooms.snapshot().room.status;
+    return status === 'IDLE' || status === 'DISCONNECTED';
+  },
+);
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -180,6 +188,7 @@ async function createWindow(): Promise<void> {
     const passed: unknown = await window.webContents.executeJavaScript(`
       (async () => {
         const info = await window.pogLive.getAppInfo();
+        const updateState = await window.pogLive.getUpdateState();
         const saved = await window.pogLive.command({ type: 'SAVE_IDENTITY', displayName: 'Teste local' });
         if (saved.status !== 'OK') throw new Error(saved.message);
         const created = await window.pogLive.command({ type: 'CREATE_ROOM', name: 'Sala de teste', address: '127.0.0.1' });
@@ -191,6 +200,10 @@ async function createWindow(): Promise<void> {
         probe.remove();
         return info.name === 'Poglive' && typeof window.require === 'undefined'
           && typeof window.process === 'undefined'
+          && updateState.status === 'DISABLED'
+          && updateState.reason === 'DEVELOPMENT'
+          && typeof window.pogLive.checkForUpdate === 'function'
+          && typeof window.pogLive.installUpdate === 'function'
           && window.__cspProbe !== true
           && getComputedStyle(document.body).margin === '0px'
           && document.title === 'Poglive'
@@ -244,8 +257,16 @@ app
     capture.install();
     configureProtocol();
     await identities.load();
-    registerIpc(() => window, rendererUrl, rooms, capture, processAudio);
+    registerIpc(
+      () => window,
+      rendererUrl,
+      rooms,
+      capture,
+      processAudio,
+      updates,
+    );
     await createWindow();
+    updates.start();
   })
   .catch((error: unknown) => {
     console.error(
@@ -256,6 +277,7 @@ app
   });
 app.on('window-all-closed', () => app.quit());
 app.on('before-quit', () => {
+  updates.close();
   processAudio.stop();
   void rooms.close();
 });

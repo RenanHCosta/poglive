@@ -7,6 +7,7 @@ import { useRoom } from '../hooks/useRoom';
 import { CapturePanel } from '../components/CapturePanel';
 import { RoomMedia } from '../components/RoomMedia';
 import { WindowBar } from '../components/WindowBar';
+import { UpdateStatus } from '../components/UpdateStatus';
 
 export function HomePage() {
   const desktop = useAppInfo();
@@ -93,6 +94,7 @@ export function HomePage() {
                 ? action.message
                 : ''}
           </div>
+          <UpdateStatus inRoom={inRoom} />
           <footer className="app-footer">
             <span data-testid="desktop-status" role="status">
               {desktop.status === 'READY'

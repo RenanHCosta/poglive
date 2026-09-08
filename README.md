@@ -7,7 +7,7 @@ monitor/janela e preview local.
 Milestone 4 implementado: signaling pelo host e conexão WebRTC direta com DataChannel.
 Milestone 5 confirmado pelo usuário: anúncio de transmissão, Assistir e vídeo P2P.
 Milestone 6: 720p/1080p e áudio do sistema opcional validados inicialmente pelo usuário.
-Agora também há seleção 30/60 FPS, aguardando teste manual. Sem dependências novas.
+Agora também há seleção 30/60 FPS e atualização automática para instalações NSIS.
 
 [Arquitetura, segurança, protocolo e roadmap](docs/architecture.md).
 
@@ -31,10 +31,10 @@ npm run build
 npm start
 ```
 
-Para levar a outro PC, gere o executável portátil abaixo. Quem recebe não precisa
-de Node.js, npm ou dos arquivos do projeto.
+Para levar a outro PC, gere o instalador ou o executável portátil abaixo. Quem recebe
+não precisa de Node.js, npm ou dos arquivos do projeto.
 
-## Executável portátil Windows x64
+## Distribuição Windows x64
 
 Na máquina de desenvolvimento, com as dependências instaladas:
 
@@ -43,33 +43,40 @@ npm run dist:win
 ```
 
 Em uma cópia nova do projeto, execute `npm ci` antes. O comando compila e usa
-electron-builder para gerar `release/Poglive-0.1.0-win-x64-portable.exe`.
-A versão no nome acompanha package.json. O primeiro empacotamento requer internet
-para baixar Electron e ferramentas de empacotamento; não publica nem faz upload.
+electron-builder para gerar `release/Poglive-0.1.0-win-x64-setup.exe`, seu `.blockmap`,
+`latest.yml` e `release/Poglive-0.1.0-win-x64-portable.exe`. A versão no nome acompanha
+package.json. O primeiro empacotamento requer internet para baixar Electron e ferramentas
+de empacotamento; `dist:win` não publica nem faz upload.
 
-Envie **somente o arquivo terminado em -portable.exe** aos amigos, não o executável
-interno de win-unpacked. Ele contém Electron e a aplicação, extrai arquivos temporários
-ao abrir e não instala atalhos nem solicita administração. Não é um instalador.
-Mantenha espaço livre para extração; a primeira abertura pode demorar.
+O arquivo terminado em `-setup.exe` é a distribuição principal: instala por usuário,
+cria atalhos e recebe atualizações automáticas das Releases públicas do GitHub. O app
+verifica ao abrir e a cada seis horas, baixa em segundo plano e instala ao fechar ou
+quando o usuário escolhe reiniciar. O botão de reinício fica bloqueado durante uma sala.
+
+O arquivo terminado em `-portable.exe` continua disponível como alternativa sem
+instalação, mas não se autoatualiza. Não distribua o executável interno de `win-unpacked`.
+O portátil contém Electron e a aplicação e extrai arquivos temporários ao abrir.
 
 Portátil aqui significa **sem instalação**, não “sem deixar dados no computador”:
 o perfil e cache continuam em AppData do usuário do Windows. O executável não leva
 sua identidade, credenciais ou sessões. Apagar o .exe não apaga os dados locais.
 Não envie pastas de perfis junto; distribuir o mesmo UUID causaria conflitos na sala.
 
-O pacote inicial usa ícone padrão do Electron e não possui assinatura digital.
+Os pacotes possuem ícone próprio, mas ainda não têm assinatura digital.
 Windows/SmartScreen ou antivírus podem apresentar aviso; não desative proteções.
-Compartilhe apenas por um canal confiável. Assinatura e ícone próprios ficam para
-uma versão posterior. Não há atualização automática: distribua um novo .exe.
+Compartilhe apenas pelo GitHub oficial ou por outro canal confiável. Assinatura
+Authenticode permanece uma etapa futura recomendada.
 
-### Teste manual do portátil
+### Teste manual dos pacotes
 
-1. Feche as instâncias antigas e abra o .exe com duplo clique.
+1. Feche as instâncias antigas e instale pelo `-setup.exe`; teste o portátil separadamente.
 2. Defina o nome, crie sala e selecione a interface LAN (não 127.0.0.1 para outro PC).
 3. O amigo abre o mesmo .exe e entra com o convite. Permita acesso à rede privada
    no firewall se solicitado, sem desativá-lo.
 4. Teste captura de janela/monitor, Assistir, áudio opcional e 30/60 FPS.
 5. Feche e reabra: o perfil deve persistir. Fechar o host encerra a sala.
+6. Publique uma versão de teste superior e valide detecção, download, bloqueio durante
+   uma sala e reinício no novo número de versão.
 
 Para duas instâncias locais, em terminais separados dentro da pasta release:
 
@@ -362,9 +369,10 @@ npm run release -- patch
 
 Também é possível usar `minor`, `major` ou uma versão exata, como `0.2.0`. O comando
 atualiza `package.json` e `package-lock.json`, executa check/test/build nativo, gera o
-executável portátil e seu SHA-256, cria commit e tag, envia ambos atomicamente e publica
-os arquivos no GitHub Release. Se alguma validação ou build falhar antes do commit,
-revise o erro e restaure manualmente os arquivos de versão antes de tentar novamente.
+instalador NSIS, `.blockmap`, `latest.yml`, executável portátil e SHA-256 dos dois
+executáveis, cria commit e tag, envia ambos atomicamente e publica todos os artefatos
+na GitHub Release. Se alguma validação ou build falhar antes do commit, revise o erro
+e restaure manualmente os arquivos de versão antes de tentar novamente.
 
 ## Formato do convite
 

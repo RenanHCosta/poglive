@@ -20,14 +20,32 @@
   ],
   "win": {
     "icon": "build/icon.ico",
-    "target": [{ "target": "portable", "arch": ["x64"] }],
+    "target": [
+      { "target": "nsis", "arch": ["x64"] },
+      { "target": "portable", "arch": ["x64"] }
+    ],
     "executableName": "Poglive",
     "requestedExecutionLevel": "asInvoker",
     "signExecutable": false
+  },
+  "nsis": {
+    "artifactName": "Poglive-${version}-win-${arch}-setup.${ext}",
+    "oneClick": true,
+    "perMachine": false,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "deleteAppDataOnUninstall": false
   },
   "portable": {
     "artifactName": "Poglive-${version}-win-${arch}-portable.${ext}",
     "requestExecutionLevel": "user"
   },
-  "publish": null
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "RenanHCosta",
+      "repo": "poglive",
+      "releaseType": "release"
+    }
+  ]
 }

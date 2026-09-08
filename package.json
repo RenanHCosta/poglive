@@ -13,7 +13,7 @@
     "dev": "node scripts/dev.mjs",
     "build": "npm run typecheck && node scripts/build.mjs",
     "build:native:audio": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/build-native-audio.ps1",
-    "dist:win": "npm run build:native:audio && npm run build && electron-builder --config electron-builder.json --win portable --x64 --publish never",
+    "dist:win": "npm run build:native:audio && npm run build && electron-builder --config electron-builder.json --win --x64 --publish never",
     "release": "node scripts/release.mjs",
     "start": "electron .",
     "smoke": "electron . --smoke-test",
@@ -24,6 +24,7 @@
     "check": "npm run typecheck && npm run lint && npm run format:check"
   },
   "dependencies": {
+    "electron-updater": "^6.8.9",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "selfsigned": "5.5.0",

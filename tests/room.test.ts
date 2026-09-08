@@ -26,6 +26,7 @@ import {
   matchesCertificate,
   createCertificate,
 } from '../src/main/transport/certificate';
+import { updateStateSchema } from '../src/shared/schemas/update';
 
 const identity = (displayName: string) => ({
   peerId: randomUUID(),
@@ -235,6 +236,33 @@ test('untrusted schemas reject extra fields, malformed invitation and oversized 
       streamId: randomUUID(),
       negotiationId: randomUUID(),
       sdp: 'x'.repeat(48001),
+    }).success,
+    false,
+  );
+});
+
+test('update states accept bounded progress and reject untrusted fields', () => {
+  assert.equal(
+    updateStateSchema.safeParse({
+      status: 'DOWNLOADING',
+      version: '0.2.0',
+      percent: 42.5,
+    }).success,
+    true,
+  );
+  assert.equal(
+    updateStateSchema.safeParse({
+      status: 'DOWNLOADING',
+      version: '0.2.0',
+      percent: 101,
+    }).success,
+    false,
+  );
+  assert.equal(
+    updateStateSchema.safeParse({
+      status: 'READY',
+      version: '0.2.0',
+      downloadedFile: 'C:\\private\\update.exe',
     }).success,
     false,
   );

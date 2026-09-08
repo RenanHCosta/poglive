@@ -369,14 +369,22 @@ o player é necessário para evitá-lo ao compartilhar e assistir simultaneament
 
 ## Roadmap e verificação
 
-### Distribuição portátil
+### Distribuição e atualizações
 
-electron-builder.json define o target portable Windows x64, execução como usuário
-comum e saída em release/. `npm run dist:win` compila antes e usa `--publish never`.
-Documentação: [electron-builder portable](https://www.electron.build/docs/api/app-builder-lib.interface.portableoptions/).
-Sem instalador, auto-update, assinatura ou alterações de firewall. O bootstrap
-extrai o runtime em diretório temporário; app.isPackaged mantém o protocolo app://
-e desabilita os modos dev/smoke existentes. CSP, sandbox e preload são preservados.
+electron-builder.json gera NSIS e portable Windows x64 como usuário comum, com saída
+em release/. `npm run dist:win` compila antes e usa `--publish never`. O NSIS é a
+distribuição principal e recebe atualizações por `electron-updater` a partir das Releases
+públicas de `RenanHCosta/poglive`; o portátil é secundário e permanece manual.
+
+O build gera `latest.yml` e o `.blockmap` do instalador. O processo principal consulta
+ao abrir e a cada seis horas, baixa automaticamente e publica apenas estado validado
+pelo preload. Reinício manual é recusado enquanto houver sala ativa; uma atualização
+baixada também pode ser aplicada no encerramento normal. Desenvolvimento, outras
+plataformas e execução portátil desativam o updater. CSP, sandbox e preload permanecem.
+
+Os executáveis ainda não possuem Authenticode. O manifesto contém SHA-512 e o GitHub
+fornece HTTPS, mas assinatura de código continua recomendada antes de tratar o canal
+como distribuição de produção plenamente endurecida.
 
 ASAR inclui somente bundles main/preload/renderer e metadados do pacote; fontes,
 source maps, testes, perfis e segredos ficam de fora. node_modules não é incluído:

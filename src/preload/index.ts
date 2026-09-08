@@ -13,8 +13,32 @@ import {
   commandResultSchema,
   localStateSchema,
 } from '../shared/schemas/room';
+import { updateStateSchema } from '../shared/schemas/update';
 
 const bridge: DesktopBridge = {
+  getUpdateState: async () => {
+    const result: unknown = await ipcRenderer.invoke(IPC.updateGetState);
+    return updateStateSchema.parse(result);
+  },
+  checkForUpdate: async () => {
+    const result: unknown = await ipcRenderer.invoke(IPC.updateCheck);
+    return commandResultSchema.parse(result);
+  },
+  installUpdate: async () => {
+    const result: unknown = await ipcRenderer.invoke(IPC.updateInstall);
+    return commandResultSchema.parse(result);
+  },
+  onUpdateState: (listener) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      value: unknown,
+    ): void => {
+      const parsed = updateStateSchema.safeParse(value);
+      if (parsed.success) listener(parsed.data);
+    };
+    ipcRenderer.on(IPC.updateState, handler);
+    return () => ipcRenderer.removeListener(IPC.updateState, handler);
+  },
   windowMinimize: async () => {
     await ipcRenderer.invoke(IPC.windowMinimize);
   },

@@ -213,8 +213,11 @@ export function PeerConnections({
       )}
       {view.peers.some((peer) => peer.status === 'ERROR') && (
         <p>
-          Confira a rede e o firewall. Para tentar novamente, saia e entre na
-          sala.
+          {view.peers.some((peer) =>
+            peer.diagnostic?.startsWith('INCOMPATIBLE_VERSION'),
+          )
+            ? 'Esta pessoa usa uma versão incompatível. Atualizem o Poglive e entrem novamente na sala.'
+            : 'Confira a rede e o firewall. Para tentar novamente, saia e entre na sala.'}
         </p>
       )}
       {view.peers

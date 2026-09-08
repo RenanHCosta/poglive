@@ -6,6 +6,7 @@ import type {
   ProcessAudioTarget,
 } from './schemas/capture';
 import type { Signal, SignalBatch } from './protocols/signaling';
+import type { UpdateState } from './schemas/update';
 
 export const IPC = {
   getAppInfo: 'app:get-info',
@@ -23,6 +24,10 @@ export const IPC = {
   windowMinimize: 'window:minimize',
   windowToggleMaximize: 'window:toggle-maximize',
   windowClose: 'window:close',
+  updateGetState: 'update:get-state',
+  updateCheck: 'update:check',
+  updateInstall: 'update:install',
+  updateState: 'update:state',
 } as const;
 export const appInfoSchema = z
   .object({
@@ -52,6 +57,10 @@ export interface DesktopBridge {
   windowMinimize: () => Promise<void>;
   windowToggleMaximize: () => Promise<boolean>;
   windowClose: () => Promise<void>;
+  getUpdateState: () => Promise<UpdateState>;
+  checkForUpdate: () => Promise<CommandResult>;
+  installUpdate: () => Promise<CommandResult>;
+  onUpdateState: (listener: (state: UpdateState) => void) => () => void;
 }
 
 export type StreamState =

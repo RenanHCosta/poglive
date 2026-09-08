@@ -7,6 +7,7 @@ import type { CommandResult } from '../shared/schemas/room';
 import type { RoomService } from './room/service';
 import type { CaptureService } from './capture/service';
 import type { ProcessAudioService } from './capture/process-audio';
+import type { UpdateService } from './update/service';
 import {
   captureSourcesResultSchema,
   captureSelectionSchema,
@@ -21,6 +22,7 @@ export function registerIpc(
   rooms: RoomService,
   capture: CaptureService,
   processAudio: ProcessAudioService,
+  updates: UpdateService,
 ): void {
   function authorize(event: IpcMainInvokeEvent): void {
     const window = getWindow();
@@ -51,6 +53,21 @@ export function registerIpc(
     authorize(event);
     noArguments.parse(args);
     getWindow()?.close();
+  });
+  ipcMain.handle(IPC.updateGetState, (event, ...args: unknown[]) => {
+    authorize(event);
+    noArguments.parse(args);
+    return updates.snapshot();
+  });
+  ipcMain.handle(IPC.updateCheck, async (event, ...args: unknown[]) => {
+    authorize(event);
+    noArguments.parse(args);
+    return await updates.check();
+  });
+  ipcMain.handle(IPC.updateInstall, (event, ...args: unknown[]) => {
+    authorize(event);
+    noArguments.parse(args);
+    return updates.install();
   });
   ipcMain.handle(IPC.signalSend, (event, ...args: unknown[]): CommandResult => {
     authorize(event);

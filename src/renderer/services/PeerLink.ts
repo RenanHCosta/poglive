@@ -74,7 +74,12 @@ export class PeerLink {
       } else void this.sendIce(value).catch(() => this.fail());
     };
     this.pc.ondatachannel = ({ channel }) => {
-      if (this.channel || channel.label !== 'poglive-control') {
+      if (channel.label !== 'poglive-control') {
+        channel.close();
+        this.fail('INCOMPATIBLE_VERSION');
+        return;
+      }
+      if (this.channel) {
         channel.close();
         this.fail();
         return;
