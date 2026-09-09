@@ -26,6 +26,8 @@ Official downloads are published only at:
 
 https://github.com/RenanHCosta/poglive/releases
 
-SHA-256 checksums are attached to each release. Once the SignPath Foundation
-application is accepted, Windows artifacts will also carry an Authenticode signature
-whose certificate subject contains `SignPath Foundation`.
+SHA-256 checksums are attached to each release. Windows artifacts are currently
+unsigned and release notes identify this limitation. The September 2026 SignPath
+Foundation application was not accepted because the project does not yet meet the
+program's public visibility requirement. If a future application is accepted, signed
+artifacts will be announced only after their Authenticode signatures are verified.

@@ -1,5 +1,11 @@
 # SignPath Foundation application
 
+> Historical record: this application was submitted in September 2026 and was not
+> accepted because Poglive had not yet established the public visibility and external
+> adoption required by the Foundation program. No technical, security or licensing
+> defect was cited. Keep this document as preparation material for a future application;
+> do not represent the project as approved.
+
 Status: repository preparation complete; external application and approval pending.
 
 ## Application text

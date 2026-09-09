@@ -1,11 +1,22 @@
 # Code signing policy
 
-Free code signing provided by [SignPath.io](https://signpath.io), certificate by
-[SignPath Foundation](https://signpath.org).
+## Current status
 
-Status: application preparation. This policy does not claim that SignPath Foundation
-has accepted Poglive or that the current downloads are signed. The status will be
-updated only after acceptance and successful signature verification.
+Poglive releases are not currently signed with Authenticode. The project's September
+2026 application to the SignPath Foundation program was not accepted because Poglive
+does not yet have the level of public visibility and external adoption required by the
+program. SignPath did not report a technical, security or licensing defect in the
+project.
+
+Official releases are built by GitHub Actions, explicitly identified as unsigned and
+published with SHA-256 checksums. The update channel does not claim a signed publisher.
+Poglive may reapply after it has established verifiable public recognition.
+
+## Planned provider
+
+If a future application is accepted: Free code signing provided by
+[SignPath.io](https://signpath.io), certificate by
+[SignPath Foundation](https://signpath.org).
 
 ## Scope
 
@@ -29,20 +40,28 @@ forks, local builds and third-party components must not use the release signing 
 Contributions from people without direct write access require review before merging.
 All members with repository or SignPath access must use multi-factor authentication.
 
-## Release controls
+## Current release controls
 
 1. The release tag must be `v<version>`, match `package.json` exactly and point to a
    commit contained in `origin/main`.
 2. Tests, static checks and all Windows builds run on GitHub-hosted runners.
-3. GitHub is configured as the SignPath trusted build system with origin verification.
-4. The application executable and Poglive native helper are signed before packaging.
-5. The resulting installer and portable executable are submitted for a second,
-   outer-file signature.
-6. Every SignPath request requires manual approval by the signing approver.
-7. Update metadata, blockmap and checksums are generated only from the final signed
-   files.
-8. Installed updates require the `SignPath Foundation` publisher, and the workflow
+3. The unsigned workflow verifies that Poglive's application, native helper, installer
+   and portable executable have no Authenticode signature.
+4. Update metadata, blockmap and checksums are generated from the final packages.
+5. Release notes state that the artifacts are unsigned.
+
+## Controls reserved for a future signed release
+
+1. GitHub must be configured as the SignPath trusted build system with origin
+   verification.
+2. The application executable and Poglive native helper must be signed before packaging.
+3. The resulting installer and portable executable must receive a second, outer-file
+   signature.
+4. Every SignPath request requires manual approval by the signing approver.
+5. Installed updates require the `SignPath Foundation` publisher, and the workflow
    verifies each signature and expected publisher before publishing.
+6. The repository variable `SIGNPATH_ENABLED=true` may be set only after the full
+   SignPath configuration and credentials exist.
 
 Product names and product versions are restricted by the SignPath artifact
 configurations stored in `.signpath/artifact-configurations`.

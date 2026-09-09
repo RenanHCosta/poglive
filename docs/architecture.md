@@ -2,8 +2,9 @@
 
 ## Escopo atual
 
-Aplicativo independente, sem conta, backend ou deploy para o MVP LAN.
-Milestones 1 a 5 confirmados pelo usuário. M6 implementa áudio/qualidade e aguarda teste manual.
+Aplicativo independente, sem conta, backend ou servidor de mídia. Salas, captura,
+streaming WebRTC, múltiplos players e áudio opcional estão implementados. Desempenho,
+60 FPS e áudio seletivo ainda exigem validação contínua entre computadores reais.
 O host coordena admissão, presença e signaling WebRTC. Controle de transmissão e
 vídeo passam diretamente entre os renderers dos participantes.
 
@@ -41,13 +42,13 @@ src/
     pages/HomePage.tsx
     hooks/                   estado desktop e snapshots de sala
   shared/
-    contracts.ts             ponte e estados de mídia futuros
+    contracts.ts             ponte e estados compartilhados
     schemas/room.ts          identidade, convite, estado e comandos
     protocols/network.ts    união discriminada de mensagens
 tests/room.test.ts
 ```
 
-main/capture/service.ts cuida das fontes e autorizações do M3. No M4,
+main/capture/service.ts cuida das fontes e autorizações de captura.
 main/signaling/router.ts coordena o encaminhamento; renderer/services/PeerLink.ts
 e PeerMesh.ts mantêm PeerConnections e presença. shared/protocols/signaling.ts
 valida as mensagens e o lote IPC. discovery/networking, types/states separados só serão criados se
@@ -206,7 +207,7 @@ Track ended gera aviso recuperável. Fontes minimizadas/protegidas podem congela
 sem emitir ended; ainda exigem encerramento manual nesses casos.
 Schema de captura valida fonte/miniatura e IPC; nenhuma API Node nova é exposta.
 
-## Conexão direta no M4
+## Conexão direta WebRTC
 
 Cada par cria uma PeerConnection com o endpoint STUN local do host. Ele usa o mesmo
 IP/porta do convite, em UDP, para produzir um candidato pela rota explícita da sala;
@@ -245,14 +246,15 @@ selecionado para a sala e na mesma porta numérica do listener TLS, possível po
 UDP e o outro TCP. Mensagens inválidas são ignoradas e nenhum endereço é registrado.
 O diagnóstico conta candidatos UDP, Radmin e STUN sem revelar portas/IPs individuais.
 
-## Qualidade, áudio e internet futuros
+## Qualidade e conectividade externa
 
 O host coordena signaling, não atua como relay de vídeo por ser host.
 O streamer usa a PeerConnection de cada espectador; upload cresce por espectador.
 Captura usa desktopCapturer/main e getDisplayMedia/renderer com autorização de
 fonte. Chromium/WebRTC negocia codecs disponíveis; sem encoder próprio.
-720p/1080p, 30 FPS e áudio de sistema opcional serão verificados em hardware real.
-Loopback pode incluir qualquer áudio do sistema; 30/60 FPS são selecionáveis, sem garantia de taxa efetiva.
+720p/1080p, 30/60 FPS e áudio opcional estão disponíveis, sem garantia de taxa efetiva.
+Loopback global pode incluir qualquer áudio do sistema; os modos seletivos e o
+desempenho continuam sujeitos ao hardware e à versão do Windows.
 
 Internet exige distinguir alcance do host TCP de ICE para mídia. STUN não abre
 o listener TCP do host atrás de NAT/CGNAT. Pode ser necessário signaling externo
@@ -263,13 +265,13 @@ O tipo de rota selecionada será medido e mostrado; não prometer P2P universal.
 Referências: [WebRTC connections](https://webrtc.org/getting-started/peer-connections),
 [TURN](https://webrtc.org/getting-started/turn-server).
 
-## Streaming no M5
+## Streaming
 
 Arquivos: shared/protocols/media.ts (Zod/união discriminada), PeerMedia.ts
 (controle e sender), PeerLink.ts (transceiver/DataChannel), PeerMesh.ts
 (captura e seleção do espectador), RoomMedia.tsx, CapturePanel.tsx,
-PeerConnections.tsx e RemoteVideo.tsx. O M5 preservou IPC/preload e TLS;
-o M6 estende somente o contrato de seleção de captura com opções validadas.
+PeerConnections.tsx e RemoteVideo.tsx. O controle de mídia preserva as fronteiras de
+IPC/preload e TLS; as opções de captura são validadas ponta a ponta.
 network.ts remove os schemas reservados de stream: não são mensagens de sala TLS.
 
 Cada par negocia transceivers video e audio sendrecv vazios junto ao DataChannel.
@@ -309,7 +311,7 @@ por transmissor. Não há garantia de capacidade/latência nessa cardinalidade.
 Vídeo/áudio usam Chromium/WebRTC; codecs automáticos, sem encoder próprio.
 STUN público e TURN continuam ausentes. Presets e áudio opcional são descritos abaixo.
 
-## Áudio e qualidade no M6
+## Áudio e qualidade
 
 CAPTURE_PROFILES centraliza 720p (1280×720) e 1080p (1920×1080).
 captureOptionsSchema valida frameRate como 30 ou 60 e audioMode como
@@ -387,17 +389,19 @@ Os executáveis ainda não possuem Authenticode. O manifesto contém SHA-512 e o
 fornece HTTPS, mas assinatura de código continua recomendada antes de tratar o canal
 como distribuição de produção plenamente endurecida.
 
-Enquanto a candidatura do projeto estiver pendente, tags estáveis usam o job temporário
-de release não assinada. Esse job confirma que os artefatos estão sem Authenticode,
-publica um aviso explícito e não inclui `publisherName` no canal de atualização. Depois
-da aprovação, a variável de repositório `SIGNPATH_ENABLED=true` troca o mesmo gatilho de
-tags para o job assinado e passa a exigir `SignPath Foundation` nas atualizações.
+Após a candidatura gratuita à SignPath Foundation não ser aceita por visibilidade
+pública ainda insuficiente, tags estáveis continuam usando o job de release não
+assinada. Esse job confirma que os artefatos estão sem Authenticode, publica um aviso
+explícito e não inclui `publisherName` no canal de atualização. Uma futura aprovação e
+a variável de repositório `SIGNPATH_ENABLED=true` trocarão o mesmo gatilho de tags para
+o job assinado e passarão a exigir `SignPath Foundation` nas atualizações.
 
 ASAR inclui somente bundles main/preload/renderer e metadados do pacote; fontes,
 source maps, testes, perfis e segredos ficam de fora. node_modules não é incluído:
 esbuild empacota as dependências de runtime, exceto Electron/APIs nativas do Node.
-npmRebuild está desligado porque não há addon nativo; revisar essa decisão quando
-adicionarmos captura WASAPI nativa. ASAR não é criptografia nem proteção de código.
+npmRebuild está desligado porque não há addon Node nativo; o helper WASAPI é um sidecar
+compilado separadamente. Revisar essa decisão se um addon for introduzido. ASAR não é
+criptografia nem proteção de código.
 
 Portátil é sem instalação, não perfil transportável: userData continua em AppData
 por usuário, com --profile para instâncias independentes. Distribui-se somente o
@@ -421,4 +425,5 @@ Testes automatizados exercitam TLS real em loopback e runtime Electron, seguran�
 da ponte e CSP. Não substituem validação visual nem conectividade entre dois PCs.
 Por solicitação do usuário, os M3–M6 não adicionam nem executam testes automatizados.
 Compilação/lint e instruções de teste manual acompanham a entrega.
-O próximo marco só começa após o resultado do teste do usuário.
+Funcionalidades de mídia permanecem sujeitas a teste manual entre duas máquinas; build,
+lint e smoke não comprovam continuidade, isolamento, latência ou desempenho reais.

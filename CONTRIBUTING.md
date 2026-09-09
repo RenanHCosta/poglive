@@ -10,5 +10,6 @@ Contributions are welcome under the project's MIT license.
 5. Wait for maintainer review before merging.
 
 Changes to release workflows, `.signpath`, capture, networking, updates or native code
-receive additional review because they affect the signed trust boundary. Contributors
-must not attempt to submit artifacts to the project's SignPath policies.
+receive additional review because they affect the release trust boundary. Contributors
+must not attempt to submit artifacts to the repository's reserved SignPath workflows or
+future signing policies.
