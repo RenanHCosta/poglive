@@ -117,5 +117,5 @@ execute('git', ['tag', '-a', tag, '-m', `Poglive ${tag}`]);
 execute('git', ['push', '--atomic', 'origin', 'HEAD', `refs/tags/${tag}`]);
 
 console.log(
-  `\nTag ${tag} enviada. O GitHub Actions vai compilar, solicitar as aprovações do SignPath e publicar a release assinada.`,
+  `\nTag ${tag} enviada. O GitHub Actions vai compilar e publicar conforme o modo de assinatura configurado no repositório.`,
 );

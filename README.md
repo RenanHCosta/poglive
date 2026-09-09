@@ -367,11 +367,11 @@ endereços. `Radmin=1/1` e `STUN=1/1` confirmam que ambos descobriram um candida
 interface virtual. Só depois dessa confirmação uma nova falha aponta para firewall UDP
 ou política de segurança de terceiros.
 
-## Publicar uma versão assinada
+## Publicar uma versão
 
-Não crie uma nova tag enquanto a candidatura do SignPath e os secrets documentados em
-[`docs/signpath-application.md`](docs/signpath-application.md) não estiverem
-configurados. Depois disso, com a árvore Git limpa, execute no Windows:
+Enquanto a candidatura do SignPath estiver pendente, tags de versão publicam
+automaticamente instalador e portátil não assinados, com aviso explícito nas notas da
+release e hashes SHA-256. Com a árvore Git limpa, execute no Windows:
 
 ```powershell
 npm run release -- patch
@@ -379,11 +379,16 @@ npm run release -- patch
 
 Também é possível usar `minor`, `major` ou uma versão exata, como `0.3.0`. O comando
 atualiza `package.json` e `package-lock.json`, executa check/test, cria commit e tag e
-envia ambos atomicamente. O workflow `Signed Windows release` compila a partir da tag,
-solicita as duas aprovações manuais no SignPath, valida as assinaturas, gera os
-metadados finais e só então cria a GitHub Release. Se uma validação falhar antes do
-commit, revise o erro e restaure manualmente os arquivos de versão antes de tentar
-novamente.
+envia ambos atomicamente. O workflow `Windows release` compila a partir da tag, gera os
+metadados finais e cria a GitHub Release. Se uma validação falhar antes do commit,
+revise o erro e restaure manualmente os arquivos de versão antes de tentar novamente.
+
+Depois da aceitação, configure os secrets e o ambiente documentados em
+[`docs/signpath-application.md`](docs/signpath-application.md) e defina a variável de
+repositório `SIGNPATH_ENABLED` exatamente como `true`. A mesma sequência de tags passará
+a usar exclusivamente o job assinado, com duas aprovações manuais e validação de todas
+as assinaturas antes da publicação. Não ative essa variável antes de concluir a
+configuração da SignPath.
 
 ## Formato do convite
 

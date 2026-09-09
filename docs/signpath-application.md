@@ -86,10 +86,14 @@ Thank you for supporting open-source software.
    - `SIGNPATH_API_TOKEN`
    - `SIGNPATH_ORGANIZATION_ID`
 8. Never paste either value into an issue, commit, log or conversation.
-9. Publish a new patch tag only after all settings exist. Two manual approvals will be
-   requested: one for Poglive-owned inner executables and another for final packages.
-10. Confirm the final signatures and auto-update from one signed version to the next.
+9. Set the GitHub Actions repository variable `SIGNPATH_ENABLED` to `true`. Until this
+   exact value is configured, version tags intentionally use the temporary unsigned
+   release job and publish an explicit warning in the release notes.
+10. Publish a new patch tag. Two manual approvals will be requested: one for
+    Poglive-owned inner executables and another for final packages.
+11. Confirm the final signatures and auto-update from one signed version to the next.
 
-The checked-in workflow intentionally fails before the SignPath secrets and project
-configuration exist. This prevents an unsigned tag from being published as an official
-release.
+The checked-in workflow keeps unsigned and signed releases mutually exclusive. The
+unsigned path omits `publisherName` so existing unsigned installations can continue to
+update. The signed path is selected only by `SIGNPATH_ENABLED=true`, uses the protected
+`signpath-release` environment and requires all SignPath settings above.

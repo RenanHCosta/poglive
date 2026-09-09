@@ -1,4 +1,4 @@
-name: Signed Windows release
+name: Windows release
 
 on:
   push:
@@ -9,8 +9,115 @@ permissions:
   actions: read
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  release:
+  unsigned-release:
+    if: vars.SIGNPATH_ENABLED != 'true'
+    runs-on: windows-latest
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Read and validate version
+        id: version
+        shell: powershell
+        run: |
+          $version = (node scripts/assert-release-version.mjs $env:GITHUB_REF_NAME).Trim()
+          "app_version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Require a commit from main
+        shell: powershell
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor $env:GITHUB_SHA origin/main
+          if ($LASTEXITCODE -ne 0) {
+            throw 'The release tag must point to a commit contained in origin/main.'
+          }
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check source
+        run: npm run check
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build native audio helper
+        shell: powershell
+        run: npm run build:native:audio
+
+      - name: Build application
+        run: npm run build
+
+      - name: Package unsigned application
+        run: npx electron-builder --config electron-builder.json --win nsis portable --x64 --publish never
+
+      - name: Verify unsigned update channel
+        shell: powershell
+        run: |
+          $version = '${{ steps.version.outputs.app_version }}'
+          $updateConfig = 'release\win-unpacked\resources\app-update.yml'
+          if (Test-Path $updateConfig) {
+            $publisher = Select-String -Path $updateConfig -Pattern '^publisherName:'
+            if ($publisher) {
+              throw 'Unsigned releases must not require a signed publisher.'
+            }
+          }
+          .\scripts\verify-unsigned.ps1 -Path @(
+            'release\win-unpacked\Poglive.exe',
+            'release\win-unpacked\resources\poglive-process-audio.exe',
+            "release\Poglive-$version-win-x64-setup.exe",
+            "release\Poglive-$version-win-x64-portable.exe"
+          )
+
+      - name: Finalize unsigned release files
+        shell: powershell
+        run: |
+          $version = '${{ steps.version.outputs.app_version }}'
+          node scripts/create-release-metadata.mjs $version release
+
+      - name: Upload final unsigned artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: poglive-${{ steps.version.outputs.app_version }}-unsigned
+          path: |
+            release/Poglive-${{ steps.version.outputs.app_version }}-win-x64-setup.exe
+            release/Poglive-${{ steps.version.outputs.app_version }}-win-x64-setup.exe.blockmap
+            release/Poglive-${{ steps.version.outputs.app_version }}-win-x64-portable.exe
+            release/Poglive-${{ steps.version.outputs.app_version }}-SHA256.txt
+            release/latest.yml
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = '${{ steps.version.outputs.app_version }}'
+          $files = @(
+            "release\Poglive-$version-win-x64-setup.exe",
+            "release\Poglive-$version-win-x64-setup.exe.blockmap",
+            "release\Poglive-$version-win-x64-portable.exe",
+            "release\Poglive-$version-SHA256.txt",
+            'release\latest.yml'
+          )
+          $notice = 'Aviso: esta versão ainda não possui assinatura Authenticode. Confira os hashes SHA-256 publicados antes da instalação.'
+          gh release create $env:GITHUB_REF_NAME $files --verify-tag --title "Poglive $env:GITHUB_REF_NAME" --generate-notes --notes $notice
+
+  signed-release:
+    if: vars.SIGNPATH_ENABLED == 'true'
     runs-on: windows-latest
     environment: signpath-release
     steps:

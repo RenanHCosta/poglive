@@ -387,6 +387,12 @@ Os executáveis ainda não possuem Authenticode. O manifesto contém SHA-512 e o
 fornece HTTPS, mas assinatura de código continua recomendada antes de tratar o canal
 como distribuição de produção plenamente endurecida.
 
+Enquanto a candidatura do projeto estiver pendente, tags estáveis usam o job temporário
+de release não assinada. Esse job confirma que os artefatos estão sem Authenticode,
+publica um aviso explícito e não inclui `publisherName` no canal de atualização. Depois
+da aprovação, a variável de repositório `SIGNPATH_ENABLED=true` troca o mesmo gatilho de
+tags para o job assinado e passa a exigir `SignPath Foundation` nas atualizações.
+
 ASAR inclui somente bundles main/preload/renderer e metadados do pacote; fontes,
 source maps, testes, perfis e segredos ficam de fora. node_modules não é incluído:
 esbuild empacota as dependências de runtime, exceto Electron/APIs nativas do Node.

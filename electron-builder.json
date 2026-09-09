@@ -31,9 +31,6 @@
     ],
     "executableName": "Poglive",
     "requestedExecutionLevel": "asInvoker",
-    "signtoolOptions": {
-      "publisherName": "SignPath Foundation"
-    },
     "signExecutable": false
   },
   "nsis": {
