@@ -1,14 +1,28 @@
 import type {
   LocalStream,
   MediaMessage,
+  QualityReport,
+  RemoteVideoQuality,
   WatchState,
 } from '../../shared/protocols/media';
 import { configureSender } from './mediaSender';
+import {
+  applyVideoQuality,
+  evaluateQuality,
+  initialQualityState,
+  qualityLadder,
+} from './adaptiveQuality';
+import type { AdaptiveQualityState } from './adaptiveQuality';
+import { collectMediaStats } from './mediaStats';
+import type { MediaStatsSnapshot } from './mediaStats';
+
+const STATS_INTERVAL_MS = 2000;
 
 /** One pre-negotiated video sender per peer; capture ownership stays in useCapture. */
 export class PeerMedia {
   remoteId: string | null = null;
   remoteStream: MediaStream | null = null;
+  remoteQuality: RemoteVideoQuality | null = null;
   watchState: WatchState = 'IDLE';
   private local: LocalStream | null = null;
   private subscribedId: string | null = null;
@@ -19,6 +33,14 @@ export class PeerMedia {
   private updates = Promise.resolve();
   private pendingUpdates = 0;
   private timeout: ReturnType<typeof setTimeout> | undefined;
+  private statsTimer: ReturnType<typeof setInterval> | undefined;
+  private statsBusy = false;
+  private statsSnapshot: MediaStatsSnapshot | null = null;
+  private videoSender: RTCRtpSender | null = null;
+  private qualityState: AdaptiveQualityState = initialQualityState();
+  private receiverReport: QualityReport | null = null;
+  private receiverReportSequence = 0;
+  private evaluatedReportSequence = 0;
   get watchingLocal(): boolean {
     return (
       this.ready &&
@@ -56,6 +78,9 @@ export class PeerMedia {
   connected(): void {
     if (this.ready || this.closed) return;
     this.ready = true;
+    this.statsTimer = setInterval(() => {
+      void this.sampleStats();
+    }, STATS_INTERVAL_MS);
     if (this.local)
       this.send({
         version: 1,
@@ -68,6 +93,7 @@ export class PeerMedia {
     const previous = this.local;
     this.local = local;
     this.subscribedId = null;
+    this.resetSenderQuality();
     this.updateSender();
     if (!this.ready) return;
     if (previous)
@@ -115,6 +141,24 @@ export class PeerMedia {
         this.accepted = true;
         this.checkReceiving();
         break;
+      case 'QUALITY_REPORT':
+        if (message.streamId !== this.sendingId) return;
+        this.receiverReport = message;
+        this.receiverReportSequence++;
+        return;
+      case 'QUALITY_STATE':
+        if (message.streamId !== this.remoteId || this.watchState === 'IDLE')
+          return;
+        this.remoteQuality = {
+          tier: message.tier,
+          automatic: message.automatic,
+          reduced: message.reduced,
+          reason: message.reason,
+          frameWidth: this.remoteQuality?.frameWidth ?? null,
+          frameHeight: this.remoteQuality?.frameHeight ?? null,
+          framesPerSecond: this.remoteQuality?.framesPerSecond ?? null,
+        };
+        break;
     }
     this.changed();
   }
@@ -141,6 +185,8 @@ export class PeerMedia {
       this.send({ version: 1, type: 'WATCH_STOP', streamId: this.remoteId });
     this.accepted = false;
     this.watchState = 'IDLE';
+    this.remoteQuality = null;
+    this.statsSnapshot = null;
     this.changed();
   }
   private checkReceiving(): void {
@@ -193,7 +239,11 @@ export class PeerMedia {
             continue;
           }
           await sender.replaceTrack(mediaTrack);
-          if (mediaTrack) await configureSender(sender, mediaTrack);
+          if (mediaTrack) {
+            if (!local) throw new Error('Local capture unavailable');
+            await configureSender(sender, mediaTrack, local.options);
+          }
+          if (kind === 'video') this.videoSender = mediaTrack ? sender : null;
         }
         const sendingId =
           !this.closed &&
@@ -207,12 +257,16 @@ export class PeerMedia {
           this.sendingId = sendingId;
           this.changed();
         }
-        if (sendingId)
+        if (sendingId) {
           this.send({
             version: 1,
             type: 'WATCH_ACCEPTED',
             streamId: sendingId,
           });
+          this.sendQualityState();
+        } else {
+          this.resetSenderQuality();
+        }
       })
       .catch(() => {
         if (!this.closed) this.fail();
@@ -221,9 +275,111 @@ export class PeerMedia {
         this.pendingUpdates--;
       });
   }
+  private resetSenderQuality(): void {
+    this.videoSender = null;
+    this.qualityState = initialQualityState();
+    this.receiverReport = null;
+    this.receiverReportSequence = 0;
+    this.evaluatedReportSequence = 0;
+  }
+  private sendQualityState(): void {
+    const local = this.local;
+    if (!local || !this.sendingId) return;
+    const ladder = qualityLadder(local.options);
+    const tier = ladder[this.qualityState.level] ?? ladder[0];
+    if (!tier) return;
+    this.send({
+      version: 1,
+      type: 'QUALITY_STATE',
+      streamId: this.sendingId,
+      tier: tier.id,
+      automatic: local.options.adaptiveQuality,
+      reduced: this.qualityState.level > 0,
+      reason: local.options.adaptiveQuality
+        ? this.qualityState.reason
+        : 'SOURCE',
+    });
+  }
+  private async sampleStats(): Promise<void> {
+    if (this.closed || !this.ready || this.statsBusy) return;
+    this.statsBusy = true;
+    try {
+      const collected = collectMediaStats(
+        await this.pc.getStats(),
+        this.statsSnapshot,
+      );
+      this.statsSnapshot = collected.snapshot;
+      if (collected.report && this.remoteId && this.watchState === 'WATCHING') {
+        if (this.remoteQuality?.automatic !== false)
+          this.send({
+            version: 1,
+            type: 'QUALITY_REPORT',
+            streamId: this.remoteId,
+            ...collected.report,
+          });
+        if (this.remoteQuality) {
+          const previous = this.remoteQuality;
+          const next: RemoteVideoQuality = {
+            ...previous,
+            frameWidth: collected.report.frameWidth,
+            frameHeight: collected.report.frameHeight,
+            framesPerSecond: collected.report.framesPerSecond,
+          };
+          if (
+            next.frameWidth !== previous.frameWidth ||
+            next.frameHeight !== previous.frameHeight ||
+            Math.round(next.framesPerSecond ?? 0) !==
+              Math.round(previous.framesPerSecond ?? 0)
+          ) {
+            this.remoteQuality = next;
+            this.changed();
+          }
+        }
+      }
+      const local = this.local;
+      const sender = this.videoSender;
+      if (
+        !local?.options.adaptiveQuality ||
+        !sender ||
+        this.sendingId !== local.streamId
+      )
+        return;
+      const hasFreshReport =
+        this.receiverReportSequence !== this.evaluatedReportSequence;
+      if (hasFreshReport)
+        this.evaluatedReportSequence = this.receiverReportSequence;
+      const ladder = qualityLadder(local.options);
+      const previousState = this.qualityState;
+      const nextState = evaluateQuality(previousState, ladder, {
+        receiver: hasFreshReport ? this.receiverReport : null,
+        ...collected.sender,
+      });
+      if (nextState.level !== previousState.level) {
+        const tier = ladder[nextState.level];
+        if (!tier) return;
+        await applyVideoQuality(sender, local.track, tier);
+        console.info(
+          `[Stream] Quality ${tier.id} for peer (${nextState.reason.toLowerCase()})`,
+        );
+        this.qualityState = nextState;
+        this.sendQualityState();
+        this.changed();
+      } else {
+        this.qualityState = nextState;
+      }
+    } catch (error: unknown) {
+      console.warn(
+        '[Stream] Quality telemetry failed:',
+        error instanceof Error ? error.message : 'Unknown error',
+      );
+    } finally {
+      this.statsBusy = false;
+    }
+  }
   close(): void {
     this.closed = true;
     clearTimeout(this.timeout);
+    clearInterval(this.statsTimer);
     this.local = null;
     this.sendingId = null;
     this.remoteId = null;
@@ -234,5 +390,7 @@ export class PeerMedia {
       track.stop();
     });
     this.remoteStream = null;
+    this.remoteQuality = null;
+    this.resetSenderQuality();
   }
 }

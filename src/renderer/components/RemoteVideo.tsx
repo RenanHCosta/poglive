@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
+import type { RemoteVideoQuality } from '../../shared/protocols/media';
 
 export function RemoteVideo({
   stream,
   name,
+  quality,
   leave,
 }: {
   stream: MediaStream;
   name: string;
+  quality: RemoteVideoQuality | null;
   leave: () => void;
 }) {
   const video = useRef<HTMLVideoElement>(null);
@@ -80,6 +83,20 @@ export function RemoteVideo({
   const pictureInPictureAvailable =
     document.pictureInPictureEnabled &&
     typeof HTMLVideoElement.prototype.requestPictureInPicture === 'function';
+  const measuredQuality =
+    quality?.frameWidth && quality.frameHeight
+      ? `${quality.frameWidth} × ${quality.frameHeight}${quality.framesPerSecond === null ? '' : ` · ${Math.round(quality.framesPerSecond)} FPS`}`
+      : (quality?.tier ?? 'Medindo');
+  const qualityReason =
+    quality?.reason === 'NETWORK'
+      ? 'Reduzida pela rede'
+      : quality?.reason === 'CPU'
+        ? 'Reduzida pela CPU do transmissor'
+        : quality?.reason === 'RECEIVER'
+          ? 'Reduzida pela reprodução'
+          : quality?.reason === 'STABLE' && quality.reduced
+            ? 'Recuperando gradualmente'
+            : null;
   return (
     <div className="remote-player" ref={container}>
       <h3>{name}</h3>
@@ -91,6 +108,14 @@ export function RemoteVideo({
         playsInline
         aria-label={`Tela de ${name}`}
       />
+      <p className="quality-status">
+        <strong>{measuredQuality}</strong>
+        {' · '}
+        {quality?.automatic === false
+          ? 'Qualidade fixa'
+          : 'Qualidade automática'}
+        {qualityReason ? ` · ${qualityReason}` : ''}
+      </p>
       {playback === 'LOADING' && <p role="status">Aguardando vídeo…</p>}
       {playback === 'ERROR' && (
         <p role="alert" className="error-message">

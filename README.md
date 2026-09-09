@@ -29,6 +29,7 @@ mídia trafega por conexões WebRTC entre os participantes.
 
 - Salas privadas para até oito participantes, sem cadastro ou servidor de mídia.
 - Compartilhamento de monitor ou janela em 720p/1080p e 30/60 FPS.
+- Qualidade adaptativa por espectador, com redução rápida e recuperação gradual.
 - Várias transmissões abertas simultaneamente, com tela cheia e picture-in-picture.
 - Áudio opcional: sem áudio, somente a janela, sistema exceto Discord ou sistema inteiro.
 - Convites autenticados com segredo aleatório e pinning do certificado temporário da sala.

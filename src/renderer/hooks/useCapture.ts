@@ -19,6 +19,7 @@ type CaptureState =
       stream: MediaStream;
       sourceName: string;
       quality: string;
+      options: CaptureOptions;
       warning: string | null;
     }
   | { status: 'ERROR'; message: string };
@@ -151,6 +152,7 @@ export function useCapture() {
         stream: media,
         sourceName: source.name,
         quality: `${settings.width ?? '?'} × ${settings.height ?? '?'} · ${settings.frameRate === undefined ? '?' : Math.round(settings.frameRate)} FPS (configuração da captura; solicitado ${options.frameRate})`,
+        options,
         warning:
           options.audioMode !== 'NONE' && !audio
             ? 'O sistema não forneceu áudio. A transmissão segue somente com vídeo.'

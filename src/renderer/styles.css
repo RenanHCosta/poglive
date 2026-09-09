@@ -490,6 +490,20 @@ h3 {
   padding: 12px;
   border-radius: 10px;
 }
+.quality-status {
+  display: inline-flex;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 4px 7px;
+  border: 1px solid #34303e;
+  border-radius: 999px;
+  color: #aaa6b7;
+  font-size: 9px;
+}
+.quality-status strong {
+  color: #ded8eb;
+  font-weight: 600;
+}
 .remote-player:fullscreen {
   display: flex;
   flex-direction: column;

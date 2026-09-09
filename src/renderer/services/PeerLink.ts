@@ -74,7 +74,7 @@ export class PeerLink {
       } else void this.sendIce(value).catch(() => this.fail());
     };
     this.pc.ondatachannel = ({ channel }) => {
-      if (channel.label !== 'poglive-control') {
+      if (channel.label !== 'poglive-control-v2') {
         channel.close();
         this.fail('INCOMPATIBLE_VERSION');
         return;
@@ -154,7 +154,7 @@ export class PeerLink {
   async offer(): Promise<void> {
     this.pc.addTransceiver('video', { direction: 'sendrecv' });
     this.pc.addTransceiver('audio', { direction: 'sendrecv' });
-    this.attach(this.pc.createDataChannel('poglive-control'));
+    this.attach(this.pc.createDataChannel('poglive-control-v2'));
     console.info('[WebRTC] Creating offer');
     const offer = await this.pc.createOffer();
     if (this.closed) return;

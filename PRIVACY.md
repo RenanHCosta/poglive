@@ -1,6 +1,6 @@
 # Política de privacidade do Poglive
 
-Última atualização: 8 de setembro de 2026.
+Última atualização: 9 de setembro de 2026.
 
 O Poglive não possui conta, servidor central, publicidade, telemetria ou ferramenta
 de análise. O projeto não vende nem recebe dados pessoais. As conexões de sala e a
@@ -30,6 +30,15 @@ A tela, janela e áudio só são capturados após seleção explícita no aplica
 selecionada é enviada por WebRTC somente aos participantes que solicitarem assisti-la.
 O host transporta o signaling da sala, mas o fluxo de áudio e vídeo permanece direto
 entre os participantes. O conteúdo não é enviado ao desenvolvedor do Poglive.
+
+Durante uma transmissão com qualidade automática, o receptor envia diretamente ao
+transmissor métricas técnicas limitadas: proporções de perda e frames descartados,
+jitter, atraso do jitter buffer, round-trip time, FPS, dimensões do vídeo, congelamentos
+e indicação de reprodução parada. O transmissor usa esses dados para adaptar somente
+aquela conexão. Essas métricas não contêm conteúdo de áudio/vídeo, endereços IP ou
+identidade adicional, não são persistidas e não são enviadas ao desenvolvedor. No modo
+fixo, as métricas locais ainda alimentam o indicador do player, mas não são reportadas ao
+transmissor para adaptação.
 
 Radmin VPN ou outro software de rede usado para aproximar os computadores é um produto
 independente e está sujeito à política de privacidade do respectivo fornecedor.

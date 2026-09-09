@@ -218,7 +218,7 @@ Filas de entrada têm limite de 128 sinais/512 KB; polling IPC a cada 250 ms.
 SDP local precede o envio de ICE; ICE remoto aguarda remoteDescription em fila
 limitada. Saída encerra os recursos e remove negociações do peer.
 
-DataChannel poglive-control troca HELLO/ACK e controle de mídia validado, com
+DataChannel `poglive-control-v2` troca HELLO/ACK e controle de mídia validado, com
 limite de tamanho e quantidade. A UI só indica WebRTC conectado após confirmação por esse
 canal direto. Não comprova desempenho de vídeo; apenas estabelecimento do caminho.
 Timeout inicial de 25 segundos gera erro. Sem ICE restart/reconexão automática
@@ -282,8 +282,8 @@ Isso segue a [API WebRTC do W3C](https://www.w3.org/TR/webrtc/#dom-rtcrtpsender-
 A API pode recusar troca que exija renegociação: neste MVP isso gera erro de
 conexão, não fallback silencioso ou upload por servidor.
 
-Controle direto, ordenado e confiável: STREAM_STARTED, STREAM_STOPPED,
-WATCH_REQUEST, WATCH_STOP e WATCH_ACCEPTED; version=1 e streamId UUID.
+Controle direto, ordenado e confiável: STREAM_STARTED, STREAM_STOPPED, WATCH_REQUEST,
+WATCH_STOP, WATCH_ACCEPTED, QUALITY_REPORT e QUALITY_STATE; version=1 e streamId UUID.
 Schema estrito, máximo 1024 caracteres por mensagem, 20 mensagens/s por peer e
 buffer de saída limitado a 64 KiB. Payload inválido fecha apenas aquele PeerLink.
 Operações replaceTrack pendentes também são limitadas a 8 por PeerLink.
@@ -318,8 +318,8 @@ captureOptionsSchema valida frameRate como 30 ou 60 e audioMode como
 NONE/SYSTEM/WINDOW/SYSTEM_EXCEPT_DISCORD, ponta a ponta no IPC.
 CapturePanel seleciona opções antes da fonte; useCapture aplica constraints máximas
 e mostra getSettings (configuração da captura, não estatística do RTP remoto).
-Sem upscale garantido e sem troca dinâmica; uma captura nova mantém o fluxo de
-anúncio/subscription existente. 60 FPS foi adicionado e exige validação manual de desempenho.
+Sem upscale garantido; uma captura nova mantém o fluxo de anúncio/subscription existente.
+60 FPS foi adicionado e exige validação manual de desempenho.
 
 captureSelectionSchema valida id + opções no preload e main. A autorização de
 uso único inclui o pedido de áudio global; pedido divergente é recusado. Permissões de câmera
@@ -354,13 +354,32 @@ isolado, sem fallback para SYSTEM. Validação em hardware real continua pendent
 PeerLink pré-negocia uma track de cada tipo, mesmo em sessões sem áudio. PeerMedia
 mantém um MediaStream remoto com os dois receivers; só liga tracks locais após
 WATCH_REQUEST válido. WATCH_STOP/encerramento desliga ambos os senders com null.
-mediaSender.ts configura setParameters: maxFramerate 30/60 conforme constraints da captura, maxBitrate de vídeo
-2,5 Mbps até 720 linhas ou 5 Mbps acima em 30 FPS; em 60 FPS, 5/10 Mbps.
-Áudio 128 kbps por espectador em ambos os modos.
-Esses valores não incluem todo overhead nem garantem throughput/resolução.
+mediaSender.ts configura os limites iniciais: 2,5 Mbps para 720p30, 5 Mbps para
+720p60/1080p30 e 10 Mbps para 1080p60. Áudio usa 128 kbps por espectador. Esses valores
+não incluem todo overhead nem garantem throughput/resolução.
 Referência: [WebRTC RTCRtpSender](https://www.w3.org/TR/webrtc/#dom-rtcrtpsender-setparameters).
 Chromium escolhe os codecs/encoder disponíveis; NVENC/AMF/Quick Sync, AV1 e outros
 controles explícitos permanecem futuros, sem prometer aceleração ativa.
+
+### Adaptação automática de vídeo
+
+Cada PeerMedia coleta `RTCPeerConnection.getStats()` em intervalos de dois segundos. O
+receptor calcula deltas limitados de perda, frames descartados, congelamentos, atraso do
+jitter buffer e atividade do decoder e envia QUALITY_REPORT pelo DataChannel validado.
+O transmissor combina esse relatório com RTT, bitrate de saída disponível e
+`qualityLimitationReason` do sender.
+
+A escolha do usuário é o teto da escada. Duas amostras ruins reduzem um degrau; dez
+amostras estáveis permitem subir um degrau. Cooldowns e limiares diferentes para queda e
+recuperação fornecem histerese. `maxBitrate`, `maxFramerate` e
+`scaleResolutionDownBy` mudam no RTCRtpSender sem substituir a captura. Cada PeerLink
+mantém estado independente, portanto um receptor ruim não reduz os demais.
+
+QUALITY_STATE informa ao receptor o degrau, se o modo é automático, se houve redução e
+o motivo. As métricas não são persistidas ou enviadas para fora da conexão P2P. Falha ao
+coletar stats ou aplicar um degrau não encerra a mídia; mantém os últimos parâmetros
+válidos. No modo fixo, o Poglive não muda de degrau, mas o controle de congestionamento
+interno do WebRTC permanece ativo.
 
 Sem track de áudio: aviso e vídeo continua. Pedido de captura ou constraints que
 falha: erro recuperável, usuário pode tentar sem som ou em outra qualidade. Track

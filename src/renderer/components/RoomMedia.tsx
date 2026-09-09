@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { PeerConnections } from './PeerConnections';
+import type { LocalCapture } from '../../shared/protocols/media';
 
 export function RoomMedia({
   roomId,
@@ -10,7 +11,7 @@ export function RoomMedia({
   roomId: string;
   selfId: string;
   rtcEndpoint: { host: string; port: number };
-  capture: MediaStream | null;
+  capture: LocalCapture | null;
 }) {
   const [theater, setTheater] = useState(false);
   return (

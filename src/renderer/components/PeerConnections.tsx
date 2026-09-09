@@ -4,6 +4,7 @@ import type { PeerConnectionView } from '../services/PeerMesh';
 import { RemoteVideo } from './RemoteVideo';
 import { Icon } from './Icon';
 import { playStreamSound } from '../services/streamSounds';
+import type { LocalCapture } from '../../shared/protocols/media';
 
 const labels = {
   WAITING: 'Aguardando conexão',
@@ -23,7 +24,7 @@ export function PeerConnections({
   roomId: string;
   selfId: string;
   rtcEndpoint: { host: string; port: number };
-  capture: MediaStream | null;
+  capture: LocalCapture | null;
   theater: boolean;
   onTheater: (value: boolean) => void;
 }) {
@@ -167,6 +168,7 @@ export function PeerConnections({
                 key={peer.streamId}
                 stream={peer.media}
                 name={peer.displayName}
+                quality={peer.quality}
                 leave={() => meshRef.current?.stopWatching(peer.peerId)}
               />
             ) : (

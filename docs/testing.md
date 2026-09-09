@@ -57,6 +57,7 @@ Se usar Radmin, confirme candidatos `Radmin` e `STUN` no diagnóstico dos dois l
 5. Encerre a fonte na origem e confirme a remoção remota.
 6. Repita com monitor, 1080p e 60 FPS.
 7. Entre com um terceiro participante e confira envio e recepção entre convidados.
+8. Confirme que cada player mostra resolução/FPS e modo automático ou fixo.
 
 Monitores e janelas menores podem resultar em dimensões abaixo do preset. Os presets são
 limites e não obrigam upscale. Evite capturar o monitor que exibe o próprio player ao
@@ -89,6 +90,15 @@ Gerenciador de Tarefas:
 
 Repita com um e vários espectadores. O custo de upload e codificação cresce por
 espectador. FPS solicitado não comprova FPS efetivamente recebido.
+
+Com qualidade automática, limite temporariamente a conexão de um receptor ou gere carga
+de rede controlada. Confirme que somente esse peer reduz a qualidade após duas amostras
+ruins e que a recuperação é gradual depois de aproximadamente 20 segundos estáveis.
+Repita com dois receptores para confirmar que o peer saudável mantém seu próprio nível.
+
+Desative a qualidade automática, reinicie a captura e confirme que o indicador informa
+**Qualidade fixa** e que o Poglive não percorre a escada de resolução/FPS. O controle de
+congestionamento interno do WebRTC continua ativo mesmo nesse modo.
 
 ## Instalador, portátil e atualização
 

@@ -2,7 +2,12 @@ import type { Signal } from '../../shared/protocols/signaling';
 import type { RoomSnapshot } from '../../shared/schemas/room';
 import { PeerLink } from './PeerLink';
 import type { LinkStatus } from './PeerLink';
-import type { LocalStream, WatchState } from '../../shared/protocols/media';
+import type {
+  LocalCapture,
+  LocalStream,
+  RemoteVideoQuality,
+  WatchState,
+} from '../../shared/protocols/media';
 
 export interface PeerConnectionView {
   peerId: string;
@@ -11,6 +16,7 @@ export interface PeerConnectionView {
   streamId: string | null;
   media: MediaStream | null;
   watchState: WatchState;
+  quality: RemoteVideoQuality | null;
   watchingLocal: boolean;
   diagnostic: string | null;
 }
@@ -37,15 +43,16 @@ export class PeerMesh {
       void this.poll();
     }, 0);
   }
-  setCapture(stream: MediaStream | null): void {
-    const track = stream?.getVideoTracks()[0];
+  setCapture(capture: LocalCapture | null): void {
+    const track = capture?.stream.getVideoTracks()[0];
     if (this.stopped || this.capture?.track === track) return;
     this.capture =
       track && track.readyState === 'live'
         ? {
             streamId: crypto.randomUUID(),
             track,
-            audioTrack: stream?.getAudioTracks()[0] ?? null,
+            audioTrack: capture?.stream.getAudioTracks()[0] ?? null,
+            options: capture.options,
           }
         : null;
     for (const link of this.links.values()) link.media.setCapture(this.capture);
@@ -70,6 +77,7 @@ export class PeerMesh {
           streamId: this.links.get(peer.peerId)?.media.remoteId ?? null,
           media: this.links.get(peer.peerId)?.media.remoteStream ?? null,
           watchState: this.links.get(peer.peerId)?.media.watchState ?? 'IDLE',
+          quality: this.links.get(peer.peerId)?.media.remoteQuality ?? null,
           watchingLocal:
             this.links.get(peer.peerId)?.media.watchingLocal ?? false,
           diagnostic:

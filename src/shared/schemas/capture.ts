@@ -4,6 +4,7 @@ export const sourceIdSchema = z.string().min(1).max(256);
 export const captureOptionsSchema = z.strictObject({
   quality: z.enum(['720p', '1080p']),
   frameRate: z.union([z.literal(30), z.literal(60)]),
+  adaptiveQuality: z.boolean(),
   audioMode: z.enum(['NONE', 'SYSTEM', 'WINDOW', 'SYSTEM_EXCEPT_DISCORD']),
 });
 export type CaptureOptions = z.infer<typeof captureOptionsSchema>;

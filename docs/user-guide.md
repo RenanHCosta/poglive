@@ -48,8 +48,9 @@ Dentro da sala:
 
 1. Clique em **Compartilhar tela**.
 2. Escolha 720p ou 1080p e 30 ou 60 FPS.
-3. Selecione o modo de áudio.
-4. Escolha uma janela ou monitor e confirme o preview.
+3. Mantenha a qualidade automática ativada ou escolha parâmetros fixos.
+4. Selecione o modo de áudio.
+5. Escolha uma janela ou monitor e confirme o preview.
 
 Os demais participantes recebem o anúncio e decidem se querem assistir. É possível
 assistir a várias transmissões ao mesmo tempo, usar tela cheia ou picture-in-picture e
@@ -61,6 +62,26 @@ pelo sistema. Restaure a janela ou compartilhe o monitor correspondente.
 Cada espectador recebe mídia diretamente do transmissor. Mais espectadores aumentam o
 upload e a carga de codificação. Em caso de stuttering, teste primeiro 720p a 30 FPS com
 apenas um espectador.
+
+## Qualidade adaptativa
+
+A resolução e o FPS escolhidos pelo transmissor funcionam como limite máximo. No modo
+automático, cada conexão percorre sua própria escada de qualidade, sem reduzir os demais
+espectadores:
+
+```text
+1080p60 → 1080p30 → 720p30 → 540p30 → 540p15
+```
+
+Uma origem limitada a 720p ou 30 FPS começa no degrau correspondente. O Poglive mede a
+cada dois segundos perda, jitter, atraso do jitter buffer, round-trip time, frames
+descartados, congelamentos e limitações de CPU/banda informadas pelo WebRTC. Dois
+intervalos ruins reduzem um degrau; a recuperação exige cerca de dez amostras estáveis e
+usa cooldown para evitar alternância constante.
+
+O player mostra resolução/FPS observados, modo automático ou fixo e o motivo da redução.
+Desativar o automático mantém os limites escolhidos no sender, embora o próprio WebRTC
+ainda possa reduzir bitrate quando a rede não comportar a transmissão.
 
 ## Modos de áudio
 

@@ -8,11 +8,12 @@ import { CapturePanel } from '../components/CapturePanel';
 import { RoomMedia } from '../components/RoomMedia';
 import { WindowBar } from '../components/WindowBar';
 import { UpdateStatus } from '../components/UpdateStatus';
+import type { LocalCapture } from '../../shared/protocols/media';
 
 export function HomePage() {
   const desktop = useAppInfo();
   const { view, action, command } = useRoom();
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [capture, setCapture] = useState<LocalCapture | null>(null);
   const data = view.status === 'READY' ? view.data : null;
   const inRoom =
     data?.room.status === 'HOSTING' || data?.room.status === 'JOINED';
@@ -58,7 +59,7 @@ export function HomePage() {
                       <CapturePanel
                         key={data.room.room.roomId}
                         enabled
-                        onStream={setStream}
+                        onCapture={setCapture}
                       />
                     ) : (
                       <CapturePanel key="disabled" enabled={false} />
@@ -71,7 +72,7 @@ export function HomePage() {
                       roomId={data.room.room.roomId}
                       selfId={data.identity.peerId}
                       rtcEndpoint={data.room.room.rtcEndpoint}
-                      capture={stream}
+                      capture={capture}
                     />
                   ) : null}
                 </div>

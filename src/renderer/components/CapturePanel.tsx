@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useCapture } from '../hooks/useCapture';
 import type { CaptureOptions } from '../../shared/schemas/capture';
+import type { LocalCapture } from '../../shared/protocols/media';
 
 function VideoPreview({ stream }: { stream: MediaStream }) {
   const video = useRef<HTMLVideoElement>(null);
@@ -25,29 +26,33 @@ function VideoPreview({ stream }: { stream: MediaStream }) {
 }
 export function CapturePanel({
   enabled,
-  onStream,
+  onCapture,
 }: {
   enabled: boolean;
-  onStream?: (stream: MediaStream | null) => void;
+  onCapture?: (capture: LocalCapture | null) => void;
 }) {
   const { state, list, start, stop } = useCapture();
   const stream = state.status === 'PREVIEW' ? state.stream : null;
+  const activeOptions = state.status === 'PREVIEW' ? state.options : null;
   useEffect(() => {
-    onStream?.(stream);
-    return () => onStream?.(null);
-  }, [stream, onStream]);
+    onCapture?.(
+      stream && activeOptions ? { stream, options: activeOptions } : null,
+    );
+    return () => onCapture?.(null);
+  }, [stream, activeOptions, onCapture]);
   const [kind, setKind] = useState<'screen' | 'window'>('screen');
   const [options, setOptions] = useState<CaptureOptions>({
     quality: '720p',
     frameRate: 30,
-    audioMode: 'NONE',
+    adaptiveQuality: true,
+    audioMode: 'SYSTEM_EXCEPT_DISCORD',
   });
   return (
     <section className="panel share-card" aria-labelledby="capture-title">
       <div className="section-heading">
         <h2 id="capture-title">Captura de tela</h2>
         <span className="eyebrow">
-          {stream && onStream ? 'COMPARTILHANDO' : 'SUA TELA'}
+          {stream && onCapture ? 'COMPARTILHANDO' : 'SUA TELA'}
         </span>
       </div>
       {!stream && (
@@ -92,6 +97,23 @@ export function CapturePanel({
             60 FPS depende da fonte, rede e hardware. Para mudar, reinicie a
             captura.
           </p>
+          <label className="audio-option">
+            <input
+              type="checkbox"
+              checked={options.adaptiveQuality}
+              onChange={(event) =>
+                setOptions({
+                  ...options,
+                  adaptiveQuality: event.target.checked,
+                })
+              }
+            />
+            Ajustar qualidade automaticamente para cada espectador
+          </label>
+          <p className="helper">
+            A resolução e o FPS escolhidos são o limite máximo. Desative para
+            manter parâmetros fixos.
+          </p>
           <label>
             Áudio
             <select
@@ -133,7 +155,11 @@ export function CapturePanel({
               .getAudioTracks()
               .some((track) => track.readyState === 'live')
               ? 'Com áudio'
-              : 'Somente vídeo'}
+              : 'Somente vídeo'}{' '}
+            ·{' '}
+            {state.options.adaptiveQuality
+              ? 'Qualidade automática'
+              : 'Qualidade fixa'}
           </p>
           {state.warning && (
             <p role="status" className="error-message">
