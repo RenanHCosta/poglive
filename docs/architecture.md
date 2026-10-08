@@ -127,7 +127,9 @@ Não há mudança global em TLS, Chromium, CSP ou webSecurity.
 
 ## Protocolo e autoridade
 
-Todas as mensagens têm version=1 e type discriminado; Zod infere NetworkMessage.
+Todas as mensagens têm version=2 (`PROTOCOL_VERSION`) e type discriminado; Zod infere
+NetworkMessage. A versão 2 adicionou presença de voz e chat; builds anteriores são
+recusados já no convite (prefixo `PL2.`).
 Framing: 4 bytes unsigned big-endian de tamanho + JSON UTF-8, no máximo 64 KiB.
 Limites: 8 participantes, 16 conexões simultâneas, handshake/admissão de 5 s,
 120 frames por segundo por conexão (incluindo rajadas ICE), fila de saída limitada.
@@ -144,6 +146,11 @@ Estas defesas limitam recursos, mas não prometem resistir a DoS de rede dedicad
 | PING / PONG                  | Nonce novo e resposta correspondente para liveness         |
 | WEBRTC_OFFER / WEBRTC_ANSWER | Sala, remetente, destino e negotiationId validados no M4   |
 | ICE_CANDIDATE                | Candidato limitado, inclusive null; negociação validada    |
+| VOICE_STATE                  | Membro → host: a própria presença de voz                   |
+| CHAT_SEND                    | Membro → host: id UUID e texto validado                    |
+| CHAT_MESSAGE                 | Host → membros: mensagem carimbada pelo host               |
+| CHAT_HISTORY                 | Host → novo membro: até 100 mensagens em lotes ≤ 48 KiB    |
+| CHAT_REJECTED                | Host → autor: RATE_LIMITED ou UNAVAILABLE                  |
 
 O host não aceita roster, identidade alheia ou eventos de mídia enviados por
 participantes neste marco. Um cliente aceita estados somente da conexão ao host
@@ -155,6 +162,39 @@ No M4 o host autentica remetente pela conexão, valida fromPeerId e preenche ess
 campo no encaminhamento. Valida sala, destino e negociação ativa por par.
 Não confiar em um fromPeerId declarado na rede. Controle de mídia no M5 tem schema
 separado e não é aceito no transporte TLS da sala (detalhes abaixo).
+
+## Presença de voz e chat (protocolo v2)
+
+Cada participante do snapshot carrega `voice: { connected, muted, deafened, streaming }`.
+O host aceita VOICE_STATE apenas para a conexão autenticada que o enviou; um membro nunca
+altera a presença de outro. Atualizações idênticas são ignoradas e mais de 10 por
+segundo encerram a conexão. Cada mudança gera um ROOM_STATE autoritativo. O host mantém a
+própria presença localmente. A presença controla o roteamento da voz (abaixo) e a UI.
+
+O chat é retransmitido pelo host, não pelo WebRTC, para funcionar mesmo quando o caminho
+direto entre dois membros falha. O membro envia CHAT_SEND com um UUID gerado localmente;
+o host valida o texto (1–2.000 caracteres, não apenas espaços, sem controles C0/C1 nem
+overrides bidirecionais, preservando o ZWJ de emojis), aplica janela deslizante de 5
+mensagens a cada 5 s por autor, descarta IDs repetidos e carimba autor, nome e horário
+estritamente crescente antes de difundir CHAT_MESSAGE a todos, inclusive ao autor, que
+usa o eco como confirmação. Excesso gera CHAT_REJECTED sem derrubar a conexão.
+
+O host guarda até 200 mensagens apenas em memória (`ChatLog`). Quem entra recebe as
+últimas 100 em CHAT_HISTORY, empacotadas para caber no frame de 64 KiB. Clientes
+deduplicam por id. Nada é gravado em disco e encerrar a sala apaga o histórico. Nomes no
+histórico são os do momento do envio; mensagens de quem já saiu permanecem.
+
+O main empurra ao renderer eventos validados (`room:event`): STATE (sem payload; o
+renderer refaz `getState`), CHAT_MESSAGE e CHAT_REJECTED. O poll de 750 ms virou um
+fallback de 3 s. O renderer obtém o histórico por `room:chat-history`. Com a janela em
+segundo plano, mensagens de outros participantes piscam o ícone na barra de tarefas.
+
+A renderização do chat usa um subconjunto de Markdown convertido diretamente em
+elementos React, sem HTML: negrito, itálico, sublinhado, riscado, spoiler, código e
+blocos de código, links e menções a nomes da sala. Apenas URLs http(s) sem credenciais,
+com até 2.048 caracteres, viram links. Abri-los passa pelo IPC `app:open-external`,
+que revalida a URL antes de `shell.openExternal`; a navegação da janela continua
+bloqueada.
 
 ## Saída e falhas
 
@@ -327,8 +367,16 @@ e microfone continuam negadas: a compatibilidade media/empty mediaTypes do Elect
 44 foi mantida, sem liberar pedidos de dispositivos de áudio.
 No Windows, o handler usa audio: loopback apenas com consentimento explícito.
 Referência: [Electron setDisplayMediaRequestHandler](https://www.electronjs.org/docs/latest/api/session#sessetdisplaymediarequesthandlerhandler-opts).
-SYSTEM captura todo o som, inclusive fora da janela selecionada. Não usa
-loopbackWithMute.
+Nenhum modo de áudio pede áudio ao Chromium: `getDisplayMedia` sempre usa
+`audio: false` e o handler recusa pedidos com `audioRequested`. O loopback global do
+Chromium incluiria o próprio Poglive (voz da sala e players), gerando eco para quem
+assiste.
+
+SYSTEM usa o helper com `EXCLUDE_TARGET_PROCESS_TREE` sobre o PID do processo
+principal do Electron, raiz de renderer, GPU e serviço de áudio. Assim, todo o som do
+Windows é transmitido, exceto o que o próprio Poglive reproduz. O PID vem do main
+(`process.pid`), nunca do renderer. Substitui os antigos SYSTEM (loopback global) e
+SYSTEM_EXCEPT_DISCORD.
 
 WINDOW não solicita áudio ao Chromium. O ID `window:HWND:...` documentado pelo Electron
 é validado contra a lista recém-autorizada e encaminhado como argumento numérico fixo
@@ -341,18 +389,22 @@ Correção de taxa de ±0,5% com interpolação aproxima a fila do alvo sem salt
 O worklet cria a MediaStreamTrack com fila máxima limitada a um segundo.
 Encerrar captura mata o helper, remove listeners e fecha AudioContext/tracks.
 
-SYSTEM_EXCEPT_DISCORD também não solicita áudio ao Chromium. O helper enumera processos,
-reconhece Discord Stable/Canary/PTB/Development, encontra a raiz da árvore e usa
-`EXCLUDE_TARGET_PROCESS_TREE`. Sem Discord aberto, exclui a própria árvore silenciosa do
-helper, equivalendo ao loopback global. O filtro atua sobre processos, não títulos de janela.
+O helper aceita somente `--include-window <HWND>` ou `--exclude-process-tree <PID>`,
+com números decimais validados no main e de novo no executável, que confirma a
+existência da janela ou do processo antes de ativar o loopback.
 
 O helper é um sidecar separado para preservar isolamento e facilitar futura migração
 para Rust/Tauri. É compilado via CMake/MSVC antes do empacotamento e incluído em
-extraResources. A API requer Windows build 20348+; falhas encerram apenas o áudio
-isolado, sem fallback para SYSTEM. Validação em hardware real continua pendente.
+extraResources. A API requer Windows build 20348+. Uma falha do helper não interrompe a
+transmissão: o vídeo continua e a UI mostra um aviso.
 
-PeerLink pré-negocia uma track de cada tipo, mesmo em sessões sem áudio. PeerMedia
-mantém um MediaStream remoto com os dois receivers; só liga tracks locais após
+PeerLink pré-negocia três transceivers sendrecv em ordem fixa — vídeo da transmissão,
+áudio da transmissão e voz — e o DataChannel `poglive-control-v3`. O respondente
+verifica exatamente `video,audio,audio`; o índice do transceiver (`MEDIA_SECTION`)
+identifica o papel de cada track em `ontrack`. Antes de `setLocalDescription`, `tuneOpus`
+ajusta o fmtp do Opus por seção: estéreo, `sprop-stereo` e 128 kbps médios no áudio da
+transmissão; DTX e FEC na voz. Seções sem Opus ficam intactas. PeerMedia mantém um
+MediaStream remoto com os receivers da transmissão; só liga tracks locais após
 WATCH_REQUEST válido. WATCH_STOP/encerramento desliga ambos os senders com null.
 mediaSender.ts configura os limites iniciais: 2,5 Mbps para 720p30, 5 Mbps para
 720p60/1080p30 e 10 Mbps para 1080p60. Áudio usa 128 kbps por espectador. Esses valores
@@ -388,6 +440,74 @@ Preview local é sempre mudo; player remoto começa mudo e exige botão Ativar �
 Silenciar não cancela a assinatura, apenas a reprodução. Sair cancela ambos os envios.
 Loopback pode recapturar o player: fones não evitam esse ciclo de software; silenciar
 o player é necessário para evitá-lo ao compartilhar e assistir simultaneamente.
+
+## Voz
+
+A voz usa o mesmo PeerLink de cada par. `MicrophoneInput` abre `getUserMedia` somente
+com áudio (mono, 48 kHz) e as opções do usuário para cancelamento de eco, supressão de
+ruído e AGC do Chromium. O grafo Web Audio aplica o volume de entrada, mede o nível
+(RMS em dBFS a cada 40 ms) e passa por um gate de atividade de voz antes de um
+`MediaStreamAudioDestinationNode`, cuja track é compartilhada por todos os links. No modo
+automático, o gate acompanha o piso de ruído (desce rápido, sobe devagar) e abre 12 dB
+acima, limitado entre -62 e -28 dBFS. No manual, usa o limite escolhido. Abertura rápida,
+liberação suave e 320 ms de retenção evitam cortar sílabas. Silenciado, a track fica
+desabilitada e transmite apenas silêncio, reduzido pelo DTX.
+
+PeerMesh liga a track ao transceiver de voz somente quando os dois lados estão
+conectados à voz, segundo a presença autoritativa do host. O sender de voz usa 64 kbps e
+prioridade alta de RTP e rede, à frente do vídeo sob congestionamento.
+
+`VoicePlayback` mistura as vozes remotas em um AudioContext com ganho por pessoa (0–200%,
+silêncio local), ganho mestre (volume de saída e ensurdecer) e `setSinkId` para o
+dispositivo de saída. Cada track remota também fica presa a um elemento de áudio mudo,
+porque o Chromium só alimenta o Web Audio com áudio WebRTC remoto nessa condição. O
+indicador de fala dos outros é medido localmente no áudio recebido, sem mensagens extras.
+Ensurdecer força o silenciamento; reativar o microfone também reativa o áudio.
+
+Mudar dispositivo ou processamento reabre o microfone e troca a track em todos os links
+antes de fechar o grafo anterior. Volume e sensibilidade se aplicam sem reabrir. Um
+microfone desconectado volta ao padrão do sistema. Sem microfone, a entrada na voz
+acontece em modo somente escuta. A janela usa `backgroundThrottling: false`, para que
+detecção e gate não parem com o app minimizado, e `autoplayPolicy:
+'no-user-gesture-required'`, para tocar a voz sem clique.
+
+O lado que oferece (UUID menor) refaz automaticamente um link que falhou, com espera de
+2, 5, 10, 20 e depois 30 s, e uma nova negociação aceita pelo host após 2 s. Versões
+incompatíveis não tentam de novo. A UI também oferece uma nova tentativa manual.
+
+### Permissões
+
+O handler de permissões continua negando tudo por padrão. Além de tela cheia e da
+captura de tela de uso único, permite `media` apenas quando `mediaTypes` é exatamente
+`['audio']`, `speaker-selection` e a checagem `media` com `mediaType` igual a `audio`
+(rótulos de dispositivos), sempre para o mainFrame do renderer confiável. Câmera e
+pedidos combinados de áudio e vídeo continuam negados.
+
+## Configurações e atalhos
+
+`SettingsStore` grava `settings.json` no perfil por arquivo temporário seguido de rename,
+com escritas serializadas. O schema estrito cobre dispositivos, volumes, sensibilidade,
+processamento, atalhos, sons, padrões de transmissão e preferências locais de volume
+por `peerId` (até 200). Arquivos de versões anteriores são completados com os padrões;
+um arquivo ilegível é renomeado para `settings.invalid.json` e substituído pelos padrões,
+porque preferências, ao contrário da identidade, não são críticas. O renderer aplica as
+mudanças de forma otimista e persiste com debounce de 250 ms.
+
+Atalhos globais usam `globalShortcut` no main e exigem ao menos um modificador (ou
+F13–F24), para não capturar a digitação comum em outros aplicativos. Combinações
+ocupadas por outro programa são informadas na UI. O main envia apenas a ação
+(`TOGGLE_MUTE`, `TOGGLE_DEAFEN`), validada no preload. Push-to-talk global não é
+possível: `globalShortcut` não informa quando a tecla é solta.
+
+## Interface
+
+O renderer segue o layout de aplicativos de voz: barra de salas, barra lateral da sala
+(canal `#chat`, sala de voz com participantes, painel de conexão de voz e painel do
+usuário), palco da voz com blocos de participantes e transmissões, chat, lista de
+participantes e configurações em tela cheia. O estado de cada sala fica em `RoomSession`
+(PeerMesh, VoiceController, ScreenShare e ChatController), criado ao entrar e fechado ao
+sair. Os componentes leem stores observáveis via `useSyncExternalStore`, e a fala é um
+store próprio, para não redesenhar a interface inteira a cada amostra.
 
 ## Roadmap e verificação
 
@@ -438,11 +558,16 @@ dados e não altera as limitações LAN/áudio. Validação de funcionamento emp
 6. Áudio opcional, 720p/1080p e 30 FPS validados inicialmente pelo usuário.
    60 FPS e exclusão da árvore do Discord implementados, aguardando teste manual
    em dois PCs.
-7. Internet: STUN, NAT traversal, TURN e signaling mínimo conforme necessidade.
+7. Concluído: protocolo v2 com presença de voz e chat; canal de voz com processamento,
+   gate, volume por pessoa e atalhos globais; áudio de transmissão sem o próprio
+   Poglive; interface no estilo de aplicativos de voz; teste e2e com duas instâncias.
+8. Internet: STUN, NAT traversal, TURN e signaling mínimo conforme necessidade.
 
 Testes automatizados exercitam TLS real em loopback e runtime Electron, segurança
 da ponte e CSP. Não substituem validação visual nem conectividade entre dois PCs.
-Por solicitação do usuário, os M3–M6 não adicionam nem executam testes automatizados.
+O e2e (`npm run e2e`) conduz duas instâncias reais com microfone sintético e cobre
+sala, voz, detecção de fala, chat, transmissão e presença. Os M3–M6 não adicionaram
+testes automatizados, por solicitação do usuário.
 Compilação/lint e instruções de teste manual acompanham a entrega.
 Funcionalidades de mídia permanecem sujeitas a teste manual entre duas máquinas; build,
 lint e smoke não comprovam continuidade, isolamento, latência ou desempenho reais.

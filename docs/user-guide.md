@@ -18,15 +18,32 @@ Na primeira execução, informe um nome. O Poglive gera um identificador aleató
 mantém ambos no perfil local. O nome pode ser alterado fora de uma sala; o identificador
 permanece. Não copie `identity.json` ou uma pasta de perfil para outro computador.
 
+## Visão geral da interface
+
+A janela segue o layout de aplicativos de voz conhecidos:
+
+- **Barra de salas**, à esquerda: Início, a sala atual, criar (+) e entrar por convite.
+- **Barra da sala**: nome da sala com menu (convidar, configurações, sair), o canal de
+  texto `#chat`, a **Sala de voz** com quem está conectado e o painel da conexão de voz.
+- **Painel do usuário**, no rodapé: seu nome, silenciar microfone, desativar áudio e
+  configurações.
+- **Área principal**: o chat ou o palco da voz, com blocos dos participantes e das
+  transmissões. Na voz, o botão de mensagem no topo abre o chat ao lado.
+- **Participantes**, à direita do chat: quem está na voz e quem está só na sala.
+
+Clique em um participante (ou use o botão direito) para ver o estado da conexão direta,
+ajustar o volume dele só para você, silenciá-lo localmente e abrir o diagnóstico.
+
 ## Criar uma sala
 
-1. Selecione **Criar sala**.
+1. Selecione **Criar uma sala** (ou o **+** da barra de salas).
 2. Informe o nome da sala.
 3. Escolha o IPv4 da rede pela qual os convidados alcançarão o host:
    - Wi-Fi ou Ethernet para computadores na mesma LAN;
    - Radmin ou outra VPN para uma LAN virtual;
    - `127.0.0.1` somente para testes no mesmo computador.
-4. Copie e envie o convite completo por um canal confiável.
+4. Abra **Convidar pessoas** no menu da sala, copie e envie o convite completo por um
+   canal confiável.
 
 O host abre uma porta disponível na interface selecionada. Encerrar a sala ou fechar o
 host desconecta todos. Uma sala nova gera outro segredo, identificador e certificado;
@@ -34,25 +51,85 @@ convites antigos deixam de funcionar.
 
 ## Entrar em uma sala
 
-Selecione **Entrar em sala**, cole o convite e confirme. Um convite válido permite a
+Selecione **Entrar com convite**, cole o convite e confirme. Um convite válido permite a
 entrada automática enquanto houver espaço e o mesmo identificador não estiver conectado.
 O limite atual é de oito participantes.
+
+Convites começam com `PL2.`. Um convite `PL1.` vem de uma versão anterior: quem criou
+a sala precisa atualizar o Poglive e gerar um convite novo. Todos os participantes devem
+usar a mesma versão.
 
 O convite é uma credencial temporária. Base64url não é criptografia: quem tiver o código
 completo poderá tentar entrar enquanto a sala existir. Nomes e identificadores são
 declarados pelos participantes e não comprovam a identidade de uma pessoa.
 
-## Compartilhar e assistir
+## Voz
 
-Dentro da sala:
+Clique em **Sala de voz** na barra da sala, ou em **Entrar na voz** no palco. A voz é
+enviada diretamente a cada participante que também estiver no canal de voz.
 
-1. Clique em **Compartilhar tela**.
-2. Escolha 720p ou 1080p e 30 ou 60 FPS.
-3. Mantenha a qualidade automática ativada ou escolha parâmetros fixos.
-4. Selecione o modo de áudio.
-5. Escolha uma janela ou monitor e confirme o preview.
+- **Silenciar** (microfone) e **Desativar áudio** ficam no painel do usuário e nos
+  controles do palco. Desativar o áudio também silencia o microfone; ativar o microfone
+  de novo reativa o áudio.
+- Um contorno verde indica quem está falando.
+- Sem microfone disponível, você entra só para ouvir; conecte o dispositivo e use
+  **Tentar de novo**.
+- Para sair só da voz, use o botão vermelho. Você continua na sala e no chat.
 
-Os demais participantes recebem o anúncio e decidem se querem assistir. É possível
+O Windows pode pedir permissão de microfone na primeira vez. Se o acesso for negado,
+libere em **Configurações do Windows > Privacidade > Microfone**.
+
+### Sensibilidade e processamento
+
+Em **Configurações > Voz e áudio**:
+
+- Escolha os dispositivos de entrada e saída e os volumes (até 200%).
+- **Determinar automaticamente a sensibilidade** acompanha o ruído do ambiente. Sem
+  ela, ajuste o limite manual; o teste de microfone mostra o nível e o ponto de corte
+  (verde quando sua voz seria transmitida).
+- Supressão de ruído, cancelamento de eco e controle automático de ganho usam o
+  processamento nativo do Chromium.
+
+### Atalhos globais
+
+Por padrão, `Ctrl + Shift + M` silencia o microfone e `Ctrl + Shift + D` desativa o
+áudio, mesmo com um jogo em foco. Altere em **Configurações > Atalhos**. Atalhos
+precisam de uma tecla modificadora (Ctrl, Alt, Shift) ou de F13–F24. Se outro
+aplicativo já usar a combinação, o Poglive avisa na mesma tela.
+
+Push-to-talk global não está disponível: o Windows não informa ao Electron quando uma
+tecla global é solta.
+
+## Chat de texto
+
+O canal `#chat` aceita mensagens de até 2.000 caracteres. `Enter` envia e
+`Shift + Enter` quebra a linha.
+
+- Formatação: `**negrito**`, `*itálico*`, `__sublinhado__`, `~~riscado~~`,
+  `||spoiler||`, código entre crases e blocos com três crases.
+- Digite `@` para mencionar alguém da sala. Menções a você ficam destacadas e tocam um
+  som.
+- Links `http`/`https` abrem no navegador padrão.
+- Mensagens ainda não confirmadas pelo anfitrião aparecem em cinza; se falharem, use
+  **Reenviar**. O anfitrião aceita até cinco mensagens a cada cinco segundos por pessoa.
+
+O histórico fica somente na memória do anfitrião (até 200 mensagens) e quem entra
+recebe as últimas 100. Encerrar a sala apaga tudo; nada é gravado em disco.
+
+## Transmitir e assistir
+
+1. Clique em **Transmitir** no painel de voz, ou no botão de tela nos controles do
+   palco.
+2. Escolha uma janela em **Aplicativos** ou um monitor em **Telas**.
+3. Ajuste resolução, taxa de quadros e áudio. A escolha fica salva para a próxima vez.
+4. Clique em **Transmitir** (ou dê um duplo clique na fonte).
+
+Seu nome ganha a marca **AO VIVO** e um bloco com a prévia da transmissão aparece no
+palco, com o número de pessoas assistindo. Clique de novo no botão de tela para parar.
+
+Os demais participantes veem o bloco da transmissão e decidem se querem assistir.
+Clique em um bloco para destacá-lo; duplo clique abre tela cheia. Passe o mouse para
+ver o volume, o mini player (picture-in-picture), tela cheia e **Parar de assistir**. É possível
 assistir a várias transmissões ao mesmo tempo, usar tela cheia ou picture-in-picture e
 ajustar o volume de cada player. Sair de um player não encerra a transmissão na origem.
 
@@ -83,22 +160,23 @@ O player mostra resolução/FPS observados, modo automático ou fixo e o motivo 
 Desativar o automático mantém os limites escolhidos no sender, embora o próprio WebRTC
 ainda possa reduzir bitrate quando a rede não comportar a transmissão.
 
-## Modos de áudio
+## Modos de áudio da transmissão
 
-| Modo                 | Conteúdo enviado                                              |
-| -------------------- | ------------------------------------------------------------- |
-| Sem áudio            | Somente vídeo                                                 |
-| Somente a janela     | Áudio da árvore de processos associada à janela escolhida     |
-| Tudo menos o Discord | Sistema, excluindo Discord Stable, Canary, PTB ou Development |
-| Todo o sistema       | Tudo reproduzido pelo loopback global do Windows              |
+| Modo                 | Conteúdo enviado                                          |
+| -------------------- | --------------------------------------------------------- |
+| Áudio do computador  | Todo o som do Windows, exceto o próprio Poglive           |
+| Somente o aplicativo | Áudio da árvore de processos associada à janela escolhida |
+| Sem áudio            | Somente vídeo                                             |
 
-O áudio seletivo usa um helper nativo e requer Windows build 20348 ou superior. Uma
-falha nesse helper encerra somente o áudio e nunca muda silenciosamente para captura
-global. O microfone não é usado.
+“Áudio do computador” exclui a árvore de processos do Poglive: a voz da sala, os sons
+do aplicativo e as transmissões que você está assistindo nunca voltam pela sua
+transmissão. Por isso não há eco nem recaptura, mesmo assistindo e transmitindo ao
+mesmo tempo.
 
-Compartilhar o sistema enquanto assiste a outra live pode recapturar o player. Coloque
-o volume recebido em zero para evitar esse ciclo; fones de ouvido não impedem a
-recaptura feita por software.
+Os dois modos com áudio usam um helper nativo e requerem Windows build 20348 ou
+superior. Se o áudio não puder ser capturado, a transmissão continua somente com vídeo
+e o aviso aparece no palco. O áudio da transmissão é estéreo; a voz usa o microfone e é
+enviada separadamente.
 
 ## Rede e Radmin VPN
 
@@ -119,8 +197,10 @@ projeto.
 
 ## Diagnóstico de conexão
 
-Se a entrada na sala funciona, mas o WebRTC não conecta, abra **Diagnóstico de conexão**
-e compare a linha dos dois computadores.
+Se a entrada na sala funciona, mas a conexão direta não, o participante aparece com um
+alerta. Abra o perfil dele: o Poglive tenta reconectar sozinho em intervalos crescentes,
+e **Tentar de novo** força uma nova tentativa. **Diagnóstico da conexão** mostra a linha
+a comparar entre os dois computadores.
 
 - `ICE=connected`: o transporte WebRTC chegou a conectar.
 - `Radmin` e `STUN`: mostram quantos candidatos foram encontrados por essa rota.
@@ -135,7 +215,9 @@ assim, remova qualquer informação adicional sensível antes de publicar uma is
 - Uma sala por instância e até oito participantes.
 - IPv4 e conectividade direta por LAN ou VPN; sem travessia geral de NAT ou TURN.
 - Sem contas, verificação de identidade, banimento persistente, kick ou migração de host.
-- Sem reconexão automática após perda da sala.
+- Sem reconexão automática após perda da sala. Conexões diretas entre participantes
+  são refeitas automaticamente enquanto a sala existir.
+- Sem push-to-talk global, edição ou exclusão de mensagens e anexos no chat.
 - Certificados temporários da sala expiram; recrie a sala quando necessário.
 - Qualidade real depende de captura, encoder, decoder, CPU/GPU, rede e número de viewers.
 

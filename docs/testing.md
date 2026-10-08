@@ -17,8 +17,26 @@ npm run smoke
 npm run dev -- --smoke-test
 ```
 
-O smoke usa um perfil isolado. Testes automatizados locais não substituem uma validação
-entre dois computadores físicos.
+O smoke usa um perfil isolado e verifica ponte, CSP, entrada na sala, o estado
+empurrado para a interface e uma mensagem de chat renderizada. Também grava capturas
+em `.artifacts/`.
+
+### Teste de ponta a ponta com duas instâncias
+
+```powershell
+npm run build
+npm run e2e          # ou: node scripts/e2e.mjs --keep
+```
+
+Abre duas instâncias reais (anfitrião e convidado) com perfis temporários e o microfone
+sintético do Chromium, e conduz a interface: criação e entrada na sala, conexão de voz,
+detecção de fala nos dois sentidos, chat, transmissão de tela assistida pelo convidado
+e propagação do silenciar. As janelas ficam fora da área visível. Com `--keep`, as
+capturas `host.png` e `guest.png` permanecem na pasta temporária indicada.
+
+O e2e roda em loopback com mídia sintética. Ele comprova o caminho de rede e a
+interface, mas não substitui uma validação entre dois computadores físicos com
+microfones reais.
 
 ## Sala em duas instâncias locais
 
@@ -47,6 +65,23 @@ npm start -- --profile=vitoria
 6. Teste saída voluntária, encerramento do host e uma perda temporária de rede.
 
 Se usar Radmin, confirme candidatos `Radmin` e `STUN` no diagnóstico dos dois lados.
+
+## Voz
+
+1. Entre na voz nos dois perfis e confirme o contorno verde ao falar.
+2. Silencie e desative o áudio pelo painel do usuário e pelos atalhos globais com outro
+   aplicativo em foco; confira os ícones no outro lado.
+3. Ajuste o volume de uma pessoa pelo perfil dela e silencie-a localmente.
+4. Troque o microfone em **Configurações > Voz e áudio** durante a chamada e confirme
+   que a voz continua.
+5. Desconecte o microfone durante a chamada e confirme o aviso e a recuperação.
+6. Com caixas de som, confirme que o cancelamento de eco evita retorno.
+
+## Chat
+
+1. Envie mensagens com formatação, uma menção e um link nos dois sentidos.
+2. Entre com um terceiro perfil e confirme o histórico recebido.
+3. Envie mais de cinco mensagens em sequência e confirme o aviso de limite e o reenvio.
 
 ## Captura e streaming
 

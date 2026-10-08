@@ -5,7 +5,7 @@
 <h1 align="center">Poglive</h1>
 
 <p align="center">
-  Compartilhamento privado de tela e áudio, direto entre amigos.
+  Voz, chat e compartilhamento de tela em salas privadas, direto entre amigos.
 </p>
 
 <p align="center">
@@ -15,9 +15,10 @@
   <img src="https://img.shields.io/badge/platform-Windows%20x64-0078D4" alt="Windows x64">
 </p>
 
-Poglive é um aplicativo open source para criar salas privadas e compartilhar janelas,
-monitores e áudio no Windows. Não exige conta: o host cria a sala, envia um convite e a
-mídia trafega por conexões WebRTC entre os participantes.
+Poglive é um aplicativo open source para conversar por voz, trocar mensagens e
+compartilhar janelas e monitores com áudio no Windows, com uma interface no estilo dos
+aplicativos de voz que você já conhece. Não exige conta: o anfitrião cria a sala, envia
+um convite e voz e vídeo trafegam por conexões WebRTC diretas entre os participantes.
 
 > [!WARNING]
 > As versões atuais ainda não possuem assinatura Authenticode e podem gerar um aviso do
@@ -28,10 +29,15 @@ mídia trafega por conexões WebRTC entre os participantes.
 ## Recursos
 
 - Salas privadas para até oito participantes, sem cadastro ou servidor de mídia.
-- Compartilhamento de monitor ou janela em 720p/1080p e 30/60 FPS.
+- Canal de voz com supressão de ruído, cancelamento de eco, sensibilidade automática,
+  indicador de quem está falando, volume por pessoa, silenciar e desativar áudio.
+- Atalhos globais para silenciar e desativar o áudio mesmo com um jogo em foco.
+- Chat de texto com menções, formatação, links e histórico enquanto a sala existe.
+- Transmissão de monitor ou janela em 720p/1080p e 30/60 FPS, com áudio estéreo do
+  computador que nunca inclui o próprio Poglive (sem eco da voz da sala).
 - Qualidade adaptativa por espectador, com redução rápida e recuperação gradual.
-- Várias transmissões abertas simultaneamente, com tela cheia e picture-in-picture.
-- Áudio opcional: sem áudio, somente a janela, sistema exceto Discord ou sistema inteiro.
+- Várias transmissões abertas simultaneamente, com foco, tela cheia e picture-in-picture.
+- Reconexão automática das conexões diretas entre participantes.
 - Convites autenticados com segredo aleatório e pinning do certificado temporário da sala.
 - Conexão em LAN e redes virtuais, incluindo descoberta pela interface do Radmin VPN.
 - Atualizações automáticas na versão instalada; atualização manual na versão portátil.
@@ -54,10 +60,11 @@ vídeo sem áudio ou o loopback global oferecido pelo Windows.
 ## Como usar
 
 1. Abra o Poglive e escolha seu nome local.
-2. O host cria uma sala selecionando o IPv4 da LAN ou VPN que será usada.
-3. Compartilhe o convite completo somente com pessoas de confiança.
-4. Os convidados colam o convite e entram na sala.
-5. Qualquer participante pode compartilhar uma janela ou monitor; os demais escolhem
+2. O anfitrião cria uma sala selecionando o IPv4 da LAN ou VPN que será usada.
+3. Em **Convidar pessoas**, copie o convite e envie somente a pessoas de confiança.
+4. Os convidados colam o convite em **Entrar com convite**.
+5. Entre na **Sala de voz** para conversar e use o `#chat` para mensagens.
+6. Qualquer participante pode transmitir uma janela ou monitor; os demais escolhem
    quais transmissões assistir.
 
 O convite funciona como uma credencial enquanto a sala estiver aberta. Ele contém o
@@ -76,14 +83,16 @@ flowchart LR
   A <-->|áudio, vídeo e controles WebRTC| B
 ```
 
-O host coordena entrada, presença e signaling. Depois da negociação, áudio, vídeo e
-controles de transmissão seguem diretamente entre os participantes. Não há TURN ou
+O anfitrião coordena entrada, presença, chat e signaling. Depois da negociação, voz,
+vídeo, áudio das transmissões e controles seguem diretamente entre os participantes. Não há TURN ou
 relay público; fora de uma rede roteável em comum, use uma VPN como o Radmin.
 
 ## Privacidade e segurança
 
 - Tela e áudio só são capturados depois de uma escolha explícita.
-- Microfone e câmera não são solicitados.
+- O microfone só é aberto ao entrar na voz ou testar o microfone; a câmera nunca é
+  solicitada.
+- O chat existe apenas na memória da sala e some quando ela é encerrada.
 - Identidade e preferências ficam no perfil local do Windows.
 - Convites, mídia e descrições WebRTC não são armazenados pelo Poglive após a sala.
 - O diagnóstico de conexão mostra estados e contagens, sem copiar IPs ou SDP completo.
@@ -119,7 +128,7 @@ Consulte [Desenvolvimento](docs/development.md) para ambiente e comandos,
 
 | Documento                                        | Conteúdo                                                    |
 | ------------------------------------------------ | ----------------------------------------------------------- |
-| [Guia do usuário](docs/user-guide.md)            | Salas, transmissões, áudio, rede e diagnóstico              |
+| [Guia do usuário](docs/user-guide.md)            | Salas, voz, chat, transmissões, rede e diagnóstico          |
 | [Desenvolvimento](docs/development.md)           | Ambiente local, comandos e estrutura do projeto             |
 | [Testes](docs/testing.md)                        | Verificações automatizadas e testes em uma ou duas máquinas |
 | [Releases](docs/releases.md)                     | Instalador, portátil, atualizador e processo de publicação  |

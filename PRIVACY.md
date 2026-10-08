@@ -1,6 +1,6 @@
 # Política de privacidade do Poglive
 
-Última atualização: 9 de setembro de 2026.
+Última atualização: 7 de outubro de 2026.
 
 O Poglive não possui conta, servidor central, publicidade, telemetria ou ferramenta
 de análise. O projeto não vende nem recebe dados pessoais. As conexões de sala e a
@@ -9,13 +9,19 @@ mídia são diretas entre os participantes escolhidos pelo usuário.
 ## Dados armazenados no computador
 
 O aplicativo salva no perfil local um identificador aleatório (`peerId`) e o nome de
-exibição informado pelo usuário. Electron também pode manter dados técnicos de cache.
+exibição informado pelo usuário (`identity.json`), além das preferências do aplicativo
+(`settings.json`): dispositivos de áudio escolhidos, volumes, sensibilidade do
+microfone, atalhos, sons, opções de transmissão e, quando ajustados, o volume e o
+silêncio local definidos para outros participantes, associados ao `peerId` deles.
+Electron também pode manter dados técnicos de cache.
 A desinstalação preserva esses dados para permitir uma reinstalação sem perder o
 perfil. Eles podem ser apagados removendo a pasta `%APPDATA%\poglive` depois de fechar
 o aplicativo.
 
-Convites, certificados temporários, segredos de sala, descrições WebRTC e mídia não são
-armazenados pelo Poglive após o encerramento da sala. O certificado TLS temporário de
+Convites, certificados temporários, segredos de sala, descrições WebRTC, mídia e
+mensagens do chat não são armazenados pelo Poglive após o encerramento da sala. O
+histórico do chat existe apenas na memória do anfitrião e dos participantes enquanto a
+sala está aberta. O certificado TLS temporário de
 cada sala é gerado localmente e mantido apenas em memória.
 
 ## Dados compartilhados com participantes
@@ -25,6 +31,15 @@ necessárias à conexão são enviados aos demais participantes. Isso inclui end
 portas e candidatos ICE. O convite contém endereço do host, porta, identificador e
 segredo da sala e impressão digital do certificado; quem recebe o convite pode tentar
 entrar enquanto aquela sala existir.
+
+O microfone só é aberto quando o usuário entra no canal de voz ou inicia o teste de
+microfone nas configurações. A voz é enviada por WebRTC diretamente aos participantes
+que também estão no canal de voz; enquanto o usuário fala abaixo da sensibilidade ou
+está silenciado, nada além de silêncio é transmitido. A câmera nunca é solicitada.
+
+O estado de voz (conectado, silenciado, áudio desativado e transmitindo) e as mensagens
+do chat passam pelo anfitrião da sala, que os repassa aos demais participantes. O
+anfitrião registra o nome do autor e o horário de cada mensagem.
 
 A tela, janela e áudio só são capturados após seleção explícita no aplicativo. A mídia
 selecionada é enviada por WebRTC somente aos participantes que solicitarem assisti-la.
