@@ -154,12 +154,17 @@ export function SharePicker({
               value={options.quality}
               onChange={(event) => {
                 const quality = event.target.value;
-                if (quality === '720p' || quality === '1080p')
+                if (
+                  quality === '720p' ||
+                  quality === '1080p' ||
+                  quality === 'native'
+                )
                   setOptions({ ...options, quality });
               }}
             >
               <option value="720p">720p</option>
               <option value="1080p">1080p</option>
+              <option value="native">Nativa (até 4K)</option>
             </select>
           </label>
           <label className="field">
@@ -206,6 +211,14 @@ export function SharePicker({
           label="Qualidade adaptativa"
           description="Reduz resolução e FPS para quem tiver rede ou computador mais fraco. A escolha acima é o máximo."
         />
+        {options.quality === 'native' && (
+          <p className="field-hint">
+            A resolução nativa usa o tamanho real da tela ou janela (até 4K) e
+            consome mais rede: cerca de {options.frameRate === 60 ? '20' : '10'}{' '}
+            Mbps por pessoa assistindo. Se a rede não aguentar, a qualidade
+            adaptativa desce para 1080p.
+          </p>
+        )}
         <p className="field-hint">
           {windowAudioBlocked
             ? '“Somente o aplicativo” exige uma janela. Escolha uma janela ou outro modo de áudio.'

@@ -15,6 +15,11 @@ export const videoQualityTierSchema = z.enum([
   '1080p30-low',
   '720p60-low',
   '720p30-low',
+  // Source resolution (whatever the monitor or window is), up to 4K.
+  'native60',
+  'native60-low',
+  'native30',
+  'native30-low',
 ]);
 export const videoQualityReasonSchema = z.enum([
   'SOURCE',

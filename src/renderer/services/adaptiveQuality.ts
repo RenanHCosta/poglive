@@ -21,7 +21,16 @@ function tier(
   return { id, height, frameRate, maxBitrate };
 }
 
+/** Height 0 means "the source's own size": no downscaling. */
+export const SOURCE_HEIGHT = 0;
+// Native streams are capped at 4K; bigger sources are scaled down.
+const MAX_SOURCE_HEIGHT = 2160;
+
 export const QUALITY_TIERS: Record<VideoQualityTier, QualityTierDefinition> = {
+  native60: tier('native60', SOURCE_HEIGHT, 60, 20_000_000),
+  'native60-low': tier('native60-low', SOURCE_HEIGHT, 60, 12_000_000),
+  native30: tier('native30', SOURCE_HEIGHT, 30, 10_000_000),
+  'native30-low': tier('native30-low', SOURCE_HEIGHT, 30, 6_000_000),
   '1080p60': tier('1080p60', 1080, 60, 12_000_000),
   '1080p60-low': tier('1080p60-low', 1080, 60, 7_000_000),
   '1080p30': tier('1080p30', 1080, 30, 6_000_000),
@@ -41,6 +50,21 @@ export const QUALITY_TIERS: Record<VideoQualityTier, QualityTierDefinition> = {
  * below 720p30.
  */
 const LADDERS: Record<string, VideoQualityTier[]> = {
+  native60: [
+    'native60',
+    'native60-low',
+    '1080p60',
+    '1080p60-low',
+    '720p60-low',
+    '720p30-low',
+  ],
+  native30: [
+    'native30',
+    'native30-low',
+    '1080p30',
+    '1080p30-low',
+    '720p30-low',
+  ],
   '1080p60': ['1080p60', '1080p60-low', '720p60', '720p60-low', '720p30-low'],
   '1080p30': ['1080p30', '1080p30-low', '720p30', '720p30-low'],
   '720p60': ['720p60', '720p60-low', '720p30-low'],
@@ -221,7 +245,9 @@ export async function applyVideoQuality(
   if (!parameters.encodings.length)
     throw new Error('Media encoding not negotiated');
   const sourceHeight = track.getSettings().height ?? tier.height;
-  const scale = Math.max(1, sourceHeight / tier.height);
+  const targetHeight =
+    tier.height === SOURCE_HEIGHT ? MAX_SOURCE_HEIGHT : tier.height;
+  const scale = sourceHeight ? Math.max(1, sourceHeight / targetHeight) : 1;
   for (const encoding of parameters.encodings) {
     encoding.maxBitrate = tier.maxBitrate;
     encoding.maxFramerate = tier.frameRate;

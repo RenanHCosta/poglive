@@ -80,11 +80,20 @@ export class ScreenShare {
         return;
       }
       const profile = CAPTURE_PROFILES[options.quality];
-      const constraints = {
-        width: { ideal: profile.width, max: profile.width },
-        height: { ideal: profile.height, max: profile.height },
-        frameRate: { ideal: options.frameRate, max: options.frameRate },
-      };
+      // Native captures the source's own size: resizeMode 'none' alone
+      // (adding width/height limits makes Chromium upscale to them). Larger
+      // than 4K sources are scaled down by the encoder instead.
+      const constraints =
+        options.quality === 'native'
+          ? {
+              resizeMode: 'none',
+              frameRate: { ideal: options.frameRate, max: options.frameRate },
+            }
+          : {
+              width: { ideal: profile.width, max: profile.width },
+              height: { ideal: profile.height, max: profile.height },
+              frameRate: { ideal: options.frameRate, max: options.frameRate },
+            };
       const media = await navigator.mediaDevices.getDisplayMedia({
         video: constraints,
         audio: false,

@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 export const sourceIdSchema = z.string().min(1).max(256);
 export const captureOptionsSchema = z.strictObject({
-  quality: z.enum(['720p', '1080p']),
+  // 'native' streams the source's own size (e.g. a 1440p monitor), up to 4K.
+  quality: z.enum(['720p', '1080p', 'native']),
   frameRate: z.union([z.literal(30), z.literal(60)]),
   adaptiveQuality: z.boolean(),
   // SYSTEM is all output except Poglive's own process tree (voice, players),
@@ -18,6 +19,8 @@ export type ProcessAudioTarget = z.infer<typeof processAudioTargetSchema>;
 export const CAPTURE_PROFILES = {
   '720p': { width: 1280, height: 720, maxBitrate: 2500000 },
   '1080p': { width: 1920, height: 1080, maxBitrate: 5000000 },
+  // Upper bound only: the capture keeps the source size below it.
+  native: { width: 3840, height: 2160, maxBitrate: 10000000 },
 } as const;
 // Bitrate presets are for 30 FPS; the sender doubles the budget for 60 FPS.
 export const captureSelectionSchema = z.strictObject({

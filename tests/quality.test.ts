@@ -7,6 +7,7 @@ import {
   initialQualityState,
   QUALITY_TIERS,
   qualityLadder,
+  SOURCE_HEIGHT,
 } from '../src/renderer/services/adaptiveQuality';
 import type {
   AdaptationSample,
@@ -16,7 +17,7 @@ import { captureOptionsSchema } from '../src/shared/schemas/capture';
 import { mediaMessageSchema } from '../src/shared/protocols/media';
 import { preferredVideoCodecs } from '../src/renderer/services/codecs';
 
-const options = (quality: '720p' | '1080p', frameRate: 30 | 60) =>
+const options = (quality: '720p' | '1080p' | 'native', frameRate: 30 | 60) =>
   captureOptionsSchema.parse({
     quality,
     frameRate,
@@ -72,10 +73,10 @@ test('ladders keep a 720p30 floor and prefer fluidity for 60 FPS', () => {
     qualityLadder(options('1080p', 30)).map((tier) => tier.id),
     ['1080p30', '1080p30-low', '720p30', '720p30-low'],
   );
-  for (const quality of ['720p', '1080p'] as const)
+  for (const quality of ['720p', '1080p', 'native'] as const)
     for (const frameRate of [30, 60] as const)
       for (const tier of qualityLadder(options(quality, frameRate))) {
-        assert.ok(tier.height >= 720, tier.id);
+        assert.ok(tier.height === SOURCE_HEIGHT || tier.height >= 720, tier.id);
         assert.ok(tier.frameRate >= 30, tier.id);
       }
   // New tier names are valid on the control channel.
@@ -195,4 +196,35 @@ test('screen video prefers H.264 with the best profile first', () => {
     [high, baseline, baselineSingle, vp8, rtx],
   );
   assert.deepEqual(preferredVideoCodecs([vp8, rtx]), [vp8, rtx]);
+});
+
+test('native resolution streams the source size, then falls back to 1080p', async () => {
+  assert.deepEqual(
+    qualityLadder(options('native', 60)).map((tier) => tier.id),
+    [
+      'native60',
+      'native60-low',
+      '1080p60',
+      '1080p60-low',
+      '720p60-low',
+      '720p30-low',
+    ],
+  );
+  const encoding: RTCRtpEncodingParameters = {};
+  const parameters = { encodings: [encoding] } as RTCRtpSendParameters;
+  const sender = {
+    getParameters: () => parameters,
+    setParameters: async () => undefined,
+  } as unknown as RTCRtpSender;
+  const track = {
+    getSettings: () => ({ height: 1440 }),
+  } as unknown as MediaStreamTrack;
+  await applyVideoQuality(sender, track, QUALITY_TIERS.native60);
+  assert.equal(encoding.scaleResolutionDownBy, undefined);
+  assert.equal(encoding.maxBitrate, 20_000_000);
+  // Falling back to 1080p scales a 1440p source down by 4/3.
+  await applyVideoQuality(sender, track, QUALITY_TIERS['1080p60']);
+  assert.equal(encoding.scaleResolutionDownBy, 1.33);
+  await applyVideoQuality(sender, track, QUALITY_TIERS['native60-low']);
+  assert.equal(encoding.scaleResolutionDownBy, 1);
 });

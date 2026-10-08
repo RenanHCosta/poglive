@@ -615,12 +615,19 @@ function StreamSection({ settings }: { settings: Settings }) {
             value={stream.quality}
             onChange={(event) => {
               const quality = event.target.value;
-              if (quality === '720p' || quality === '1080p')
+              if (
+                quality === '720p' ||
+                quality === '1080p' ||
+                quality === 'native'
+              )
                 setStream({ quality });
             }}
           >
             <option value="720p">720p · menor uso de rede</option>
             <option value="1080p">1080p · mais detalhes</option>
+            <option value="native">
+              Nativa · resolução do monitor, até 4K
+            </option>
           </select>
         </label>
         <label className="field">
