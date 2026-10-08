@@ -241,6 +241,14 @@ classifica cada bloco: SimpleBlock com flag de chave, ou BlockGroup sem Referenc
 janela, em um Cluster novo, com Timecodes rebaseados para zero. Entrada corrompida
 desativa o buffer em vez de gerar arquivos inválidos.
 
+Clipes enviados no chat viram anexos (`attachment`: id, nome, tamanho até 512 MiB,
+duração). O host só retransmite essa descrição. Quem abre envia `FILE_REQUEST` pelo canal
+de controle; o autor, se ainda tiver o clipe na memória (até 8 clipes e 400 MB por
+sessão), abre um canal de dados `poglive-file-v1:<id>` e envia blocos de 64 KB com
+backpressure, seguidos de `END`. O receptor só aceita canais de arquivo de um download
+que iniciou, do autor anunciado, sem exceder o tamanho declarado, e aborta após 20 s sem
+progresso. Canais de arquivo só são aceitos depois que o link foi confirmado.
+
 O main grava em `Vídeos\Poglive` com nome sanitizado, verificação do número mágico
 EBML, limite de 512 MiB e `wx` contra sobrescrita. O renderer só pode revelar arquivos
 salvos por este processo. Quem assiste avisa quem transmite com `CLIP_SAVED` no canal
