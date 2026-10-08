@@ -163,8 +163,12 @@ reações sobem por cima do vídeo para todos que estão assistindo e para quem 
 Enquanto você assiste, o Poglive guarda na memória os últimos segundos da
 transmissão. O botão de tesoura no player, o atalho global (`Alt + Shift + C` por
 padrão) ou o menu da bandeja salvam um clipe de 15, 30 ou 60 segundos em
-`Vídeos\Poglive`. Quem transmite recebe um aviso de que alguém salvou um clipe. Em
-**Configurações > Clipes**, você ajusta a duração, ativa clipes da sua própria
+`Vídeos\Poglive`. Quem transmite recebe um aviso de que alguém salvou um clipe. Com **Enviar clipes no chat ao salvar** (ativado por padrão), o clipe também aparece
+no `#chat` da sala. Quem clicar em **Assistir clipe** recebe o vídeo direto do seu
+computador e pode salvá-lo no próprio PC. O clipe fica disponível enquanto você estiver
+na sala. Com a opção desligada, o aviso de clipe salvo oferece **Enviar no chat**.
+
+Em **Configurações > Clipes**, você ajusta a duração, ativa clipes da sua própria
 transmissão ou desativa o recurso, que usa um pouco de CPU por transmissão aberta. É possível
 assistir a várias transmissões ao mesmo tempo, usar tela cheia ou picture-in-picture e
 ajustar o volume de cada player. Sair de um player não encerra a transmissão na origem.
