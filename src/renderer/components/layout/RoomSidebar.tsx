@@ -3,6 +3,7 @@ import type { Participant, RoomState } from '../../../shared/schemas/room';
 import type { RoomSession } from '../../services/RoomSession';
 import { useStore } from '../../services/store';
 import { Avatar } from '../common/Avatar';
+import { Equalizer } from '../common/Equalizer';
 import { Popover } from '../common/Popover';
 import type { Anchor } from '../common/Popover';
 import { Icon } from '../Icon';
@@ -199,7 +200,13 @@ function VoiceMember({
           {self && <span className="you"> (você)</span>}
         </span>
         <span className="voice-member-icons">
-          {peer.voice.streaming && <span className="live-badge">AO VIVO</span>}
+          <Equalizer active={speaking} />
+          {peer.voice.streaming && (
+            <span className="live-badge">
+              <i aria-hidden="true" />
+              AO VIVO
+            </span>
+          )}
           {peer.voice.deafened ? (
             <Icon name="headphonesOff" size={16} className="state-icon" />
           ) : peer.voice.muted ? (

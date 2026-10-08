@@ -11,6 +11,9 @@ export function Onboarding({
   const [name, setName] = useState('');
   return (
     <div className="onboarding">
+      <div className="onboarding-art" aria-hidden="true">
+        <img src="./poglive.svg" alt="" />
+      </div>
       <form
         className="onboarding-card"
         onSubmit={(event) => {
@@ -18,14 +21,14 @@ export function Onboarding({
           void command({ type: 'SAVE_IDENTITY', displayName: name });
         }}
       >
-        <img className="onboarding-logo" src="./poglive.svg" alt="" />
-        <h1>Boas-vindas ao Poglive</h1>
+        <span className="kicker">Sua frequência privada</span>
+        <h1>Bem-vindo a bordo do Poglive</h1>
         <p>
-          Voz, chat e compartilhamento de tela direto entre amigos. Sem conta,
-          sem servidor de terceiros.
+          Voz, chat e transmissões de tela direto entre amigos. Sem conta, sem
+          servidor no meio do caminho.
         </p>
         <label className="field">
-          <span className="field-label">Como você quer ser chamado?</span>
+          <span className="field-label">Como a tripulação vai te chamar?</span>
           <input
             autoFocus
             autoComplete="nickname"
@@ -42,7 +45,7 @@ export function Onboarding({
           disabled={busy || !name.trim()}
           type="submit"
         >
-          Continuar
+          Entrar no ar
         </button>
         <p className="fine-print">
           Seu nome fica salvo apenas neste computador e pode ser alterado nas

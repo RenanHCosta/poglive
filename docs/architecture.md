@@ -511,6 +511,17 @@ possível: `globalShortcut` não informa quando a tecla é solta.
 
 ## Interface
 
+A estrutura segue o padrão de aplicativos de voz, mas a identidade visual é própria
+("sua frequência privada"), derivada do ícone do sapo pirata: superfícies preto-tinta,
+texto e ações principais em branco-osso, vermelho-sinal reservado para o que está no
+ar (transmissões, indicador na barra de título, ações destrutivas) e verde-sapo para
+voz e conexão. Bahnschrift, fonte do Windows, dá aos títulos e rótulos um tom
+condensado de transmissão, sem embutir arquivos de fonte. Outras assinaturas:
+avatares em squircle, etiquetas de nome em fita, console de controles com teclas
+quadradas, equalizador animado em quem fala, granulado sutil no palco e sons
+sintetizados com chiado de rádio e "roger beep". Os tokens ficam no topo de
+`styles.css`.
+
 Fechar a janela com uma sala ativa a oculta e cria um ícone na bandeja (`TrayService`),
 com menu para reabrir, alternar mudo e ensurdecer (as mesmas ações dos atalhos) e sair.
 O ícone vem de `build/icon.ico`, empacotado como `tray.ico`. Sair pelo menu, pelo

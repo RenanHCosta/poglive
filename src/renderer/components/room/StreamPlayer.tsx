@@ -123,7 +123,10 @@ export function StreamPlayer({
         </div>
       )}
       <div className="stream-top">
-        <span className="live-badge">AO VIVO</span>
+        <span className="live-badge">
+          <i aria-hidden="true" />
+          AO VIVO
+        </span>
         <span className="stream-quality" title={reason ?? undefined}>
           {qualityLabel(quality)}
           {reason && <Icon name="alert" size={12} />}

@@ -2,11 +2,15 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Icon } from '../Icon';
 
+export type OnAir = 'voice' | 'live' | null;
+
 export function TitleBar({
   title,
+  onAir = null,
   children,
 }: {
   title: string;
+  onAir?: OnAir;
   children?: ReactNode;
 }) {
   const [maximized, setMaximized] = useState(false);
@@ -14,7 +18,22 @@ export function TitleBar({
     <div className="title-bar">
       <div className="title-bar-brand">
         <img className="app-icon" src="./poglive.svg" alt="" />
-        <span>Poglive</span>
+        <span className="wordmark">
+          Pog<b>live</b>
+        </span>
+        {onAir && (
+          <span
+            className={`on-air ${onAir}`}
+            title={
+              onAir === 'live'
+                ? 'Você está transmitindo'
+                : 'Você está na sala de voz'
+            }
+          >
+            <i aria-hidden="true" />
+            {onAir === 'live' ? 'Transmitindo' : 'No ar'}
+          </span>
+        )}
       </div>
       <div className="title-bar-title">{title}</div>
       <div className="window-actions">

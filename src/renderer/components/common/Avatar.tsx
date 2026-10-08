@@ -1,19 +1,20 @@
+// Poglive crew colors: saturated but warm, readable with bone-white initials.
 const COLORS = [
-  '#5865f2',
-  '#3ba55c',
-  '#e8a23a',
-  '#ed4245',
-  '#eb459e',
-  '#00a8fc',
-  '#9b59b6',
-  '#6d7684',
+  '#6f8f3a',
+  '#3f9e5a',
+  '#d9892b',
+  '#2f8f9d',
+  '#8c5bd6',
+  '#c2457e',
+  '#5a74c7',
+  '#7a6f62',
 ];
 
 export function avatarColor(peerId: string): string {
   let hash = 0;
   for (const character of peerId)
     hash = (hash * 31 + character.charCodeAt(0)) | 0;
-  return COLORS[Math.abs(hash) % COLORS.length] ?? '#5865f2';
+  return COLORS[Math.abs(hash) % COLORS.length] ?? '#6f8f3a';
 }
 
 export function initials(name: string): string {

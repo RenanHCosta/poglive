@@ -43,11 +43,15 @@ export function HomeView({
           </div>
         )}
         <section className="home-hero">
-          <h2>Olá, {data.identity?.displayName}!</h2>
-          <p>
-            Crie uma sala para seus amigos ou entre com um convite. Voz, chat e
-            telas compartilhadas vão direto entre os participantes.
-          </p>
+          <img className="home-hero-mark" src="./poglive.svg" alt="" />
+          <div>
+            <span className="kicker">Sua frequência privada</span>
+            <h2>E aí, {data.identity?.displayName}?</h2>
+            <p>
+              Abra uma sala para a tripulação ou sintonize com um convite. Voz,
+              chat e telas vão direto entre vocês, sem servidor no meio.
+            </p>
+          </div>
         </section>
         <div className="home-actions">
           <button
@@ -59,9 +63,9 @@ export function HomeView({
             <span className="home-card-icon create">
               <Icon name="plus" size={26} />
             </span>
-            <span className="home-card-title">Criar uma sala</span>
+            <span className="home-card-title">Abrir uma sala</span>
             <span className="home-card-text">
-              Você hospeda a sala e envia o convite para até 7 amigos.
+              Você é o anfitrião e chama até 7 amigos com um convite.
             </span>
           </button>
           <button
@@ -73,9 +77,9 @@ export function HomeView({
             <span className="home-card-icon join">
               <Icon name="link" size={26} />
             </span>
-            <span className="home-card-title">Entrar com convite</span>
+            <span className="home-card-title">Sintonizar com convite</span>
             <span className="home-card-text">
-              Cole o código que você recebeu de quem criou a sala.
+              Cole o código que o anfitrião mandou para você.
             </span>
           </button>
         </div>

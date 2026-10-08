@@ -17,6 +17,9 @@ import { CreateRoomModal, JoinRoomModal } from './components/home/RoomForms';
 import { Icon } from './components/Icon';
 import { ServerRail } from './components/layout/ServerRail';
 import { TitleBar } from './components/layout/TitleBar';
+import type { OnAir } from './components/layout/TitleBar';
+import { IDLE_VOICE_VIEW } from './services/voice/VoiceController';
+import type { ShareState } from './services/ScreenShare';
 import { UserPanel } from './components/layout/UserPanel';
 import { InviteModal } from './components/room/InviteModal';
 import { RoomLayout } from './components/room/RoomLayout';
@@ -26,6 +29,7 @@ import { SettingsModal } from './components/settings/SettingsModal';
 type Dialog = 'create' | 'join' | 'invite' | 'share' | 'settings' | 'leave';
 
 const NO_UNREAD_STORE = new Store({ count: 0, mentioned: false });
+const IDLE_SHARE_STATE = new Store<ShareState>({ status: 'IDLE' });
 
 export function App() {
   const desktop = useAppInfo();
@@ -42,6 +46,14 @@ export function App() {
       : null;
   const session = useRoomSession(active?.room ?? null, identity);
   const unread = useStore(session?.chat.unread ?? NO_UNREAD_STORE);
+  const voiceView = useStore(session?.voice.view ?? IDLE_VOICE_VIEW);
+  const shareState = useStore(session?.share.state ?? IDLE_SHARE_STATE);
+  const onAir: OnAir =
+    shareState.status === 'LIVE'
+      ? 'live'
+      : voiceView.status === 'CONNECTED'
+        ? 'voice'
+        : null;
   const roomSelected = !!active && homeFor !== active.room.roomId;
   const setRoomSelected = (selected: boolean) =>
     setHomeFor(selected ? null : (active?.room.roomId ?? null));
@@ -82,7 +94,7 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar title={title}>
+      <TitleBar title={title} onAir={onAir}>
         {updater.state?.status === 'READY' && (
           <button
             type="button"

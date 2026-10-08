@@ -241,12 +241,27 @@ async function createWindow(): Promise<void> {
   if (e2e) void runE2E(window, e2e);
   if (smoke) {
     // Fixed local diagnostic only; no user-supplied script is evaluated.
+    const artifactDirectory = resolve(app.getAppPath(), '.artifacts');
+    await mkdir(artifactDirectory, { recursive: true });
+    const capture = async (name: string): Promise<void> => {
+      const image = await window!.webContents.capturePage();
+      await writeFile(resolve(artifactDirectory, name), image.toPNG());
+    };
+    // Hidden smoke windows do not advance CSS animations.
+    await window.webContents.insertCSS(
+      '*, *::before, *::after { animation: none !important; transition: none !important; }',
+    );
+    await new Promise((done) => setTimeout(done, 400));
+    await capture('smoke-onboarding.png');
+    await window.webContents.executeJavaScript(
+      `window.pogLive.command({ type: 'SAVE_IDENTITY', displayName: 'Teste local' })`,
+    );
+    await new Promise((done) => setTimeout(done, 600));
+    await capture('smoke-home.png');
     const passed: unknown = await window.webContents.executeJavaScript(`
       (async () => {
         const info = await window.pogLive.getAppInfo();
         const updateState = await window.pogLive.getUpdateState();
-        const saved = await window.pogLive.command({ type: 'SAVE_IDENTITY', displayName: 'Teste local' });
-        if (saved.status !== 'OK') throw new Error(saved.message);
         const created = await window.pogLive.command({ type: 'CREATE_ROOM', name: 'Sala de teste', address: '127.0.0.1' });
         if (created.status !== 'OK') throw new Error(created.message);
         await new Promise(resolve => setTimeout(resolve, 300));
@@ -298,12 +313,6 @@ async function createWindow(): Promise<void> {
     if (rendered !== true)
       throw new Error(`Room state not rendered: ${String(rendered)}`);
     await new Promise((resolve) => setTimeout(resolve, 500));
-    const artifactDirectory = resolve(app.getAppPath(), '.artifacts');
-    await mkdir(artifactDirectory, { recursive: true });
-    const capture = async (name: string): Promise<void> => {
-      const image = await window!.webContents.capturePage();
-      await writeFile(resolve(artifactDirectory, name), image.toPNG());
-    };
     await capture('milestone-2.png');
     // Chat round trip: a member's message reaches the host UI through the room.
     testPeer.sendChat(
@@ -340,10 +349,6 @@ async function createWindow(): Promise<void> {
     if (typed !== true) throw new Error('Typing indicator not rendered');
     await new Promise((resolve) => setTimeout(resolve, 300));
     await capture('smoke-chat.png');
-    // Hidden smoke windows do not advance CSS animations.
-    await window.webContents.insertCSS(
-      '*, *::before, *::after { animation: none !important; transition: none !important; }',
-    );
     await window.webContents.executeJavaScript(`
       document.querySelector('[aria-label="Configurações de usuário"]')?.click();
       new Promise((resolve) => setTimeout(() => {

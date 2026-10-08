@@ -6,6 +6,7 @@ import { settingsStore } from '../../services/settings';
 import { useStore } from '../../services/store';
 import { effectiveMuted } from '../../services/voice/VoiceController';
 import { Avatar } from '../common/Avatar';
+import { Equalizer } from '../common/Equalizer';
 import { Icon } from '../Icon';
 import { LocalPreview, StreamPlayer } from './StreamPlayer';
 
@@ -58,7 +59,10 @@ export function VoiceStage({
         >
           <LocalPreview stream={share.stream} />
           <div className="stream-top">
-            <span className="live-badge">AO VIVO</span>
+            <span className="live-badge">
+              <i aria-hidden="true" />
+              AO VIVO
+            </span>
             <span className="stream-quality">{share.settings}</span>
           </div>
           <div className="stream-bottom">
@@ -110,6 +114,7 @@ export function VoiceStage({
         />
         <div className="tile-footer">
           <span className="tile-name">
+            <Equalizer active={speaking.has(peer.peerId)} />
             {peer.displayName}
             {self && ' (você)'}
           </span>
@@ -140,10 +145,10 @@ export function VoiceStage({
           <span className="stage-empty-icon">
             <Icon name="speaker" size={44} />
           </span>
-          <h2>Ninguém na sala de voz ainda</h2>
+          <h2>Silêncio na frequência</h2>
           <p>
-            Entre para conversar. Transmissões de quem estiver na sala também
-            aparecem aqui.
+            Ninguém está na voz ainda. Entre para abrir o canal; transmissões de
+            quem estiver na sala também aparecem aqui.
           </p>
         </div>
       ) : focusedTile ? (
@@ -298,7 +303,10 @@ function StreamTile({
     <div className={`tile stream-tile preview${focused ? ' focused' : ''}`}>
       <Avatar peerId={peer.peerId} name={peer.displayName} size={64} />
       <div className="stream-top">
-        <span className="live-badge">AO VIVO</span>
+        <span className="live-badge">
+          <i aria-hidden="true" />
+          AO VIVO
+        </span>
       </div>
       <div className="stream-invite">
         <span>{peer.displayName} está transmitindo</span>
