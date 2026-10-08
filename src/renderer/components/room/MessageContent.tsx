@@ -2,16 +2,7 @@ import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { parseMarkdown } from '../../services/markdown';
 import type { MarkdownNode } from '../../services/markdown';
-import { pushToast } from '../../services/toasts';
-
-function openLink(url: string): void {
-  void window.pogLive
-    .openExternal(url)
-    .then((result) => {
-      if (result.status === 'ERROR') pushToast(result.message, 'error');
-    })
-    .catch(() => pushToast('Não foi possível abrir o link.', 'error'));
-}
+import { requestOpenLink } from '../../services/links';
 
 function Spoiler({ children }: { children: ReactNode }) {
   const [revealed, setRevealed] = useState(false);
@@ -62,7 +53,7 @@ function render(
             title={node.url}
             onClick={(event) => {
               event.preventDefault();
-              openLink(node.url);
+              requestOpenLink(node.url);
             }}
           >
             {node.url}

@@ -1435,6 +1435,16 @@ input[type='range'] {
   font-size: 13px;
   user-select: all;
 }
+.link-preview {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: var(--bg-input);
+  font-family: Consolas, 'Cascadia Mono', monospace;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
 .invite-notes {
   list-style: none;
   padding: 0;

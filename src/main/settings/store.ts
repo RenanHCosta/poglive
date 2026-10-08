@@ -58,26 +58,64 @@ export class SettingsStore {
   }
 }
 
-/** Fills fields added after the file was written, keeping valid user choices. */
+/**
+ * Keeps every valid user choice and fills the rest with defaults. Unknown
+ * keys (from a newer build) and invalid values are dropped field by field
+ * instead of discarding the whole file.
+ */
 export function migrate(value: unknown): Settings {
   const strict = settingsSchema.safeParse(value);
   if (strict.success) return strict.data;
-  if (!value || typeof value !== 'object') throw new Error('Settings shape');
-  const source = value as Partial<Record<keyof Settings, unknown>>;
-  const merged = {
-    ...DEFAULT_SETTINGS,
-    ...source,
-    version: 1,
-    audio: { ...DEFAULT_SETTINGS.audio, ...asObject(source.audio) },
-    shortcuts: { ...DEFAULT_SETTINGS.shortcuts, ...asObject(source.shortcuts) },
-    notifications: {
-      ...DEFAULT_SETTINGS.notifications,
-      ...asObject(source.notifications),
-    },
-    stream: { ...DEFAULT_SETTINGS.stream, ...asObject(source.stream) },
-    peers: asObject(source.peers),
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    throw new Error('Settings shape');
+  const source = value as Record<string, unknown>;
+  const section = <T extends object>(defaults: T, raw: unknown): T => {
+    const input = asObject(raw);
+    const result = { ...defaults };
+    for (const key of Object.keys(defaults) as (keyof T)[])
+      if (key in input)
+        (result as Record<keyof T, unknown>)[key] = input[key as string];
+    return result;
   };
-  return settingsSchema.parse(merged);
+  const candidate: Settings = {
+    version: 1,
+    audio: section(DEFAULT_SETTINGS.audio, source.audio),
+    shortcuts: section(DEFAULT_SETTINGS.shortcuts, source.shortcuts),
+    notifications: section(
+      DEFAULT_SETTINGS.notifications,
+      source.notifications,
+    ),
+    stream: section(DEFAULT_SETTINGS.stream, source.stream),
+    peers: Object.fromEntries(
+      Object.entries(asObject(source.peers)).flatMap(([peerId, preference]) => {
+        const parsed = settingsSchema.shape.peers.safeParse({
+          [peerId]: preference,
+        });
+        return parsed.success ? Object.entries(parsed.data) : [];
+      }),
+    ),
+  };
+  // Field-level fallback: any section that still fails reverts to its defaults.
+  for (const key of [
+    'audio',
+    'shortcuts',
+    'notifications',
+    'stream',
+  ] as const) {
+    const checked = settingsSchema.shape[key].safeParse(candidate[key]);
+    if (!checked.success) {
+      const repaired: Record<string, unknown> = { ...DEFAULT_SETTINGS[key] };
+      for (const [field, fieldValue] of Object.entries(candidate[key])) {
+        const attempt = settingsSchema.shape[key].safeParse({
+          ...repaired,
+          [field]: fieldValue,
+        });
+        if (attempt.success) repaired[field] = fieldValue;
+      }
+      (candidate as Record<string, unknown>)[key] = repaired;
+    }
+  }
+  return settingsSchema.parse(trimPeers(candidate));
 }
 
 function asObject(value: unknown): Record<string, unknown> {

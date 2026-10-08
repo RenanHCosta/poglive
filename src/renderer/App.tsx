@@ -9,6 +9,7 @@ import { Store, useStore } from './services/store';
 import { pushToast } from './services/toasts';
 import { toggleDeafenPref, toggleMutePref } from './services/voice/prefs';
 import { Modal } from './components/common/Modal';
+import { LinkConfirm } from './components/common/LinkConfirm';
 import { Toasts } from './components/common/Toasts';
 import { HomeView } from './components/home/HomeView';
 import { Onboarding } from './components/home/Onboarding';
@@ -237,6 +238,7 @@ export function App() {
           onClose={close}
         />
       )}
+      <LinkConfirm />
       <Toasts />
       <span className="sr-only" data-testid="desktop-status" role="status">
         {desktop.status === 'READY'
