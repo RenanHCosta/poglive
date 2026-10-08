@@ -141,7 +141,13 @@ export function registerIpc(
                 mode: 'INCLUDE_WINDOW',
                 windowHandle: capture.windowHandle(target.sourceId),
               }
-            : { mode: 'EXCLUDE_PROCESS_TREE', processId: process.pid },
+            : // Poglive's own tree (voice, players) and Discord never
+              // leak into a share, so nobody hears a call twice.
+              {
+                mode: 'SYSTEM_EXCEPT',
+                processId: process.pid,
+                excludeDiscord: true,
+              },
           event.sender,
         );
         return { status: 'OK' };

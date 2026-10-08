@@ -382,11 +382,27 @@ Nenhum modo de áudio pede áudio ao Chromium: `getDisplayMedia` sempre usa
 Chromium incluiria o próprio Poglive (voz da sala e players), gerando eco para quem
 assiste.
 
-SYSTEM usa o helper com `EXCLUDE_TARGET_PROCESS_TREE` sobre o PID do processo
-principal do Electron, raiz de renderer, GPU e serviço de áudio. Assim, todo o som do
-Windows é transmitido, exceto o que o próprio Poglive reproduz. O PID vem do main
-(`process.pid`), nunca do renderer. Substitui os antigos SYSTEM (loopback global) e
-SYSTEM_EXCEPT_DISCORD.
+A API de process loopback aceita uma única árvore por cliente, para incluir ou para
+excluir. Excluir duas árvores (Poglive e Discord) exige outro caminho, então SYSTEM usa
+o modo mixer do helper (`--system-except <PID> --except-discord`):
+
+- A cada 2 s, enumera as sessões de áudio de todos os dispositivos de saída ativos
+  (`IAudioSessionManager2`), ignorando a sessão de sons do sistema.
+- Descarta processos cuja ancestralidade inclui o PID do processo principal do
+  Electron (raiz de renderer, GPU e serviço de áudio) ou qualquer executável do
+  Discord. A relação pai e filho do Toolhelp só é aceita quando o pai foi criado antes
+  do filho, para que PIDs reutilizados não criem ancestralidade falsa.
+- Também descarta processos cuja árvore contém um processo excluído (por exemplo, um
+  launcher que abriu o Discord), porque incluí-los vazaria o excluído, e processos já
+  cobertos por um ancestral incluído, para não tocar duas vezes.
+- Abre um cliente `INCLUDE_TARGET_PROCESS_TREE` por processo restante (até 48) e
+  mistura tudo em ticks de 10 ms no relógio do sistema. Cada fonte tem 20 ms de
+  pré-buffer e no máximo 100 ms em fila; underruns refazem o pré-buffer, excessos
+  descartam o mais antigo, e as somas são saturadas em 16 bits.
+
+O PID vem do main (`process.pid`), nunca do renderer. Sons de notificação do Windows
+não entram, porque a sessão do sistema não pertence a um processo capturável. Este
+modo substitui os antigos SYSTEM (loopback global) e SYSTEM_EXCEPT_DISCORD.
 
 WINDOW não solicita áudio ao Chromium. O ID `window:HWND:...` documentado pelo Electron
 é validado contra a lista recém-autorizada e encaminhado como argumento numérico fixo
@@ -399,9 +415,9 @@ Correção de taxa de ±0,5% com interpolação aproxima a fila do alvo sem salt
 O worklet cria a MediaStreamTrack com fila máxima limitada a um segundo.
 Encerrar captura mata o helper, remove listeners e fecha AudioContext/tracks.
 
-O helper aceita somente `--include-window <HWND>` ou `--exclude-process-tree <PID>`,
-com números decimais validados no main e de novo no executável, que confirma a
-existência da janela ou do processo antes de ativar o loopback.
+O helper aceita somente `--include-window <HWND>` ou
+`--system-except <PID>[,<PID>…] [--except-discord]` (até 8 PIDs), com números decimais
+validados no main e de novo no executável.
 
 O helper é um sidecar separado para preservar isolamento e facilitar futura migração
 para Rust/Tauri. É compilado via CMake/MSVC antes do empacotamento e incluído em

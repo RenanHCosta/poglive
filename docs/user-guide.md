@@ -172,14 +172,16 @@ ainda possa reduzir bitrate quando a rede não comportar a transmissão.
 
 | Modo                 | Conteúdo enviado                                          |
 | -------------------- | --------------------------------------------------------- |
-| Áudio do computador  | Todo o som do Windows, exceto o próprio Poglive           |
+| Áudio do computador  | Som dos aplicativos, exceto o Poglive e o Discord         |
 | Somente o aplicativo | Áudio da árvore de processos associada à janela escolhida |
 | Sem áudio            | Somente vídeo                                             |
 
-“Áudio do computador” exclui a árvore de processos do Poglive: a voz da sala, os sons
-do aplicativo e as transmissões que você está assistindo nunca voltam pela sua
-transmissão. Por isso não há eco nem recaptura, mesmo assistindo e transmitindo ao
-mesmo tempo.
+“Áudio do computador” captura cada aplicativo que está tocando som, exceto o Poglive
+(voz da sala, sons e transmissões que você assiste) e o Discord (Stable, PTB, Canary).
+Nenhuma chamada volta pela transmissão, mesmo assistindo e transmitindo ao mesmo tempo
+ou com uma call do Discord aberta. Aplicativos que começam a tocar durante a
+transmissão entram em cerca de dois segundos. Sons de notificação do Windows não são
+incluídos.
 
 Os dois modos com áudio usam um helper nativo e requerem Windows build 20348 ou
 superior. Se o áudio não puder ser capturado, a transmissão continua somente com vídeo

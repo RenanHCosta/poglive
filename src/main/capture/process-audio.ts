@@ -7,7 +7,7 @@ import { IPC } from '../../shared/contracts';
 
 export type ProcessAudioRequest =
   | { mode: 'INCLUDE_WINDOW'; windowHandle: string }
-  | { mode: 'EXCLUDE_PROCESS_TREE'; processId: number };
+  | { mode: 'SYSTEM_EXCEPT'; processId: number; excludeDiscord: boolean };
 
 function helperArguments(request: ProcessAudioRequest): string[] {
   if (request.mode === 'INCLUDE_WINDOW') {
@@ -15,9 +15,17 @@ function helperArguments(request: ProcessAudioRequest): string[] {
       throw new Error('Invalid window handle');
     return ['--include-window', request.windowHandle];
   }
-  if (!Number.isSafeInteger(request.processId) || request.processId <= 0)
+  if (
+    !Number.isSafeInteger(request.processId) ||
+    request.processId <= 0 ||
+    request.processId > 0xffffffff
+  )
     throw new Error('Invalid process ID');
-  return ['--exclude-process-tree', String(request.processId)];
+  return [
+    '--system-except',
+    String(request.processId),
+    ...(request.excludeDiscord ? ['--except-discord'] : []),
+  ];
 }
 
 export class ProcessAudioService {
