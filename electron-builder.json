@@ -19,6 +19,10 @@
       "to": "poglive-process-audio.exe"
     },
     {
+      "from": "build/icon.ico",
+      "to": "tray.ico"
+    },
+    {
       "from": "build/THIRD_PARTY_NOTICES.txt",
       "to": "THIRD_PARTY_NOTICES.txt"
     }

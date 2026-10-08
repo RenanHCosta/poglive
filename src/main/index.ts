@@ -12,9 +12,12 @@ import { CaptureService } from './capture/service';
 import { ProcessAudioService } from './capture/process-audio';
 import { UpdateService } from './update/service';
 import { IPC } from '../shared/contracts';
+import type { ShortcutAction } from '../shared/schemas/settings';
 import { SettingsStore } from './settings/store';
 import { ShortcutService } from './settings/shortcuts';
 import { e2eOptions, prepareE2E, runE2E } from './e2e';
+import { TrayService } from './tray';
+import { loadWindowState, trackWindowState } from './window-state';
 
 const WEBRTC_MDNS_FEATURE = 'WebRtcHideLocalIpsWithMdns';
 const WEBRTC_UDP_PORT_RANGE = { min: 52000, max: 52100 } as const;
@@ -62,10 +65,21 @@ if (!app.requestSingleInstanceLock()) app.exit(0);
 const identities = new IdentityStore(app.getPath('userData'));
 const rooms = new RoomService(identities);
 const settings = new SettingsStore(app.getPath('userData'));
-const shortcuts = new ShortcutService((action) => {
+function sendShortcut(action: ShortcutAction): void {
   const contents = window?.webContents;
   if (contents && !contents.isDestroyed()) contents.send(IPC.shortcut, action);
-});
+}
+const shortcuts = new ShortcutService(sendShortcut);
+let quitting = false;
+const tray = new TrayService(
+  () => window,
+  sendShortcut,
+  () => app.quit(),
+);
+function inRoom(): boolean {
+  const status = rooms.snapshot().room.status;
+  return status === 'HOSTING' || status === 'JOINED';
+}
 rooms.subscribe((event) => {
   const contents = window?.webContents;
   if (contents && !contents.isDestroyed()) contents.send(IPC.roomEvent, event);
@@ -79,10 +93,7 @@ rooms.subscribe((event) => {
   )
     window.flashFrame(true);
 });
-app.on('second-instance', () => {
-  window?.restore();
-  window?.focus();
-});
+app.on('second-instance', () => tray.show());
 const rendererUrl = development
   ? 'http://127.0.0.1:5173/'
   : 'app://poglive/index.html';
@@ -162,9 +173,12 @@ function configureProtocol(): void {
 }
 
 async function createWindow(): Promise<void> {
+  const automated = smoke || !!e2e;
+  const saved = automated
+    ? { bounds: { width: 1280, height: 800 }, maximized: false }
+    : loadWindowState(app.getPath('userData'));
   window = new BrowserWindow({
-    width: 1280,
-    height: 800,
+    ...saved.bounds,
     minWidth: 940,
     minHeight: 600,
     backgroundColor: '#1e1f22',
@@ -205,13 +219,24 @@ async function createWindow(): Promise<void> {
     console.error('[App] Renderer process stopped'),
   );
   window.on('focus', () => window?.flashFrame(false));
+  window.on('close', (event) => {
+    // Closing during a call hides to the tray instead of dropping the room.
+    if (!quitting && !automated && inRoom()) {
+      event.preventDefault();
+      tray.hideToTray();
+    }
+  });
+  if (!automated) trackWindowState(window, app.getPath('userData'));
   window.on('closed', () => {
     capture.cancel();
     processAudio.stop();
     window = null;
   });
   await window.loadURL(rendererUrl);
-  if (!smoke && !e2e) window.show();
+  if (!automated) {
+    if (saved.maximized) window.maximize();
+    window.show();
+  }
   console.info('[App] Window ready');
   if (e2e) void runE2E(window, e2e);
   if (smoke) {
@@ -359,8 +384,12 @@ app
     app.exit(1);
   });
 app.on('window-all-closed', () => app.quit());
-app.on('will-quit', () => shortcuts.clear());
+app.on('will-quit', () => {
+  shortcuts.clear();
+  tray.destroy();
+});
 app.on('before-quit', () => {
+  quitting = true;
   updates.close();
   processAudio.stop();
   void rooms.close();
