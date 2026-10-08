@@ -1,3 +1,4 @@
+import { clipMimeType } from './codecProbe';
 import { WebmClipBuffer } from './webm';
 
 const TIMESLICE_MS = 500;
@@ -5,15 +6,6 @@ const TIMESLICE_MS = 500;
 // always available.
 const RETAIN_MARGIN_MS = 8000;
 const VIDEO_BITS_PER_SECOND = 6_000_000;
-
-// H.264 first: Chromium hands it to the GPU encoder when available, costing
-// about a third of the CPU of VP8 (measured 7% vs 19% for 1080p60), which
-// keeps clip buffering from stealing frames from the stream being watched.
-const MIME_TYPES = [
-  'video/webm;codecs=h264,opus',
-  'video/webm;codecs=vp8,opus',
-  'video/webm',
-];
 
 type RecorderOptions = MediaRecorderOptions & {
   // Chromium extension: forces regular keyframes so cuts stay close.
@@ -38,18 +30,18 @@ export class ClipRecorder {
   }
 
   static supported(): boolean {
-    return typeof MediaRecorder !== 'undefined' && !!ClipRecorder.mimeType();
+    return typeof MediaRecorder !== 'undefined';
   }
 
-  private static mimeType(): string | null {
-    return (
-      MIME_TYPES.find((type) => MediaRecorder.isTypeSupported(type)) ?? null
-    );
-  }
-
+  /** Starts once the codec for this machine is known (see codecProbe). */
   start(): void {
-    const mimeType = ClipRecorder.mimeType();
-    if (!mimeType || this.stopped) return;
+    void clipMimeType().then((mimeType) => {
+      if (mimeType) this.begin(mimeType);
+    });
+  }
+
+  private begin(mimeType: string): void {
+    if (this.stopped) return;
     const live = this.stream
       .getTracks()
       .filter((track) => track.readyState === 'live');

@@ -150,6 +150,18 @@ export class WebmClipBuffer {
     this.trim();
   }
 
+  /** Video frames currently buffered. */
+  videoFrames(): number {
+    return this.all().reduce(
+      (count, cluster) =>
+        count +
+        cluster.children.filter(
+          (child) => child.kind === 'video' || child.kind === 'videoKey',
+        ).length,
+      0,
+    );
+  }
+
   /** Duration of buffered media, in ms. */
   bufferedMs(): number {
     const clusters = this.all();
