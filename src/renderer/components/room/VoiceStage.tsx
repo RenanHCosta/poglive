@@ -7,6 +7,7 @@ import { useStore } from '../../services/store';
 import { effectiveMuted } from '../../services/voice/VoiceController';
 import { Avatar } from '../common/Avatar';
 import { Equalizer } from '../common/Equalizer';
+import { SELF_CLIP } from '../../services/clips/ClipManager';
 import { Icon } from '../Icon';
 import { LocalPreview, StreamPlayer } from './StreamPlayer';
 
@@ -29,6 +30,7 @@ export function VoiceStage({
   const mesh = useStore(session.mesh);
   const share = useStore(session.share.state);
   const speaking = useStore(session.voice.speaking);
+  const clips = useStore(session.clips.view);
   const settings = useStore(settingsStore);
   const outputDeviceId =
     settings.status === 'READY' ? settings.settings.audio.outputDeviceId : null;
@@ -56,6 +58,20 @@ export function VoiceStage({
   ];
   // Focus falls back to the grid when the focused stream or person goes away.
   const focus = focusChoice && keys.includes(focusChoice) ? focusChoice : null;
+  // The clip shortcut targets the focused stream.
+  const clipTarget =
+    focus === 'self-stream'
+      ? SELF_CLIP
+      : focus?.startsWith('stream:')
+        ? focus.slice(7)
+        : null;
+  useEffect(() => {
+    session.clips.setTarget(clipTarget);
+  }, [session, clipTarget]);
+  const clipFor = (key: string) =>
+    clips.available.has(key)
+      ? { saving: clips.saving, save: () => void session.clips.save(key) }
+      : null;
   const renderTile = (key: TileKey) => {
     if (key === 'self-stream' && share.status === 'LIVE')
       return (
@@ -76,9 +92,26 @@ export function VoiceStage({
             <span className="tile-name">
               Sua transmissão · {share.source.name}
             </span>
-            <span className="viewer-count" title="Quem está assistindo">
-              <Icon name="eye" size={16} />
-              {viewers.length}
+            <span className="stream-bottom-actions">
+              {clipFor(SELF_CLIP) && (
+                <button
+                  type="button"
+                  className="stream-button clip"
+                  aria-label="Salvar clipe"
+                  data-tooltip="Salvar clipe da sua transmissão"
+                  disabled={clips.saving}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void session.clips.save(SELF_CLIP);
+                  }}
+                >
+                  <Icon name="clip" size={18} />
+                </button>
+              )}
+              <span className="viewer-count" title="Quem está assistindo">
+                <Icon name="eye" size={16} />
+                {viewers.length}
+              </span>
             </span>
           </div>
         </div>
@@ -94,6 +127,7 @@ export function VoiceStage({
           deafened={voice.deafened}
           outputDeviceId={outputDeviceId}
           inVoice={connected}
+          clip={clipFor(peer.peerId)}
           onFocus={() => setFocus(focus === key ? null : key)}
           onWatch={() => {
             session.watch(peer.peerId);
@@ -320,7 +354,9 @@ function StreamTile({
   onFocus,
   onWatch,
   onLeave,
+  clip,
 }: {
+  clip: { saving: boolean; save: () => void } | null;
   inVoice: boolean;
   peer: PeerConnectionView;
   focused: boolean;
@@ -345,6 +381,7 @@ function StreamTile({
           focused={focused}
           onFocus={onFocus}
           onLeave={onLeave}
+          clip={clip}
         />
       </div>
     );

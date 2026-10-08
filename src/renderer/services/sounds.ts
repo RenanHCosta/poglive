@@ -9,7 +9,8 @@ export type SoundCue =
   | 'undeafen'
   | 'streamStart'
   | 'streamStop'
-  | 'message';
+  | 'message'
+  | 'clip';
 
 interface Note {
   frequency: number;
@@ -108,6 +109,26 @@ const CUES: Record<SoundCue, Cue> = {
       { frequency: 1046.5, at: 0, duration: 0.09 },
       { frequency: 659.25, at: 0.08, duration: 0.09 },
       { frequency: 392, at: 0.16, duration: 0.16 },
+    ],
+  },
+  // Shutter-like: a crisp burst of static and a short high blip.
+  clip: {
+    static: { at: 0, duration: 0.05, gain: 0.06 },
+    notes: [
+      {
+        frequency: 1568,
+        at: 0.04,
+        duration: 0.05,
+        wave: 'triangle',
+        gain: 0.05,
+      },
+      {
+        frequency: 2093,
+        at: 0.09,
+        duration: 0.08,
+        wave: 'triangle',
+        gain: 0.045,
+      },
     ],
   },
   message: {

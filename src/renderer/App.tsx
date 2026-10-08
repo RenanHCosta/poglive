@@ -65,7 +65,10 @@ export function App() {
     );
     return window.pogLive.onShortcut((action) => {
       const current = activeSession.get();
-      if (action === 'TOGGLE_MUTE') {
+      if (action === 'SAVE_CLIP') {
+        if (current) void current.clips.save();
+        else pushToast('Entre em uma sala para salvar clipes.', 'info');
+      } else if (action === 'TOGGLE_MUTE') {
         if (current) current.voice.toggleMute();
         else toggleMutePref();
       } else if (current) current.voice.toggleDeafen();

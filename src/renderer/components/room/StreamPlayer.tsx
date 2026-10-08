@@ -38,7 +38,9 @@ export function StreamPlayer({
   focused,
   onFocus,
   onLeave,
+  clip = null,
 }: {
+  clip?: { saving: boolean; save: () => void } | null;
   stream: MediaStream;
   name: string;
   quality: RemoteVideoQuality | null;
@@ -172,6 +174,21 @@ export function StreamPlayer({
           >
             <Icon name="pip" size={18} />
           </button>
+          {clip && (
+            <button
+              type="button"
+              className="stream-button clip"
+              aria-label="Salvar clipe"
+              data-tooltip="Salvar clipe dos últimos segundos"
+              disabled={clip.saving}
+              onClick={(event) => {
+                event.stopPropagation();
+                clip.save();
+              }}
+            >
+              <Icon name="clip" size={18} />
+            </button>
+          )}
           <button
             type="button"
             className="stream-button"

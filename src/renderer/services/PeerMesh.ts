@@ -57,6 +57,7 @@ export class PeerMesh {
       peers: PeerConnectionView[],
       error: string | null,
     ) => void,
+    private readonly clipped: (peerId: string) => void = () => {},
   ) {}
   start(): void {
     this.timer = setTimeout(() => {
@@ -92,6 +93,9 @@ export class PeerMesh {
   }
   stopWatching(peerId: string): void {
     this.links.get(peerId)?.media.stopWatching();
+  }
+  notifyClip(peerId: string): void {
+    this.links.get(peerId)?.media.notifyClip();
   }
   stopWatchingAll(): void {
     for (const link of this.links.values())
@@ -181,6 +185,7 @@ export class PeerMesh {
       this.rtcEndpoint,
       this.send,
       () => this.changed(peerId, link),
+      () => this.clipped(peerId),
     );
     this.links.set(peerId, link);
     link.media.setCapture(this.capture);

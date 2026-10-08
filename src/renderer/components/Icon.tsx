@@ -40,7 +40,9 @@ export type IconName =
   | 'bell'
   | 'info'
   | 'monitor'
-  | 'window';
+  | 'window'
+  | 'clip'
+  | 'folder';
 
 // Original 24×24 stroke icons drawn for Poglive.
 const paths: Record<IconName, string> = {
@@ -96,6 +98,9 @@ const paths: Record<IconName, string> = {
   info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 11v5.5M12 7.5h.01',
   monitor: 'M3 4.5h18v12H3zM8.5 20h7M12 16.5V20',
   window: 'M3 5h18v14H3zM3 9h18M6 7h.01M8.5 7h.01',
+  clip: 'M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM8.2 7.6 20 18M8.2 16.4 20 6',
+  folder:
+    'M3 6.5A1.5 1.5 0 0 1 4.5 5h4.2l2 2.2h8.8A1.5 1.5 0 0 1 21 8.7v9.8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5v-12Z',
 };
 
 export function Icon({

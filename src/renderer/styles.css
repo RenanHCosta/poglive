@@ -1750,6 +1750,16 @@ input[type='range'] {
   color: var(--muted);
   cursor: pointer;
 }
+.toast .toast-action {
+  padding: 4px 10px;
+  border-radius: var(--radius-small);
+  background: var(--bone);
+  color: var(--ink-0);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
 .toast.error {
   border-left-color: var(--signal);
 }
@@ -2676,6 +2686,18 @@ input[type='range'] {
 }
 .stream-button.danger:hover {
   background: var(--signal);
+}
+.stream-button.clip:hover:not(:disabled) {
+  background: var(--frog);
+  color: var(--ink-0);
+}
+.stream-bottom-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.stream-tile.self .stream-button.clip {
+  background: rgba(9, 9, 11, 0.75);
 }
 .stream-button:disabled {
   opacity: 0.4;

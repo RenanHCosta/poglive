@@ -17,7 +17,11 @@ export const acceleratorSchema = z
   .max(64)
   .regex(acceleratorPattern, 'Atalho inválido');
 
-export const shortcutActionSchema = z.enum(['TOGGLE_MUTE', 'TOGGLE_DEAFEN']);
+export const shortcutActionSchema = z.enum([
+  'TOGGLE_MUTE',
+  'TOGGLE_DEAFEN',
+  'SAVE_CLIP',
+]);
 export type ShortcutAction = z.infer<typeof shortcutActionSchema>;
 
 export const peerAudioSchema = z
@@ -47,9 +51,17 @@ export const settingsSchema = z
       .object({
         TOGGLE_MUTE: acceleratorSchema.nullable(),
         TOGGLE_DEAFEN: acceleratorSchema.nullable(),
+        SAVE_CLIP: acceleratorSchema.nullable(),
       })
       .strict(),
     notifications: z.object({ sounds: z.boolean() }).strict(),
+    clips: z
+      .object({
+        enabled: z.boolean(),
+        durationSeconds: z.union([z.literal(15), z.literal(30), z.literal(60)]),
+        recordOwnStream: z.boolean(),
+      })
+      .strict(),
     stream: captureOptionsSchema,
     // Local-only preferences keyed by peer UUID, like per-user volume in voice apps.
     peers: z
@@ -78,8 +90,10 @@ export const DEFAULT_SETTINGS: Settings = {
   shortcuts: {
     TOGGLE_MUTE: 'CommandOrControl+Shift+M',
     TOGGLE_DEAFEN: 'CommandOrControl+Shift+D',
+    SAVE_CLIP: 'Alt+Shift+C',
   },
   notifications: { sounds: true },
+  clips: { enabled: true, durationSeconds: 30, recordOwnStream: false },
   stream: {
     quality: '1080p',
     frameRate: 30,
@@ -95,7 +109,7 @@ export const settingsResultSchema = z.discriminatedUnion('status', [
       status: z.literal('OK'),
       settings: settingsSchema,
       // Shortcuts already registered by another application.
-      unavailableShortcuts: z.array(shortcutActionSchema).max(2),
+      unavailableShortcuts: z.array(shortcutActionSchema).max(3),
     })
     .strict(),
   z

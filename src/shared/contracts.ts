@@ -40,6 +40,9 @@ export const IPC = {
   settingsUpdate: 'settings:update',
   shortcut: 'settings:shortcut',
   openExternal: 'app:open-external',
+  clipSave: 'clip:save',
+  clipReveal: 'clip:reveal',
+  clipOpenFolder: 'clip:open-folder',
 } as const;
 export const appInfoSchema = z
   .object({
@@ -79,7 +82,27 @@ export interface DesktopBridge {
   updateSettings: (settings: Settings) => Promise<SettingsResult>;
   onShortcut: (listener: (action: ShortcutAction) => void) => () => void;
   openExternal: (url: string) => Promise<CommandResult>;
+  saveClip: (bytes: Uint8Array, label: string) => Promise<ClipResult>;
+  revealClip: (fileName: string) => Promise<CommandResult>;
+  openClipFolder: () => Promise<CommandResult>;
 }
+
+export type ClipResult =
+  { status: 'OK'; fileName: string } | { status: 'ERROR'; message: string };
+export const clipResultSchema = z.discriminatedUnion('status', [
+  z
+    .object({ status: z.literal('OK'), fileName: z.string().min(1).max(120) })
+    .strict(),
+  z
+    .object({ status: z.literal('ERROR'), message: z.string().max(200) })
+    .strict(),
+]);
+export const clipFileNameSchema = z
+  .string()
+  .min(1)
+  .max(120)
+  .regex(/^[^\\/:*?"<>|]+\.webm$/u);
+export const clipLabelSchema = z.string().min(1).max(64);
 
 export type StreamState =
   | { status: 'IDLE' }

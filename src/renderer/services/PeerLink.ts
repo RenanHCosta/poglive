@@ -42,6 +42,7 @@ export class PeerLink {
     rtcEndpoint: { host: string; port: number },
     private readonly send: (signal: Signal) => Promise<void>,
     private readonly changed: () => void,
+    clipped: () => void = () => {},
   ) {
     this.pc = new RTCPeerConnection({
       iceServers: [{ urls: `stun:${rtcEndpoint.host}:${rtcEndpoint.port}` }],
@@ -51,6 +52,7 @@ export class PeerLink {
       (message) => this.sendControl(message),
       this.changed,
       () => this.fail(),
+      clipped,
     );
     this.deadline = setTimeout(() => this.fail('TIMEOUT_25S'), 25000);
     this.pc.onicecandidate = ({ candidate }) => {

@@ -17,6 +17,7 @@ import { SettingsStore } from './settings/store';
 import { ShortcutService } from './settings/shortcuts';
 import { e2eOptions, prepareE2E, runE2E } from './e2e';
 import { TrayService } from './tray';
+import { ClipStore } from './clips';
 import { loadWindowState, trackWindowState } from './window-state';
 
 const WEBRTC_MDNS_FEATURE = 'WebRtcHideLocalIpsWithMdns';
@@ -390,6 +391,7 @@ app
       updates,
       settings,
       shortcuts,
+      new ClipStore(),
     );
     await createWindow();
     updates.start();

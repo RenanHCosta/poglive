@@ -1,7 +1,15 @@
 import { app, clipboard, ipcMain, shell } from 'electron';
 import type { BrowserWindow, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
-import { appInfoSchema, IPC } from '../shared/contracts';
+import {
+  appInfoSchema,
+  clipFileNameSchema,
+  clipLabelSchema,
+  IPC,
+} from '../shared/contracts';
+import type { ClipResult } from '../shared/contracts';
+import type { ClipStore } from './clips';
+import { MAX_CLIP_BYTES } from './clips';
 import { commandSchema, localStateSchema } from '../shared/schemas/room';
 import { chatHistorySchema } from '../shared/schemas/chat';
 import type { CommandResult } from '../shared/schemas/room';
@@ -30,6 +38,7 @@ export function registerIpc(
   updates: UpdateService,
   settings: SettingsStore,
   shortcuts: ShortcutService,
+  clips: ClipStore,
 ): void {
   let unavailableShortcuts = shortcuts.apply(settings.get().shortcuts);
   function authorize(event: IpcMainInvokeEvent): void {
@@ -216,6 +225,46 @@ export function registerIpc(
         return { status: 'OK' };
       } catch {
         return { status: 'ERROR', message: 'Não foi possível abrir o link.' };
+      }
+    },
+  );
+  ipcMain.handle(
+    IPC.clipSave,
+    async (event, ...args: unknown[]): Promise<ClipResult> => {
+      authorize(event);
+      const parsed = z
+        .tuple([z.instanceof(Uint8Array), clipLabelSchema])
+        .safeParse(args);
+      if (!parsed.success || parsed.data[0].byteLength > MAX_CLIP_BYTES)
+        return { status: 'ERROR', message: 'Clipe inválido.' };
+      try {
+        const fileName = await clips.save(parsed.data[0], parsed.data[1]);
+        return { status: 'OK', fileName };
+      } catch {
+        return {
+          status: 'ERROR',
+          message: 'Não foi possível salvar o clipe na pasta Vídeos.',
+        };
+      }
+    },
+  );
+  ipcMain.handle(IPC.clipReveal, (event, ...args: unknown[]): CommandResult => {
+    authorize(event);
+    const parsed = z.tuple([clipFileNameSchema]).safeParse(args);
+    if (!parsed.success || !clips.reveal(parsed.data[0]))
+      return { status: 'ERROR', message: 'Clipe não encontrado.' };
+    return { status: 'OK' };
+  });
+  ipcMain.handle(
+    IPC.clipOpenFolder,
+    async (event, ...args: unknown[]): Promise<CommandResult> => {
+      authorize(event);
+      noArguments.parse(args);
+      try {
+        await clips.openFolder();
+        return { status: 'OK' };
+      } catch {
+        return { status: 'ERROR', message: 'Não foi possível abrir a pasta.' };
       }
     },
   );

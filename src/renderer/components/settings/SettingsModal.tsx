@@ -21,7 +21,13 @@ import { UpdatePanel } from './UpdatePanel';
 import { MicrophoneTest } from './MicrophoneTest';
 
 type Section =
-  'account' | 'voice' | 'shortcuts' | 'notifications' | 'stream' | 'about';
+  | 'account'
+  | 'voice'
+  | 'shortcuts'
+  | 'notifications'
+  | 'stream'
+  | 'clips'
+  | 'about';
 
 const SECTIONS: { id: Section; label: string; group: string }[] = [
   { id: 'account', label: 'Minha conta', group: 'Configurações de usuário' },
@@ -29,6 +35,7 @@ const SECTIONS: { id: Section; label: string; group: string }[] = [
   { id: 'shortcuts', label: 'Atalhos', group: 'Configurações do app' },
   { id: 'notifications', label: 'Notificações', group: 'Configurações do app' },
   { id: 'stream', label: 'Transmissão', group: 'Configurações do app' },
+  { id: 'clips', label: 'Clipes', group: 'Configurações do app' },
   { id: 'about', label: 'Atualizações e sobre', group: 'Poglive' },
 ];
 
@@ -111,6 +118,7 @@ export function SettingsModal({
             <NotificationSection settings={settings} />
           )}
           {section === 'stream' && <StreamSection settings={settings} />}
+          {section === 'clips' && <ClipSection settings={settings} />}
           {section === 'about' && (
             <UpdatePanel inRoom={inRoom} appInfo={appInfo} />
           )}
@@ -387,6 +395,7 @@ function VoiceSection({ settings }: { settings: Settings }) {
 const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   TOGGLE_MUTE: 'Silenciar ou ativar o microfone',
   TOGGLE_DEAFEN: 'Desativar ou ativar o áudio',
+  SAVE_CLIP: 'Salvar clipe da transmissão em foco',
 };
 
 function ShortcutSection({
@@ -512,6 +521,75 @@ function NotificationSection({ settings }: { settings: Settings }) {
       <p className="field-hint">
         Quando a janela está em segundo plano, novas mensagens também piscam o
         ícone na barra de tarefas.
+      </p>
+    </>
+  );
+}
+
+function ClipSection({ settings }: { settings: Settings }) {
+  const clips = settings.clips;
+  const setClips = (change: Partial<Settings['clips']>) =>
+    updateSettings((current) => ({
+      ...current,
+      clips: { ...current.clips, ...change },
+    }));
+  return (
+    <>
+      <SettingsHeader title="Clipes">
+        Salve os últimos segundos de uma transmissão que você está assistindo,
+        pelo botão de tesoura no player ou pelo atalho. Os arquivos ficam em
+        Vídeos\Poglive.
+      </SettingsHeader>
+      <Toggle
+        checked={clips.enabled}
+        onChange={(enabled) => setClips({ enabled })}
+        label="Manter clipes disponíveis"
+        description="Enquanto você assiste, o Poglive guarda na memória os segundos mais recentes. Isso usa um pouco de CPU para cada transmissão aberta."
+      />
+      <label className="field">
+        <span className="field-label">Duração do clipe</span>
+        <select
+          value={clips.durationSeconds}
+          disabled={!clips.enabled}
+          onChange={(event) => {
+            const durationSeconds = Number(event.target.value);
+            if (
+              durationSeconds === 15 ||
+              durationSeconds === 30 ||
+              durationSeconds === 60
+            )
+              setClips({ durationSeconds });
+          }}
+        >
+          <option value={15}>Últimos 15 segundos</option>
+          <option value={30}>Últimos 30 segundos</option>
+          <option value={60}>Último minuto</option>
+        </select>
+      </label>
+      <Toggle
+        checked={clips.recordOwnStream}
+        disabled={!clips.enabled}
+        onChange={(recordOwnStream) => setClips({ recordOwnStream })}
+        label="Clipes da minha transmissão"
+        description="Também guarda os últimos segundos do que você transmite, para salvar seus próprios momentos."
+      />
+      <div>
+        <button
+          type="button"
+          className="button secondary"
+          onClick={() =>
+            void window.pogLive.openClipFolder().then((result) => {
+              if (result.status === 'ERROR') pushToast(result.message, 'error');
+            })
+          }
+        >
+          <Icon name="folder" size={18} />
+          Abrir pasta de clipes
+        </button>
+      </div>
+      <p className="field-hint">
+        Quem transmite é avisado quando alguém salva um clipe da transmissão
+        dele. Clipes ficam só no seu computador; nada é enviado a servidores.
       </p>
     </>
   );

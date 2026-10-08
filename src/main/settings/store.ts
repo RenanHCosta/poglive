@@ -86,6 +86,7 @@ export function migrate(value: unknown): Settings {
       source.notifications,
     ),
     stream: section(DEFAULT_SETTINGS.stream, source.stream),
+    clips: section(DEFAULT_SETTINGS.clips, source.clips),
     peers: Object.fromEntries(
       Object.entries(asObject(source.peers)).flatMap(([peerId, preference]) => {
         const parsed = settingsSchema.shape.peers.safeParse({
@@ -101,6 +102,7 @@ export function migrate(value: unknown): Settings {
     'shortcuts',
     'notifications',
     'stream',
+    'clips',
   ] as const) {
     const checked = settingsSchema.shape[key].safeParse(candidate[key]);
     if (!checked.success) {

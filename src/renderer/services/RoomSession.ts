@@ -6,6 +6,9 @@ import type {
 import type { RoomEvent } from '../../shared/schemas/chat';
 import type { Settings } from '../../shared/schemas/settings';
 import { ChatController } from './ChatController';
+import { ClipManager, SELF_CLIP } from './clips/ClipManager';
+import type { ClipSource } from './clips/ClipManager';
+import { pushToast } from './toasts';
 import { PeerMesh } from './PeerMesh';
 import type { PeerConnectionView } from './PeerMesh';
 import { ScreenShare } from './ScreenShare';
@@ -29,6 +32,8 @@ export class RoomSession {
   readonly voice: VoiceController;
   readonly share = new ScreenShare();
   readonly chat: ChatController;
+  readonly clips: ClipManager;
+  private readonly clippedAt = new Map<string, number>();
   private readonly peerMesh: PeerMesh;
   private readonly unsubscribe: (() => void)[] = [];
   private lastPresence: string | null = null;
@@ -46,6 +51,14 @@ export class RoomSession {
     settings: Settings,
   ) {
     this.chat = new ChatController(roomId, self);
+    this.clips = new ClipManager(
+      settings.clips,
+      (key) =>
+        key === SELF_CLIP
+          ? `${self.displayName} (minha transmissão)`
+          : (this.nameOf(key) ?? 'Transmissão'),
+      (key) => this.peerMesh.notifyClip(key),
+    );
     this.voice = new VoiceController(self.peerId, settings, (track) =>
       this.peerMesh.setVoice(track, this.voice.connected),
     );
@@ -54,6 +67,7 @@ export class RoomSession {
       self.peerId,
       rtcEndpoint,
       (peers, error) => this.meshChanged(peers, error),
+      (peerId) => this.clippedByPeer(peerId),
     );
     this.unsubscribe.push(
       this.share.capture.subscribe(() => {
@@ -61,6 +75,7 @@ export class RoomSession {
         this.peerMesh.setCapture(capture);
         // Going live happens in the voice channel, as viewers expect.
         if (capture) this.ensureVoice();
+        this.syncClips();
         this.syncPresence();
       }),
       this.voice.view.subscribe(() => {
@@ -107,6 +122,7 @@ export class RoomSession {
 
   applySettings(settings: Settings): void {
     this.voice.applySettings(settings);
+    this.clips.setSettings(settings.clips);
   }
 
   /** Joins the voice channel if needed; watching and streaming happen there. */
@@ -124,9 +140,39 @@ export class RoomSession {
     this.peerMesh.reconnect(peerId);
   }
 
+  private nameOf(peerId: string): string | undefined {
+    return (
+      this.roster?.find((peer) => peer.peerId === peerId)?.displayName ??
+      this.mesh.get().peers.find((peer) => peer.peerId === peerId)?.displayName
+    );
+  }
+
+  /** Recorders follow the streams actually playing on this screen. */
+  private syncClips(): void {
+    const sources: ClipSource[] = [];
+    for (const peer of this.mesh.get().peers)
+      if (peer.watchState === 'WATCHING' && peer.media)
+        sources.push({ key: peer.peerId, stream: peer.media });
+    const own = this.share.capture.get();
+    if (own) sources.push({ key: SELF_CLIP, stream: own.stream });
+    this.clips.sync(sources);
+  }
+
+  private clippedByPeer(peerId: string): void {
+    const now = Date.now();
+    // One notice per viewer every 10 s, however often they clip.
+    if (now - (this.clippedAt.get(peerId) ?? 0) < 10_000) return;
+    this.clippedAt.set(peerId, now);
+    pushToast(
+      `${this.nameOf(peerId) ?? 'Alguém'} salvou um clipe da sua transmissão.`,
+      'info',
+    );
+  }
+
   private meshChanged(peers: PeerConnectionView[], error: string | null): void {
     if (this.closed) return;
     this.mesh.set({ peers, error });
+    this.syncClips();
     this.voice.setRemotes(
       peers.map((peer) => ({
         peerId: peer.peerId,
@@ -198,6 +244,7 @@ export class RoomSession {
     this.closed = true;
     clearTimeout(this.presenceTimer);
     for (const stop of this.unsubscribe) stop();
+    this.clips.close();
     this.share.close();
     this.voice.close();
     this.chat.close();

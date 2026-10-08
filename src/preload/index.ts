@@ -1,5 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { appInfoSchema, IPC } from '../shared/contracts';
+import {
+  appInfoSchema,
+  clipFileNameSchema,
+  clipLabelSchema,
+  clipResultSchema,
+  IPC,
+} from '../shared/contracts';
 import type { DesktopBridge } from '../shared/contracts';
 import { z } from 'zod';
 import { signalSchema, signalBatchSchema } from '../shared/protocols/signaling';
@@ -154,6 +160,27 @@ const bridge: DesktopBridge = {
       IPC.openExternal,
       externalUrlSchema.parse(url),
     );
+    return commandResultSchema.parse(result);
+  },
+  saveClip: async (bytes, label) => {
+    if (!(bytes instanceof Uint8Array) || bytes.byteLength > 512 * 1024 * 1024)
+      throw new Error('Invalid clip');
+    const result: unknown = await ipcRenderer.invoke(
+      IPC.clipSave,
+      bytes,
+      clipLabelSchema.parse(label),
+    );
+    return clipResultSchema.parse(result);
+  },
+  revealClip: async (fileName) => {
+    const result: unknown = await ipcRenderer.invoke(
+      IPC.clipReveal,
+      clipFileNameSchema.parse(fileName),
+    );
+    return commandResultSchema.parse(result);
+  },
+  openClipFolder: async () => {
+    const result: unknown = await ipcRenderer.invoke(IPC.clipOpenFolder);
     return commandResultSchema.parse(result);
   },
   onRoomEvent: (listener) => {

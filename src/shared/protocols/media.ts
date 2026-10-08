@@ -24,6 +24,8 @@ export const mediaMessageSchema = z.discriminatedUnion('type', [
   z.strictObject({ ...stream, type: z.literal('WATCH_REQUEST') }),
   z.strictObject({ ...stream, type: z.literal('WATCH_STOP') }),
   z.strictObject({ ...stream, type: z.literal('WATCH_ACCEPTED') }),
+  // Viewer → streamer: a clip of this stream was saved, for transparency.
+  z.strictObject({ ...stream, type: z.literal('CLIP_SAVED') }),
   z.strictObject({
     ...stream,
     type: z.literal('QUALITY_REPORT'),

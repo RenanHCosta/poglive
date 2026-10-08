@@ -62,6 +62,10 @@ export class TrayService {
           label: 'Desativar ou ativar áudio',
           click: () => this.trigger('TOGGLE_DEAFEN'),
         },
+        {
+          label: 'Salvar clipe da transmissão',
+          click: () => this.trigger('SAVE_CLIP'),
+        },
         { type: 'separator' },
         { label: 'Sair da sala e fechar', click: () => this.quit() },
       ]),

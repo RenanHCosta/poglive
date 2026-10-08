@@ -1,6 +1,6 @@
 import { app } from 'electron';
 import type { BrowserWindow } from 'electron';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 /**
@@ -26,6 +26,8 @@ export function prepareE2E(options: {
   directory: string;
 }): void {
   app.setPath('userData', resolve(options.directory, options.role));
+  // Clips land in the test directory, never in the user's Videos folder.
+  app.setPath('videos', resolve(options.directory, options.role, 'videos'));
   // Synthetic beeping microphone; no device prompt.
   app.commandLine.appendSwitch('use-fake-device-for-media-stream');
   app.commandLine.appendSwitch('use-fake-ui-for-media-stream');
@@ -178,6 +180,13 @@ export async function runE2E(
         `document.querySelector('.stream-tile.self .viewer-count')?.textContent.trim() === '1'`,
       );
       step('guest watching');
+      await until(
+        window,
+        'clip notice',
+        `[...document.querySelectorAll('.toast')].some((toast) => toast.textContent.includes('salvou um clipe da sua transmissão'))`,
+        60000,
+      );
+      step('notified of clip');
     } else {
       await until(window, 'watch', click('.stream-invite .button.primary'));
       await until(
@@ -186,6 +195,47 @@ export async function runE2E(
         `(() => { const video = document.querySelector('.stream-player video'); return !!video && video.readyState >= 2 && video.videoWidth > 0; })()`,
       );
       step('stream video playing');
+      // Let a few seconds buffer, then clip what was just watched.
+      await until(
+        window,
+        'clip button',
+        `!!document.querySelector('.stream-player .stream-button.clip')`,
+      );
+      await new Promise((done) => setTimeout(done, 4500));
+      await until(
+        window,
+        'save clip',
+        click('.stream-player .stream-button.clip'),
+      );
+      await until(
+        window,
+        'clip saved',
+        `[...document.querySelectorAll('.toast')].some((toast) => toast.textContent.includes('Clipe salvo'))`,
+      );
+      const clipsFolder = resolve(directory, role, 'videos', 'Poglive');
+      const files = (await readdir(clipsFolder)).filter((file) =>
+        file.endsWith('.webm'),
+      );
+      if (files.length !== 1)
+        throw new Error(`Expected one clip, found ${files.length}`);
+      const clipBytes = await readFile(resolve(clipsFolder, files[0]!));
+      // The clip must decode on its own in a fresh media element.
+      const played: unknown = await window.webContents.executeJavaScript(`
+        (async () => {
+          const bytes = Uint8Array.from(atob(${JSON.stringify(clipBytes.toString('base64'))}), (c) => c.charCodeAt(0));
+          const video = document.createElement('video');
+          video.muted = true;
+          video.src = URL.createObjectURL(new Blob([bytes], { type: 'video/webm' }));
+          await new Promise((ok, fail) => { video.onloadeddata = ok; video.onerror = () => fail(new Error('decode')); });
+          await video.play();
+          await new Promise((done) => setTimeout(done, 800));
+          const quality = video.getVideoPlaybackQuality();
+          video.pause();
+          return video.videoWidth > 0 && quality.totalVideoFrames > 5 && quality.corruptedVideoFrames === 0;
+        })()
+      `);
+      if (played !== true) throw new Error('Clip does not play');
+      step('clip saved and playable');
     }
     // Mute must reach the other side through host presence.
     if (role === 'guest') {
