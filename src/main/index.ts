@@ -12,6 +12,8 @@ import { CaptureService } from './capture/service';
 import { ProcessAudioService } from './capture/process-audio';
 import { UpdateService } from './update/service';
 import { IPC } from '../shared/contracts';
+import { SettingsStore } from './settings/store';
+import { ShortcutService } from './settings/shortcuts';
 
 const WEBRTC_MDNS_FEATURE = 'WebRtcHideLocalIpsWithMdns';
 const WEBRTC_UDP_PORT_RANGE = { min: 52000, max: 52100 } as const;
@@ -56,6 +58,11 @@ else if (profile)
 if (!app.requestSingleInstanceLock()) app.exit(0);
 const identities = new IdentityStore(app.getPath('userData'));
 const rooms = new RoomService(identities);
+const settings = new SettingsStore(app.getPath('userData'));
+const shortcuts = new ShortcutService((action) => {
+  const contents = window?.webContents;
+  if (contents && !contents.isDestroyed()) contents.send(IPC.shortcut, action);
+});
 rooms.subscribe((event) => {
   const contents = window?.webContents;
   if (contents && !contents.isDestroyed()) contents.send(IPC.roomEvent, event);
@@ -169,6 +176,11 @@ async function createWindow(): Promise<void> {
       sandbox: true,
       webSecurity: true,
       webviewTag: false,
+      // Voice keeps running while minimized or behind a game; throttled timers
+      // would stall speaking detection and audio graph scheduling.
+      backgroundThrottling: false,
+      // Remote voice must play as soon as someone speaks, without a click.
+      autoplayPolicy: 'no-user-gesture-required',
     },
   });
   // Enumerate every interface so virtual LAN adapters such as Radmin are
@@ -272,6 +284,7 @@ app
     capture.install();
     configureProtocol();
     await identities.load();
+    await settings.load();
     registerIpc(
       () => window,
       rendererUrl,
@@ -279,6 +292,8 @@ app
       capture,
       processAudio,
       updates,
+      settings,
+      shortcuts,
     );
     await createWindow();
     updates.start();
@@ -291,6 +306,7 @@ app
     app.exit(1);
   });
 app.on('window-all-closed', () => app.quit());
+app.on('will-quit', () => shortcuts.clear());
 app.on('before-quit', () => {
   updates.close();
   processAudio.stop();

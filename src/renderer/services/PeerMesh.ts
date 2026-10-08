@@ -1,5 +1,9 @@
 import type { Signal } from '../../shared/protocols/signaling';
-import type { RoomSnapshot } from '../../shared/schemas/room';
+import type {
+  Participant,
+  RoomSnapshot,
+  VoiceState,
+} from '../../shared/schemas/room';
 import { PeerLink } from './PeerLink';
 import type { LinkStatus } from './PeerLink';
 import type {
@@ -9,22 +13,38 @@ import type {
   WatchState,
 } from '../../shared/protocols/media';
 
+// Offerer-side retry after a failed link. Version mismatches never retry.
+const RETRY_DELAYS_MS = [2000, 5000, 10000, 20000, 30000];
+const WAITING_TIMEOUT_MS = 30000;
+
 export interface PeerConnectionView {
   peerId: string;
   displayName: string;
+  role: Participant['role'];
+  presence: VoiceState;
   status: LinkStatus | 'WAITING';
   streamId: string | null;
   media: MediaStream | null;
+  voiceTrack: MediaStreamTrack | null;
   watchState: WatchState;
   quality: RemoteVideoQuality | null;
   watchingLocal: boolean;
   diagnostic: string | null;
 }
+
+interface Retry {
+  attempts: number;
+  at: number;
+}
+
 export class PeerMesh {
   private readonly links = new Map<string, PeerLink>();
+  private readonly retries = new Map<string, Retry>();
   private room: RoomSnapshot | null = null;
   private stopped = false;
   private capture: LocalStream | null = null;
+  private voiceTrack: MediaStreamTrack | null = null;
+  private voiceConnected = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private outbox = Promise.resolve();
   private readonly waitingSince = new Map<string, number>();
@@ -38,7 +58,6 @@ export class PeerMesh {
     ) => void,
   ) {}
   start(): void {
-    // React StrictMode can mount/clean up immediately; don't drain IPC on that discarded mount.
     this.timer = setTimeout(() => {
       void this.poll();
     }, 0);
@@ -58,6 +77,13 @@ export class PeerMesh {
     for (const link of this.links.values()) link.media.setCapture(this.capture);
     console.info(this.capture ? '[Stream] Started' : '[Stream] Stopped');
   }
+  /** Voice flows only between members who are both in the voice channel. */
+  setVoice(track: MediaStreamTrack | null, connected: boolean): void {
+    if (this.stopped) return;
+    this.voiceTrack = track;
+    this.voiceConnected = connected;
+    this.routeVoice();
+  }
   watch(peerId: string): void {
     const target = this.links.get(peerId);
     if (target?.status !== 'CONNECTED') return;
@@ -66,34 +92,58 @@ export class PeerMesh {
   stopWatching(peerId: string): void {
     this.links.get(peerId)?.media.stopWatching();
   }
+  /** Manual retry from the UI, regardless of backoff. */
+  reconnect(peerId: string): void {
+    const link = this.links.get(peerId);
+    if (!link || link.status !== 'ERROR') return;
+    this.retries.set(peerId, {
+      attempts: this.retries.get(peerId)?.attempts ?? 0,
+      at: 0,
+    });
+  }
+  private routeVoice(): void {
+    const presence = new Map(
+      (this.room?.participants ?? []).map((peer) => [
+        peer.peerId,
+        peer.voice.connected,
+      ]),
+    );
+    for (const [peerId, link] of this.links)
+      link.media.setVoice(
+        this.voiceTrack,
+        this.voiceConnected && presence.get(peerId) === true,
+      );
+  }
   private publish(error: string | null = null): void {
     if (this.stopped) return;
+    const now = Date.now();
     this.update(
       (this.room?.participants ?? [])
         .filter((peer) => peer.peerId !== this.selfId)
-        .map((peer) => ({
-          peerId: peer.peerId,
-          displayName: peer.displayName,
-          streamId: this.links.get(peer.peerId)?.media.remoteId ?? null,
-          media: this.links.get(peer.peerId)?.media.remoteStream ?? null,
-          watchState: this.links.get(peer.peerId)?.media.watchState ?? 'IDLE',
-          quality: this.links.get(peer.peerId)?.media.remoteQuality ?? null,
-          watchingLocal:
-            this.links.get(peer.peerId)?.media.watchingLocal ?? false,
-          diagnostic:
-            this.links.get(peer.peerId)?.diagnostic ??
-            (!this.links.has(peer.peerId) &&
-            Date.now() - (this.waitingSince.get(peer.peerId) ?? Date.now()) >
-              30000
-              ? 'NO_REMOTE_OFFER · A oferta do outro participante não chegou em 30 segundos.'
-              : null),
-          status:
-            this.links.get(peer.peerId)?.status ??
-            (Date.now() - (this.waitingSince.get(peer.peerId) ?? Date.now()) >
-            30000
-              ? 'ERROR'
-              : 'WAITING'),
-        })),
+        .map((peer) => {
+          const link = this.links.get(peer.peerId);
+          const waited =
+            now - (this.waitingSince.get(peer.peerId) ?? now) >
+            WAITING_TIMEOUT_MS;
+          return {
+            peerId: peer.peerId,
+            displayName: peer.displayName,
+            role: peer.role,
+            presence: peer.voice,
+            streamId: link?.media.remoteId ?? null,
+            media: link?.media.remoteStream ?? null,
+            voiceTrack: link?.media.remoteVoice ?? null,
+            watchState: link?.media.watchState ?? 'IDLE',
+            quality: link?.media.remoteQuality ?? null,
+            watchingLocal: link?.media.watchingLocal ?? false,
+            diagnostic:
+              link?.diagnostic ??
+              (!link && waited
+                ? 'NO_REMOTE_OFFER · A oferta do outro participante não chegou em 30 segundos.'
+                : null),
+            status: link?.status ?? (waited ? 'ERROR' : 'WAITING'),
+          };
+        }),
       error,
     );
   }
@@ -120,11 +170,29 @@ export class PeerMesh {
       this.selfId,
       this.rtcEndpoint,
       this.send,
-      () => this.publish(),
+      () => this.changed(peerId, link),
     );
     this.links.set(peerId, link);
     link.media.setCapture(this.capture);
+    this.routeVoice();
     return link;
+  }
+  private changed(peerId: string, link: PeerLink): void {
+    if (this.links.get(peerId) !== link) return;
+    if (link.status === 'CONNECTED') this.retries.delete(peerId);
+    else if (
+      link.status === 'ERROR' &&
+      this.selfId < peerId &&
+      !link.diagnostic?.startsWith('INCOMPATIBLE_VERSION') &&
+      !this.retries.has(peerId)
+    ) {
+      const attempts = 0;
+      this.retries.set(peerId, {
+        attempts,
+        at: Date.now() + (RETRY_DELAYS_MS[attempts] ?? 30000),
+      });
+    }
+    this.publish();
   }
   private async poll(): Promise<void> {
     try {
@@ -147,16 +215,29 @@ export class PeerMesh {
         if (!members.has(id)) {
           link.close();
           this.links.delete(id);
+          this.retries.delete(id);
         }
       for (const id of members) {
         if (this.stopped) return;
-        if (this.selfId < id && !this.links.has(id)) {
-          const link = this.create(id, crypto.randomUUID());
-          try {
-            await link.offer();
-          } catch {
-            link.fail('OFFER_FAILED');
-          }
+        if (this.selfId >= id) continue;
+        const existing = this.links.get(id);
+        const retry = this.retries.get(id);
+        const due =
+          existing?.status === 'ERROR' && retry && Date.now() >= retry.at;
+        if (existing && !due) continue;
+        if (due && retry) {
+          const attempts = retry.attempts + 1;
+          this.retries.set(id, {
+            attempts,
+            at: Date.now() + (RETRY_DELAYS_MS[attempts] ?? 30000),
+          });
+          console.info('[WebRTC] Retrying link');
+        }
+        const link = this.create(id, crypto.randomUUID());
+        try {
+          await link.offer();
+        } catch {
+          link.fail('OFFER_FAILED');
         }
       }
       for (const signal of batch.signals) {
@@ -186,6 +267,7 @@ export class PeerMesh {
           );
         }
       }
+      this.routeVoice();
       this.publish();
     } catch {
       this.publish(
@@ -201,8 +283,10 @@ export class PeerMesh {
   stop(): void {
     this.stopped = true;
     this.capture = null;
+    this.voiceTrack = null;
     clearTimeout(this.timer);
     for (const link of this.links.values()) link.close();
     this.links.clear();
+    this.retries.clear();
   }
 }

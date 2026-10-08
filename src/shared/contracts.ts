@@ -8,6 +8,11 @@ import type {
 import type { Signal, SignalBatch } from './protocols/signaling';
 import type { UpdateState } from './schemas/update';
 import type { ChatHistory, RoomEvent } from './schemas/chat';
+import type {
+  Settings,
+  SettingsResult,
+  ShortcutAction,
+} from './schemas/settings';
 
 export const IPC = {
   getAppInfo: 'app:get-info',
@@ -31,6 +36,10 @@ export const IPC = {
   updateCheck: 'update:check',
   updateInstall: 'update:install',
   updateState: 'update:state',
+  settingsGet: 'settings:get',
+  settingsUpdate: 'settings:update',
+  shortcut: 'settings:shortcut',
+  openExternal: 'app:open-external',
 } as const;
 export const appInfoSchema = z
   .object({
@@ -66,6 +75,10 @@ export interface DesktopBridge {
   checkForUpdate: () => Promise<CommandResult>;
   installUpdate: () => Promise<CommandResult>;
   onUpdateState: (listener: (state: UpdateState) => void) => () => void;
+  getSettings: () => Promise<SettingsResult>;
+  updateSettings: (settings: Settings) => Promise<SettingsResult>;
+  onShortcut: (listener: (action: ShortcutAction) => void) => () => void;
+  openExternal: (url: string) => Promise<CommandResult>;
 }
 
 export type StreamState =

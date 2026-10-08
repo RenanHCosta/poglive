@@ -1,4 +1,4 @@
-import { app, clipboard, ipcMain } from 'electron';
+import { app, clipboard, ipcMain, shell } from 'electron';
 import type { BrowserWindow, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 import { appInfoSchema, IPC } from '../shared/contracts';
@@ -9,6 +9,10 @@ import type { RoomService } from './room/service';
 import type { CaptureService } from './capture/service';
 import type { ProcessAudioService } from './capture/process-audio';
 import type { UpdateService } from './update/service';
+import type { SettingsStore } from './settings/store';
+import type { ShortcutService } from './settings/shortcuts';
+import { externalUrlSchema, settingsSchema } from '../shared/schemas/settings';
+import type { SettingsResult } from '../shared/schemas/settings';
 import {
   captureSourcesResultSchema,
   captureSelectionSchema,
@@ -24,7 +28,10 @@ export function registerIpc(
   capture: CaptureService,
   processAudio: ProcessAudioService,
   updates: UpdateService,
+  settings: SettingsStore,
+  shortcuts: ShortcutService,
 ): void {
+  let unavailableShortcuts = shortcuts.apply(settings.get().shortcuts);
   function authorize(event: IpcMainInvokeEvent): void {
     const window = getWindow();
     if (
@@ -161,6 +168,51 @@ export function registerIpc(
       arch: process.arch,
     });
   });
+  ipcMain.handle(IPC.settingsGet, (event, ...args: unknown[]) => {
+    authorize(event);
+    noArguments.parse(args);
+    return {
+      status: 'OK',
+      settings: settings.get(),
+      unavailableShortcuts,
+    } satisfies SettingsResult;
+  });
+  ipcMain.handle(
+    IPC.settingsUpdate,
+    async (event, ...args: unknown[]): Promise<SettingsResult> => {
+      authorize(event);
+      const parsed = z.tuple([settingsSchema]).safeParse(args);
+      if (!parsed.success)
+        return { status: 'ERROR', message: 'Configurações inválidas.' };
+      const previous = settings.get().shortcuts;
+      try {
+        const saved = await settings.save(parsed.data[0]);
+        if (JSON.stringify(previous) !== JSON.stringify(saved.shortcuts))
+          unavailableShortcuts = shortcuts.apply(saved.shortcuts);
+        return { status: 'OK', settings: saved, unavailableShortcuts };
+      } catch {
+        return {
+          status: 'ERROR',
+          message: 'Não foi possível salvar as configurações.',
+        };
+      }
+    },
+  );
+  ipcMain.handle(
+    IPC.openExternal,
+    async (event, ...args: unknown[]): Promise<CommandResult> => {
+      authorize(event);
+      const parsed = z.tuple([externalUrlSchema]).safeParse(args);
+      if (!parsed.success)
+        return { status: 'ERROR', message: 'Link inválido.' };
+      try {
+        await shell.openExternal(new URL(parsed.data[0]).toString());
+        return { status: 'OK' };
+      } catch {
+        return { status: 'ERROR', message: 'Não foi possível abrir o link.' };
+      }
+    },
+  );
   ipcMain.handle(IPC.chatHistory, (event, ...args: unknown[]) => {
     authorize(event);
     noArguments.parse(args);

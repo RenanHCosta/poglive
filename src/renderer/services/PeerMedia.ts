@@ -5,7 +5,7 @@ import type {
   RemoteVideoQuality,
   WatchState,
 } from '../../shared/protocols/media';
-import { configureSender } from './mediaSender';
+import { configureSender, configureVoiceSender } from './mediaSender';
 import {
   applyVideoQuality,
   evaluateQuality,
@@ -15,17 +15,29 @@ import {
 import type { AdaptiveQualityState } from './adaptiveQuality';
 import { collectMediaStats } from './mediaStats';
 import type { MediaStatsSnapshot } from './mediaStats';
+import { MEDIA_SECTION } from './sdp';
 
 const STATS_INTERVAL_MS = 2000;
 
-/** One pre-negotiated video sender per peer; capture ownership stays in useCapture. */
+type Role = keyof typeof MEDIA_SECTION;
+
+/**
+ * Three pre-negotiated senders per peer: shared-screen video, its audio, and
+ * voice. Capture ownership stays in useCapture and the voice engine.
+ */
 export class PeerMedia {
   remoteId: string | null = null;
   remoteStream: MediaStream | null = null;
+  remoteVoice: MediaStreamTrack | null = null;
   remoteQuality: RemoteVideoQuality | null = null;
   watchState: WatchState = 'IDLE';
   private local: LocalStream | null = null;
+  private voiceTrack: MediaStreamTrack | null = null;
+  private voiceRouted = false;
+  private voiceSenderTrack: MediaStreamTrack | null = null;
+  private voiceConfigured = false;
   private subscribedId: string | null = null;
+  private acceptPending = false;
   private sendingId: string | null = null;
   private ready = false;
   private closed = false;
@@ -55,10 +67,18 @@ export class PeerMedia {
     private readonly changed: () => void,
     private readonly fail: () => void,
   ) {
-    pc.ontrack = ({ track }) => {
+    pc.ontrack = ({ track, transceiver }) => {
       if (this.closed) return;
+      const role = this.roleOf(transceiver);
+      if (role === 'voice' && track.kind === 'audio' && !this.remoteVoice) {
+        this.remoteVoice = track;
+        this.changed();
+        return;
+      }
+      const expected =
+        role === 'video' ? 'video' : role === 'streamAudio' ? 'audio' : null;
       if (
-        !['video', 'audio'].includes(track.kind) ||
+        track.kind !== expected ||
         this.remoteStream?.getTracks().some((item) => item.kind === track.kind)
       ) {
         this.fail();
@@ -75,6 +95,15 @@ export class PeerMedia {
       this.checkReceiving();
     };
   }
+  private roleOf(transceiver: RTCRtpTransceiver): Role | null {
+    const index = this.pc.getTransceivers().indexOf(transceiver);
+    for (const [role, section] of Object.entries(MEDIA_SECTION))
+      if (section === index) return role as Role;
+    return null;
+  }
+  private sender(role: Role): RTCRtpSender | null {
+    return this.pc.getTransceivers()[MEDIA_SECTION[role]]?.sender ?? null;
+  }
   connected(): void {
     if (this.ready || this.closed) return;
     this.ready = true;
@@ -87,6 +116,7 @@ export class PeerMedia {
         type: 'STREAM_STARTED',
         streamId: this.local.streamId,
       });
+    this.syncSenders();
   }
   setCapture(local: LocalStream | null): void {
     if (this.closed || this.local?.streamId === local?.streamId) return;
@@ -94,7 +124,7 @@ export class PeerMedia {
     this.local = local;
     this.subscribedId = null;
     this.resetSenderQuality();
-    this.updateSender();
+    this.syncSenders();
     if (!this.ready) return;
     if (previous)
       this.send({
@@ -108,6 +138,20 @@ export class PeerMedia {
         type: 'STREAM_STARTED',
         streamId: local.streamId,
       });
+  }
+  /**
+   * `routed` is true only while both sides are in the voice channel. The track
+   * itself is shared by every link; muting happens upstream in the engine.
+   */
+  setVoice(track: MediaStreamTrack | null, routed: boolean): void {
+    if (
+      this.closed ||
+      (this.voiceTrack === track && this.voiceRouted === routed)
+    )
+      return;
+    this.voiceTrack = track;
+    this.voiceRouted = routed;
+    this.syncSenders();
   }
   receive(message: MediaMessage): void {
     if (this.closed) return;
@@ -125,12 +169,14 @@ export class PeerMedia {
       case 'WATCH_REQUEST':
         if (message.streamId !== this.local?.streamId) return;
         this.subscribedId = message.streamId;
-        this.updateSender();
+        // Answer every request, including a retry for a stream already flowing.
+        this.acceptPending = true;
+        this.syncSenders();
         break;
       case 'WATCH_STOP':
         if (message.streamId !== this.subscribedId) return;
         this.subscribedId = null;
-        this.updateSender();
+        this.syncSenders();
         break;
       case 'WATCH_ACCEPTED':
         if (
@@ -205,9 +251,9 @@ export class PeerMedia {
     }
     this.changed();
   }
-  private updateSender(): void {
+  private syncSenders(): void {
     // Bound outstanding replaceTrack operations even if Chromium stalls.
-    if (this.closed) return;
+    if (this.closed || !this.ready) return;
     if (this.pendingUpdates >= 8) {
       this.fail();
       return;
@@ -215,58 +261,8 @@ export class PeerMedia {
     this.pendingUpdates++;
     this.updates = this.updates
       .then(async () => {
-        if (this.closed) return;
-        const local = this.local;
-        const track =
-          local &&
-          local.streamId === this.subscribedId &&
-          local.track.readyState === 'live'
-            ? local.track
-            : null;
-        for (const kind of ['video', 'audio'] as const) {
-          if (this.closed) return;
-          const sender = this.pc
-            .getTransceivers()
-            .find((item) => item.receiver.track.kind === kind)?.sender;
-          const mediaTrack =
-            kind === 'video'
-              ? track
-              : track && local?.audioTrack?.readyState === 'live'
-                ? local.audioTrack
-                : null;
-          if (!sender) {
-            if (mediaTrack) throw new Error('Media sender unavailable');
-            continue;
-          }
-          await sender.replaceTrack(mediaTrack);
-          if (mediaTrack) {
-            if (!local) throw new Error('Local capture unavailable');
-            await configureSender(sender, mediaTrack, local.options);
-          }
-          if (kind === 'video') this.videoSender = mediaTrack ? sender : null;
-        }
-        const sendingId =
-          !this.closed &&
-          track &&
-          local &&
-          this.local === local &&
-          this.subscribedId === local.streamId
-            ? local.streamId
-            : null;
-        if (!this.closed && this.sendingId !== sendingId) {
-          this.sendingId = sendingId;
-          this.changed();
-        }
-        if (sendingId) {
-          this.send({
-            version: 1,
-            type: 'WATCH_ACCEPTED',
-            streamId: sendingId,
-          });
-          this.sendQualityState();
-        } else {
-          this.resetSenderQuality();
-        }
+        await this.syncVoice();
+        await this.syncStream();
       })
       .catch(() => {
         if (!this.closed) this.fail();
@@ -274,6 +270,80 @@ export class PeerMedia {
       .finally(() => {
         this.pendingUpdates--;
       });
+  }
+  private async syncVoice(): Promise<void> {
+    if (this.closed) return;
+    const sender = this.sender('voice');
+    if (!sender) throw new Error('Voice sender unavailable');
+    const track =
+      this.voiceRouted && this.voiceTrack?.readyState === 'live'
+        ? this.voiceTrack
+        : null;
+    if (track === this.voiceSenderTrack) return;
+    await sender.replaceTrack(track);
+    this.voiceSenderTrack = track;
+    if (track && !this.voiceConfigured) {
+      await configureVoiceSender(sender);
+      this.voiceConfigured = true;
+    }
+  }
+  private async syncStream(): Promise<void> {
+    if (this.closed) return;
+    const local = this.local;
+    const track =
+      local &&
+      local.streamId === this.subscribedId &&
+      local.track.readyState === 'live'
+        ? local.track
+        : null;
+    for (const role of ['video', 'streamAudio'] as const) {
+      if (this.closed) return;
+      const sender = this.sender(role);
+      const mediaTrack =
+        role === 'video'
+          ? track
+          : track && local?.audioTrack?.readyState === 'live'
+            ? local.audioTrack
+            : null;
+      if (!sender) {
+        if (mediaTrack) throw new Error('Media sender unavailable');
+        continue;
+      }
+      // Voice changes also run this sync; only a new track resets encodings,
+      // otherwise the adaptive tier chosen for this viewer would be lost.
+      if (sender.track !== mediaTrack) {
+        await sender.replaceTrack(mediaTrack);
+        if (mediaTrack) {
+          if (!local) throw new Error('Local capture unavailable');
+          await configureSender(sender, mediaTrack, local.options);
+        }
+      }
+      if (role === 'video') this.videoSender = mediaTrack ? sender : null;
+    }
+    const sendingId =
+      !this.closed &&
+      track &&
+      local &&
+      this.local === local &&
+      this.subscribedId === local.streamId
+        ? local.streamId
+        : null;
+    const startedSending = sendingId !== null && this.sendingId !== sendingId;
+    if (!this.closed && this.sendingId !== sendingId) {
+      this.sendingId = sendingId;
+      this.changed();
+    }
+    if (sendingId && (startedSending || this.acceptPending)) {
+      this.acceptPending = false;
+      this.send({
+        version: 1,
+        type: 'WATCH_ACCEPTED',
+        streamId: sendingId,
+      });
+      this.sendQualityState();
+    } else if (!sendingId) {
+      this.resetSenderQuality();
+    }
   }
   private resetSenderQuality(): void {
     this.videoSender = null;
@@ -381,6 +451,7 @@ export class PeerMedia {
     clearTimeout(this.timeout);
     clearInterval(this.statsTimer);
     this.local = null;
+    this.voiceTrack = null;
     this.sendingId = null;
     this.remoteId = null;
     this.watchState = 'IDLE';
@@ -390,6 +461,8 @@ export class PeerMedia {
       track.stop();
     });
     this.remoteStream = null;
+    this.remoteVoice?.stop();
+    this.remoteVoice = null;
     this.remoteQuality = null;
     this.resetSenderQuality();
   }

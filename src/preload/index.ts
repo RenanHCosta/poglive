@@ -15,6 +15,12 @@ import {
 } from '../shared/schemas/room';
 import { updateStateSchema } from '../shared/schemas/update';
 import { chatHistorySchema, roomEventSchema } from '../shared/schemas/chat';
+import {
+  externalUrlSchema,
+  settingsResultSchema,
+  settingsSchema,
+  shortcutActionSchema,
+} from '../shared/schemas/settings';
 
 const bridge: DesktopBridge = {
   getUpdateState: async () => {
@@ -118,6 +124,35 @@ const bridge: DesktopBridge = {
     const result: unknown = await ipcRenderer.invoke(
       IPC.command,
       commandSchema.parse(command),
+    );
+    return commandResultSchema.parse(result);
+  },
+  getSettings: async () => {
+    const result: unknown = await ipcRenderer.invoke(IPC.settingsGet);
+    return settingsResultSchema.parse(result);
+  },
+  updateSettings: async (settings) => {
+    const result: unknown = await ipcRenderer.invoke(
+      IPC.settingsUpdate,
+      settingsSchema.parse(settings),
+    );
+    return settingsResultSchema.parse(result);
+  },
+  onShortcut: (listener) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      value: unknown,
+    ): void => {
+      const parsed = shortcutActionSchema.safeParse(value);
+      if (parsed.success) listener(parsed.data);
+    };
+    ipcRenderer.on(IPC.shortcut, handler);
+    return () => ipcRenderer.removeListener(IPC.shortcut, handler);
+  },
+  openExternal: async (url) => {
+    const result: unknown = await ipcRenderer.invoke(
+      IPC.openExternal,
+      externalUrlSchema.parse(url),
     );
     return commandResultSchema.parse(result);
   },

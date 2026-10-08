@@ -24,12 +24,15 @@ export class CaptureService {
     const legacyDisplayPermission =
       Number(process.versions.electron.split('.')[0]) < 45;
     // Electron <=44 reports desktop capture as media with an empty mediaTypes array.
-    // Keep media checks denied so requests pass through the stricter handler below.
+    // Only microphone checks pass for media, so screen requests still go through
+    // the stricter one-shot handler below. Cameras are never granted.
     session.defaultSession.setPermissionCheckHandler(
       (contents, permission, _origin, details) =>
         this.trusted(contents) &&
         details.isMainFrame &&
         (permission === 'fullscreen' ||
+          permission === 'speaker-selection' ||
+          (permission === 'media' && details.mediaType === 'audio') ||
           (permission === 'display-capture' &&
             !!this.pending &&
             this.pending.expires >= Date.now())),
@@ -42,11 +45,19 @@ export class CaptureService {
           'mediaTypes' in details &&
           Array.isArray(details.mediaTypes) &&
           details.mediaTypes.length === 0;
+        const microphone =
+          permission === 'media' &&
+          'mediaTypes' in details &&
+          Array.isArray(details.mediaTypes) &&
+          details.mediaTypes.length === 1 &&
+          details.mediaTypes[0] === 'audio';
         const allowed =
           this.trusted(contents) &&
           details.isMainFrame &&
           details.requestingUrl.split('#')[0] === this.rendererUrl &&
           (permission === 'fullscreen' ||
+            permission === 'speaker-selection' ||
+            microphone ||
             ((permission === 'display-capture' || legacyDisplay) &&
               !!this.pending &&
               this.pending.expires >= Date.now()));
@@ -54,6 +65,7 @@ export class CaptureService {
           console.info('[Capture] Permission request', {
             permission,
             legacyDisplay,
+            microphone,
             allowed,
           });
         }

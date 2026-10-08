@@ -3,6 +3,10 @@ import { PROTOCOL_VERSION } from '../../shared/schemas/room';
 import { mediaMessageSchema } from '../../shared/protocols/media';
 import type { MediaMessage } from '../../shared/protocols/media';
 import { PeerMedia } from './PeerMedia';
+import { tuneOpus } from './sdp';
+
+// Bumped with the voice transceiver so mismatched builds fail with a clear reason.
+export const CONTROL_CHANNEL = 'poglive-control-v3';
 
 export type LinkStatus = 'CONNECTING' | 'CONNECTED' | 'DISCONNECTED' | 'ERROR';
 type Candidate = Extract<Signal, { type: 'ICE_CANDIDATE' }>['candidate'];
@@ -75,7 +79,7 @@ export class PeerLink {
       } else void this.sendIce(value).catch(() => this.fail());
     };
     this.pc.ondatachannel = ({ channel }) => {
-      if (channel.label !== 'poglive-control-v2') {
+      if (channel.label !== CONTROL_CHANNEL) {
         channel.close();
         this.fail('INCOMPATIBLE_VERSION');
         return;
@@ -153,18 +157,21 @@ export class PeerLink {
     };
   }
   async offer(): Promise<void> {
+    // Order matters: MEDIA_SECTION addresses transceivers by this index.
     this.pc.addTransceiver('video', { direction: 'sendrecv' });
     this.pc.addTransceiver('audio', { direction: 'sendrecv' });
-    this.attach(this.pc.createDataChannel('poglive-control-v2'));
+    this.pc.addTransceiver('audio', { direction: 'sendrecv' });
+    this.attach(this.pc.createDataChannel(CONTROL_CHANNEL));
     console.info('[WebRTC] Creating offer');
-    const offer = await this.pc.createOffer();
+    const created = await this.pc.createOffer();
     if (this.closed) return;
+    const offer = { type: created.type, sdp: tuneOpus(created.sdp ?? '') };
     await this.pc.setLocalDescription(offer);
     if (this.closed) return;
     await this.send({
       ...this.route(),
       type: 'WEBRTC_OFFER',
-      sdp: offer.sdp ?? '',
+      sdp: offer.sdp,
     });
     await this.flushLocal();
   }
@@ -196,26 +203,24 @@ export class PeerLink {
       await this.pc.addIceCandidate(candidate ?? undefined);
     }
     if (signal.type === 'WEBRTC_OFFER') {
-      const transceivers = this.pc.getTransceivers();
-      if (
-        transceivers.length !== 2 ||
-        transceivers.filter((item) => item.receiver.track.kind === 'video')
-          .length !== 1 ||
-        transceivers.filter((item) => item.receiver.track.kind === 'audio')
-          .length !== 1
-      )
+      const kinds = this.pc
+        .getTransceivers()
+        .map((item) => item.receiver.track.kind);
+      if (kinds.join(',') !== 'video,audio,audio')
         throw new Error('Unexpected media configuration');
+      const transceivers = this.pc.getTransceivers();
       for (const transceiver of transceivers)
         transceiver.direction = 'sendrecv';
       console.info('[WebRTC] Creating answer');
-      const answer = await this.pc.createAnswer();
+      const created = await this.pc.createAnswer();
       if (this.closed) return;
+      const answer = { type: created.type, sdp: tuneOpus(created.sdp ?? '') };
       await this.pc.setLocalDescription(answer);
       if (this.closed) return;
       await this.send({
         ...this.route(),
         type: 'WEBRTC_ANSWER',
-        sdp: answer.sdp ?? '',
+        sdp: answer.sdp,
       });
       await this.flushLocal();
     }
