@@ -29,6 +29,7 @@ export interface PeerConnectionView {
   watchState: WatchState;
   quality: RemoteVideoQuality | null;
   watchingLocal: boolean;
+  roundTripMs: number | null;
   diagnostic: string | null;
 }
 
@@ -139,6 +140,8 @@ export class PeerMesh {
             watchState: link?.media.watchState ?? 'IDLE',
             quality: link?.media.remoteQuality ?? null,
             watchingLocal: link?.media.watchingLocal ?? false,
+            roundTripMs:
+              link?.status === 'CONNECTED' ? link.media.roundTripMs : null,
             diagnostic:
               link?.diagnostic ??
               (!link && waited

@@ -37,12 +37,14 @@ export function ChatView({
   self,
   names,
   roomName,
+  participants,
   compact = false,
 }: {
   session: RoomSession;
   self: Identity;
   names: string[];
   roomName: string;
+  participants: Identity[];
   compact?: boolean;
 }) {
   const entries = useStore(session.chat.entries);
@@ -95,11 +97,13 @@ export function ChatView({
       <Composer
         roomName={roomName}
         names={names}
+        onTyping={() => session.chat.notifyTyping()}
         onSend={(text) => {
           stick.current = true;
           return session.chat.send(text);
         }}
       />
+      <TypingIndicator session={session} participants={participants} />
     </div>
   );
 }
@@ -191,13 +195,50 @@ function MessageRow({
   );
 }
 
+function TypingIndicator({
+  session,
+  participants,
+}: {
+  session: RoomSession;
+  participants: Identity[];
+}) {
+  const typing = useStore(session.chat.typing);
+  const names = participants
+    .filter((peer) => typing.has(peer.peerId))
+    .map((peer) => peer.displayName);
+  const text =
+    names.length === 0
+      ? ''
+      : names.length === 1
+        ? `${names[0]} está digitando…`
+        : names.length <= 3
+          ? `${names.slice(0, -1).join(', ')} e ${names[names.length - 1]} estão digitando…`
+          : 'Várias pessoas estão digitando…';
+  return (
+    <div className="typing" aria-live="polite">
+      {text && (
+        <>
+          <span className="typing-dots" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+          <span>{text}</span>
+        </>
+      )}
+    </div>
+  );
+}
+
 function Composer({
   roomName,
   names,
+  onTyping,
   onSend,
 }: {
   roomName: string;
   names: string[];
+  onTyping: () => void;
   onSend: (text: string) => boolean;
 }) {
   const [text, setText] = useState('');
@@ -269,6 +310,7 @@ function Composer({
           onChange={(event) => {
             setText(event.target.value);
             setSuggestion(0);
+            if (event.target.value.trim()) onTyping();
           }}
           onKeyDown={(event) => {
             if (matches.length) {

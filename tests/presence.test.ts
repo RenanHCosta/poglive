@@ -371,3 +371,35 @@ test('legacy invitations explain that the host must update', () => {
   assert.throws(() => decodeInvite('VS1.abc'), /versão anterior do Poglive/);
   assert.throws(() => decodeInvite('PL3.abc'), /inválido/);
 });
+
+test('typing notices reach others, never the sender, and are throttled', async () => {
+  const hostIdentity = identity('Host');
+  const hostSaw: string[] = [];
+  const host = new RoomHost(hostIdentity, 'Typing', () => {}, undefined, {
+    onTyping: (peerId) => hostSaw.push(peerId),
+  });
+  const writerSaw: string[] = [];
+  const readerSaw: string[] = [];
+  const writer = new RoomClient({ onTyping: (id) => writerSaw.push(id) });
+  const reader = new RoomClient({ onTyping: (id) => readerSaw.push(id) });
+  try {
+    await host.listen('127.0.0.1');
+    const invite = decodeInvite(host.invite);
+    const writerIdentity = identity('Escritor');
+    await writer.join(invite, writerIdentity, () => {});
+    await reader.join(invite, identity('Leitor'), () => {});
+    for (let index = 0; index < 5; index++) writer.sendTyping();
+    await until(() => readerSaw.length === 1 && hostSaw.length === 1);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    assert.deepEqual(readerSaw, [writerIdentity.peerId]);
+    assert.deepEqual(hostSaw, [writerIdentity.peerId]);
+    assert.deepEqual(writerSaw, []);
+    host.sendTyping();
+    await until(() => writerSaw.length === 1 && readerSaw.length === 2);
+    assert.equal(writerSaw[0], hostIdentity.peerId);
+  } finally {
+    writer.close();
+    reader.close();
+    await host.close();
+  }
+});

@@ -19,6 +19,9 @@ export class RateWindow {
   static chat(): RateWindow {
     return new RateWindow(5, 5000);
   }
+  static typing(): RateWindow {
+    return new RateWindow(1, 2000);
+  }
   take(): boolean {
     const time = this.now();
     while (this.stamps.length && time - this.stamps[0]! >= this.windowMs)

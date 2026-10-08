@@ -30,6 +30,8 @@ export class PeerMedia {
   remoteStream: MediaStream | null = null;
   remoteVoice: MediaStreamTrack | null = null;
   remoteQuality: RemoteVideoQuality | null = null;
+  /** Round-trip time of the selected ICE pair, refreshed with the stats. */
+  roundTripMs: number | null = null;
   watchState: WatchState = 'IDLE';
   private local: LocalStream | null = null;
   private voiceTrack: MediaStreamTrack | null = null;
@@ -379,6 +381,18 @@ export class PeerMedia {
         this.statsSnapshot,
       );
       this.statsSnapshot = collected.snapshot;
+      const rtt = collected.sender.roundTripMs;
+      const rounded = rtt === null ? null : Math.round(rtt);
+      // Ignore jitter of a few milliseconds to avoid re-rendering every sample.
+      if (
+        (rounded === null) !== (this.roundTripMs === null) ||
+        (rounded !== null &&
+          this.roundTripMs !== null &&
+          Math.abs(rounded - this.roundTripMs) >= 3)
+      ) {
+        this.roundTripMs = rounded;
+        this.changed();
+      }
       if (collected.report && this.remoteId && this.watchState === 'WATCHING') {
         if (this.remoteQuality?.automatic !== false)
           this.send({

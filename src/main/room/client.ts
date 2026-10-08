@@ -119,6 +119,15 @@ export class RoomClient {
             if (this.remember(message.message))
               this.events.onChat?.(message.message);
             return;
+          case 'PEER_TYPING':
+            if (
+              message.peerId !== identity.peerId &&
+              this.snapshotValue?.participants.some(
+                (peer) => peer.peerId === message.peerId,
+              )
+            )
+              this.events.onTyping?.(message.peerId);
+            return;
           case 'CHAT_REJECTED':
             this.events.onChatRejected?.(message.id, message.reason);
             return;
@@ -173,6 +182,9 @@ export class RoomClient {
   }
   updateVoice(voice: VoiceState): void {
     this.live().send({ version: PROTOCOL_VERSION, type: 'VOICE_STATE', voice });
+  }
+  sendTyping(): void {
+    this.live().send({ version: PROTOCOL_VERSION, type: 'TYPING' });
   }
   sendChat(id: string, text: string): void {
     this.live().send({

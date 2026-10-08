@@ -19,7 +19,7 @@ import type { RoomEvents } from './events';
 
 type LifecycleCommand = Exclude<
   RoomCommand,
-  { type: 'COPY_INVITE' | 'UPDATE_VOICE' | 'SEND_CHAT' }
+  { type: 'COPY_INVITE' | 'UPDATE_VOICE' | 'SEND_CHAT' | 'TYPING' }
 >;
 
 export function localAddresses(): LocalState['addresses'] {
@@ -74,6 +74,10 @@ export class RoomService {
         const roomId = this.activeRoomId();
         if (owner() && roomId)
           this.emit({ type: 'CHAT_MESSAGE', roomId, message });
+      },
+      onTyping: (peerId) => {
+        const roomId = this.activeRoomId();
+        if (owner() && roomId) this.emit({ type: 'TYPING', roomId, peerId });
       },
       onHistory: () => {
         const roomId = this.activeRoomId();
@@ -214,6 +218,10 @@ export class RoomService {
       throw new Error('Entre em uma sala para usar a voz.');
     if (this.host) this.host.updateVoice(voice);
     else this.client?.updateVoice(voice);
+  }
+  sendTyping(): void {
+    if (this.host) this.host.sendTyping();
+    else if (this.client?.room) this.client.sendTyping();
   }
   sendChat(id: string, text: string): void {
     if (this.host) this.host.sendChat(id, text);

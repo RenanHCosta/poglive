@@ -31,7 +31,8 @@ A janela segue o layout de aplicativos de voz conhecidos:
   transmissões. Na voz, o botão de mensagem no topo abre o chat ao lado.
 - **Participantes**, à direita do chat: quem está na voz e quem está só na sala.
 
-Clique em um participante (ou use o botão direito) para ver o estado da conexão direta,
+Clique em um participante (ou use o botão direito) para ver o estado e a latência da
+conexão direta,
 ajustar o volume dele só para você, silenciá-lo localmente e abrir o diagnóstico.
 
 Fechar a janela durante uma sala não derruba a chamada: o Poglive vai para a área de
@@ -114,7 +115,9 @@ O canal `#chat` aceita mensagens de até 2.000 caracteres. `Enter` envia e
   `||spoiler||`, código entre crases e blocos com três crases.
 - Digite `@` para mencionar alguém da sala. Menções a você ficam destacadas e tocam um
   som.
-- Links `http`/`https` abrem no navegador padrão.
+- Links `http`/`https` abrem no navegador padrão, após uma confirmação que mostra o
+  destino.
+- Abaixo da caixa de mensagem aparece quem está digitando.
 - Mensagens ainda não confirmadas pelo anfitrião aparecem em cinza; se falharem, use
   **Reenviar**. O anfitrião aceita até cinco mensagens a cada cinco segundos por pessoa.
 

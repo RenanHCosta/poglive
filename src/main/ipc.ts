@@ -242,6 +242,7 @@ export function registerIpc(
           await clipboard.writeText(state.invite);
         } else if (command.type === 'UPDATE_VOICE')
           rooms.updateVoice(command.voice);
+        else if (command.type === 'TYPING') rooms.sendTyping();
         else if (command.type === 'SEND_CHAT')
           rooms.sendChat(command.id, command.text);
         else await rooms.execute(command);

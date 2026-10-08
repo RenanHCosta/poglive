@@ -4,6 +4,9 @@ import { playSound } from './sounds';
 import { Store } from './store';
 
 const DELIVERY_TIMEOUT_MS = 10_000;
+// A typing notice lasts a little longer than the senders' 3 s throttle.
+const TYPING_VISIBLE_MS = 6_000;
+const TYPING_SEND_INTERVAL_MS = 3_000;
 
 export type ChatEntry =
   | (ChatMessage & {
@@ -25,6 +28,10 @@ export class ChatController {
     count: 0,
     mentioned: false,
   });
+  /** Peers currently typing, with the time their notice expires. */
+  readonly typing = new Store<ReadonlyMap<string, number>>(new Map());
+  private typingTimer: ReturnType<typeof setInterval> | undefined;
+  private lastTypingSent = 0;
   private readonly timers = new Map<string, ReturnType<typeof setTimeout>>();
   private visible = false;
   private closed = false;
@@ -46,7 +53,9 @@ export class ChatController {
 
   handle(event: RoomEvent): void {
     if (this.closed) return;
-    if (event.type === 'CHAT_HISTORY' && event.roomId === this.roomId)
+    if (event.type === 'TYPING' && event.roomId === this.roomId)
+      this.markTyping(event.peerId);
+    else if (event.type === 'CHAT_HISTORY' && event.roomId === this.roomId)
       void this.load();
     else if (event.type === 'CHAT_MESSAGE' && event.roomId === this.roomId)
       this.accept(event.message, true);
@@ -63,6 +72,35 @@ export class ChatController {
   setVisible(visible: boolean): void {
     this.visible = visible;
     if (visible) this.unread.set({ count: 0, mentioned: false });
+  }
+
+  /** Called on composer input; throttled so the host sees one notice per 3 s. */
+  notifyTyping(): void {
+    const now = Date.now();
+    if (this.closed || now - this.lastTypingSent < TYPING_SEND_INTERVAL_MS)
+      return;
+    this.lastTypingSent = now;
+    void window.pogLive.command({ type: 'TYPING' }).catch(() => {});
+  }
+
+  private markTyping(peerId: string): void {
+    const next = new Map(this.typing.get());
+    next.set(peerId, Date.now() + TYPING_VISIBLE_MS);
+    this.typing.set(next);
+    this.typingTimer ??= setInterval(() => this.expireTyping(), 1000);
+  }
+
+  private expireTyping(peerId?: string): void {
+    const now = Date.now();
+    const current = this.typing.get();
+    const next = new Map(
+      [...current].filter(([id, until]) => until > now && id !== peerId),
+    );
+    if (next.size !== current.size) this.typing.set(next);
+    if (!next.size) {
+      clearInterval(this.typingTimer);
+      this.typingTimer = undefined;
+    }
   }
 
   addSystem(text: string): void {
@@ -89,6 +127,7 @@ export class ChatController {
       delivery: 'PENDING',
     });
     this.deliver(id, normalized);
+    this.lastTypingSent = 0;
     return true;
   }
 
@@ -159,6 +198,8 @@ export class ChatController {
       return;
     }
     this.push(confirmed);
+    if (live && this.typing.get().has(message.authorId))
+      this.expireTyping(message.authorId);
     if (!live || message.authorId === this.self.peerId) return;
     const mentioned = mentions(message.text, this.self.displayName);
     if (!this.visible || !document.hasFocus()) {
@@ -189,6 +230,7 @@ export class ChatController {
 
   close(): void {
     this.closed = true;
+    clearInterval(this.typingTimer);
     for (const timer of this.timers.values()) clearTimeout(timer);
     this.timers.clear();
   }

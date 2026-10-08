@@ -325,6 +325,19 @@ async function createWindow(): Promise<void> {
       })
     `);
     if (chatted !== true) throw new Error('Chat message not rendered');
+    testPeer.sendTyping();
+    const typed: unknown = await window.webContents.executeJavaScript(`
+      new Promise((resolve) => {
+        const deadline = Date.now() + 3000;
+        const check = () => {
+          if (document.querySelector('.typing')?.textContent.includes('Segundo participante está digitando')) resolve(true);
+          else if (Date.now() > deadline) resolve(false);
+          else setTimeout(check, 50);
+        };
+        check();
+      })
+    `);
+    if (typed !== true) throw new Error('Typing indicator not rendered');
     await new Promise((resolve) => setTimeout(resolve, 300));
     await capture('smoke-chat.png');
     // Hidden smoke windows do not advance CSS animations.
@@ -341,7 +354,7 @@ async function createWindow(): Promise<void> {
     `);
     await capture('smoke-settings.png');
     console.info(
-      '[App] Smoke passed: renderer, styles, preload, IPC, Node isolation, CSP, TLS room join, chat',
+      '[App] Smoke passed: renderer, styles, preload, IPC, Node isolation, CSP, TLS room join, chat, typing',
     );
     testPeer.close();
     await rooms.close();

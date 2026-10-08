@@ -125,6 +125,7 @@ export function RoomLayout({
                 self={identity}
                 names={names}
                 roomName={room.room.name}
+                participants={participants}
               />
               {showMembers && (
                 <MemberList
@@ -150,6 +151,7 @@ export function RoomLayout({
                     self={identity}
                     names={names}
                     roomName={room.room.name}
+                    participants={participants}
                     compact
                   />
                 </aside>

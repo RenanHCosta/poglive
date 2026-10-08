@@ -122,6 +122,7 @@ export const commandSchema = z.discriminatedUnion('type', [
   z
     .object({ type: z.literal('UPDATE_VOICE'), voice: voiceStateSchema })
     .strict(),
+  z.object({ type: z.literal('TYPING') }).strict(),
   z
     .object({
       type: z.literal('SEND_CHAT'),

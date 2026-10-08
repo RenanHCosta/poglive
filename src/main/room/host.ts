@@ -36,6 +36,7 @@ interface Member {
   chatRate: RateWindow;
   voiceRate: RateWindow;
   voiceAbuse: RateWindow;
+  typingRate: RateWindow;
   pendingVoice: {
     voice: VoiceState;
     timer: ReturnType<typeof setTimeout>;
@@ -52,6 +53,7 @@ export class RoomHost {
   private readonly stun: LanStunServer;
   private readonly chat = new ChatLog();
   private readonly hostChatRate = RateWindow.chat();
+  private readonly hostTypingRate = RateWindow.typing();
   private hostVoice: VoiceState = DISCONNECTED_VOICE;
   private rtcEndpoint: { host: string; port: number } | null = null;
   private closing = false;
@@ -122,6 +124,7 @@ export class RoomHost {
             chatRate: RateWindow.chat(),
             voiceRate: new RateWindow(VOICE_UPDATES_PER_SECOND, 1000),
             voiceAbuse: new RateWindow(VOICE_ABUSE_PER_SECOND, 1000),
+            typingRate: RateWindow.typing(),
             pendingVoice: null,
           });
           channel.send({
@@ -216,6 +219,10 @@ export class RoomHost {
           }, VOICE_COALESCE_MS),
         };
         return;
+      case 'TYPING':
+        // Extra notifications inside the window are simply dropped.
+        if (member.typingRate.take()) this.publishTyping(memberId);
+        return;
       case 'CHAT_SEND':
         if (!member.chatRate.take()) {
           channel.send({
@@ -242,6 +249,16 @@ export class RoomHost {
     if (sameVoice(member.voice, voice)) return;
     member.voice = voice;
     this.broadcastState();
+  }
+  private publishTyping(peerId: string): void {
+    this.broadcast(
+      { version: PROTOCOL_VERSION, type: 'PEER_TYPING', peerId },
+      peerId,
+    );
+    if (peerId !== this.identity.peerId) this.events.onTyping?.(peerId);
+  }
+  sendTyping(): void {
+    if (this.hostTypingRate.take()) this.publishTyping(this.identity.peerId);
   }
   private publishChat(author: Identity, id: string, text: string): void {
     const message = this.chat.append(author, id, text);

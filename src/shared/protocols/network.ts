@@ -98,6 +98,11 @@ export const networkMessageSchema = z.discriminatedUnion('type', [
       reason: chatRejectionSchema,
     })
     .strict(),
+  // Member → host: "I am typing". The host relays it with the sender's ID.
+  z.object({ ...envelope, type: z.literal('TYPING') }).strict(),
+  z
+    .object({ ...envelope, type: z.literal('PEER_TYPING'), peerId: z.uuid() })
+    .strict(),
   ...signalSchema.options,
   z.object({ ...envelope, type: z.literal('PING'), nonce: z.uuid() }).strict(),
   z.object({ ...envelope, type: z.literal('PONG'), nonce: z.uuid() }).strict(),

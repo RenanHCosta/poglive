@@ -70,6 +70,9 @@ export function MemberPopover({
             <div className={`profile-link ${link.status.toLowerCase()}`}>
               <Icon name="signal" size={16} />
               <span>{LINK_LABELS[link.status]}</span>
+              {link.roundTripMs !== null && (
+                <span className="profile-ping">{link.roundTripMs} ms</span>
+              )}
               {link.status === 'ERROR' &&
                 !incompatible &&
                 selfId < peer.peerId && (

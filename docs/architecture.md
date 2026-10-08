@@ -151,6 +151,7 @@ Estas defesas limitam recursos, mas não prometem resistir a DoS de rede dedicad
 | CHAT_MESSAGE                 | Host → membros: mensagem carimbada pelo host               |
 | CHAT_HISTORY                 | Host → novo membro: até 100 mensagens em lotes ≤ 48 KiB    |
 | CHAT_REJECTED                | Host → autor: RATE_LIMITED ou UNAVAILABLE                  |
+| TYPING / PEER_TYPING         | Membro → host / host → demais: aviso de digitação          |
 
 O host não aceita roster, identidade alheia ou eventos de mídia enviados por
 participantes neste marco. Um cliente aceita estados somente da conexão ao host
@@ -167,8 +168,9 @@ separado e não é aceito no transporte TLS da sala (detalhes abaixo).
 
 Cada participante do snapshot carrega `voice: { connected, muted, deafened, streaming }`.
 O host aceita VOICE_STATE apenas para a conexão autenticada que o enviou; um membro nunca
-altera a presença de outro. Atualizações idênticas são ignoradas e mais de 10 por
-segundo encerram a conexão. Cada mudança gera um ROOM_STATE autoritativo. O host mantém a
+altera a presença de outro. Atualizações idênticas são ignoradas. Acima de 10 por
+segundo, o host agrega e aplica o último estado após 1 s; apenas mais de 50 por segundo
+encerram a conexão. O cliente envia no máximo 4 por segundo. Cada mudança gera um ROOM_STATE autoritativo. O host mantém a
 própria presença localmente. A presença controla o roteamento da voz (abaixo) e a UI.
 
 O chat é retransmitido pelo host, não pelo WebRTC, para funcionar mesmo quando o caminho
@@ -179,8 +181,16 @@ mensagens a cada 5 s por autor, descarta IDs repetidos e carimba autor, nome e h
 estritamente crescente antes de difundir CHAT_MESSAGE a todos, inclusive ao autor, que
 usa o eco como confirmação. Excesso gera CHAT_REJECTED sem derrubar a conexão.
 
+Reenviar uma mensagem mantém o id. Se o original já foi aceito, o host apenas o
+reconfirma ao autor, sem publicar de novo. Avisos de digitação (TYPING) são aceitos uma
+vez a cada 2 s por autor; excedentes são descartados. O host os retransmite como
+PEER_TYPING com o id da conexão, nunca ao próprio remetente, e cada aviso expira em 6 s
+na interface.
+
 O host guarda até 200 mensagens apenas em memória (`ChatLog`). Quem entra recebe as
-últimas 100 em CHAT_HISTORY, empacotadas para caber no frame de 64 KiB. Clientes
+últimas 100 (até 160 KiB, para que a rajada de admissão fique abaixo do limite de 256
+KiB de fila do Channel) em CHAT_HISTORY, empacotadas para caber no frame de 64 KiB. O
+cliente avisa o renderer quando o histórico chega. Clientes
 deduplicam por id. Nada é gravado em disco e encerrar a sala apaga o histórico. Nomes no
 histórico são os do momento do envio; mensagens de quem já saiu permanecem.
 

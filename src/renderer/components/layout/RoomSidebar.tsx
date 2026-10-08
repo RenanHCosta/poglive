@@ -226,6 +226,10 @@ export function VoiceConnectionPanel({
   if (voice.status === 'DISCONNECTED') return null;
   const peersInVoice = mesh.peers.filter((peer) => peer.presence.connected);
   const unhealthy = peersInVoice.filter((peer) => peer.status !== 'CONNECTED');
+  const pings = peersInVoice
+    .map((peer) => peer.roundTripMs)
+    .filter((value): value is number => value !== null);
+  const ping = pings.length ? Math.max(...pings) : null;
   const quality =
     voice.status === 'CONNECTING'
       ? 'connecting'
@@ -237,7 +241,14 @@ export function VoiceConnectionPanel({
   return (
     <section className="voice-panel" aria-label="Conexão de voz">
       <div className="voice-panel-row">
-        <div className={`voice-panel-status ${quality}`}>
+        <div
+          className={`voice-panel-status ${quality}`}
+          title={
+            ping === null
+              ? undefined
+              : `Maior latência entre os participantes: ${ping} ms`
+          }
+        >
           <Icon name="signal" size={18} />
           <div>
             <strong>
@@ -249,7 +260,10 @@ export function VoiceConnectionPanel({
                     ? 'Conexão parcial'
                     : 'Sem conexão de voz'}
             </strong>
-            <span>Sala de voz / {roomName}</span>
+            <span>
+              Sala de voz / {roomName}
+              {ping !== null && ` · ${ping} ms`}
+            </span>
           </div>
         </div>
         <button
