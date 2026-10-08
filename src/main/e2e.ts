@@ -209,6 +209,14 @@ export async function runE2E(
         `(() => { const video = document.querySelector('.stream-player video'); return !!video && video.readyState >= 2 && video.videoWidth > 0; })()`,
       );
       step('stream video playing');
+      // Screen video goes out as H.264 so senders can use the GPU encoder.
+      await until(
+        window,
+        'h264',
+        `!!document.querySelector('.stream-player .stream-quality')?.textContent.includes('H264')`,
+        20000,
+      );
+      step('stream negotiated H.264');
       // Let a few seconds buffer, then clip what was just watched.
       await until(
         window,
@@ -242,10 +250,11 @@ export async function runE2E(
           video.src = URL.createObjectURL(new Blob([bytes], { type: 'video/webm' }));
           await new Promise((ok, fail) => { video.onloadeddata = ok; video.onerror = () => fail(new Error('decode')); });
           await video.play();
-          await new Promise((done) => setTimeout(done, 800));
+          // Play the whole clip: two instances share one machine here, so the
+          // frame rate is not representative, but every frame must decode.
+          await new Promise((done) => { video.onended = done; setTimeout(done, 12000); });
           const quality = video.getVideoPlaybackQuality();
-          video.pause();
-          return video.videoWidth > 0 && quality.totalVideoFrames > 5 && quality.corruptedVideoFrames === 0;
+          return video.videoWidth > 0 && video.duration >= 2 && quality.totalVideoFrames > 10 && quality.corruptedVideoFrames === 0;
         })()
       `);
       if (played !== true) throw new Error('Clip does not play');

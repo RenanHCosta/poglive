@@ -20,6 +20,8 @@ export interface MediaStatsSnapshot {
 
 export interface CollectedMediaStats {
   report: Omit<QualityReport, 'version' | 'type' | 'streamId'> | null;
+  /** Negotiated codec of the received video, e.g. "H264"; local only. */
+  codec: string | null;
   sender: Omit<AdaptationSample, 'receiver'>;
   snapshot: MediaStatsSnapshot;
 }
@@ -198,8 +200,20 @@ export function collectMediaStats(
     rawLimitation === 'other'
       ? rawLimitation
       : null;
+  let codec: string | null = null;
+  const codecId = reports.inbound?.codecId;
+  if (typeof codecId === 'string')
+    stats.forEach((raw) => {
+      const entry = raw as unknown as StatsRecord;
+      if (entry.id === codecId && typeof entry.mimeType === 'string')
+        codec = entry.mimeType
+          .replace(/^video\//i, '')
+          .toUpperCase()
+          .slice(0, 12);
+    });
   return {
     report,
+    codec,
     sender: {
       ...EMPTY_SENDER,
       qualityLimitationReason,

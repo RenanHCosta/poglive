@@ -9,6 +9,12 @@ export const videoQualityTierSchema = z.enum([
   '720p30',
   '540p30',
   '540p15',
+  // Same resolution and frame rate with a smaller bitrate budget: blurrier
+  // under motion, but neither the picture size nor the fluidity drops.
+  '1080p60-low',
+  '1080p30-low',
+  '720p60-low',
+  '720p30-low',
 ]);
 export const videoQualityReasonSchema = z.enum([
   'SOURCE',
@@ -75,4 +81,5 @@ export interface RemoteVideoQuality {
   frameWidth: number | null;
   frameHeight: number | null;
   framesPerSecond: number | null;
+  codec: string | null;
 }

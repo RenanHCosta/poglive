@@ -9,7 +9,7 @@ type SinkVideo = HTMLVideoElement & {
 
 export function qualityLabel(quality: RemoteVideoQuality | null): string {
   if (quality?.frameHeight)
-    return `${quality.frameHeight}p${quality.framesPerSecond === null ? '' : ` · ${Math.round(quality.framesPerSecond)} FPS`}`;
+    return `${quality.frameHeight}p${quality.framesPerSecond === null ? '' : ` · ${Math.round(quality.framesPerSecond)} FPS`}${quality.codec ? ` · ${quality.codec}` : ''}`;
   return quality?.tier ?? 'Medindo…';
 }
 

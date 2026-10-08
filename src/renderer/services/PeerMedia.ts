@@ -209,6 +209,7 @@ export class PeerMedia {
           frameWidth: this.remoteQuality?.frameWidth ?? null,
           frameHeight: this.remoteQuality?.frameHeight ?? null,
           framesPerSecond: this.remoteQuality?.framesPerSecond ?? null,
+          codec: this.remoteQuality?.codec ?? null,
         };
         break;
     }
@@ -422,8 +423,10 @@ export class PeerMedia {
             frameWidth: collected.report.frameWidth,
             frameHeight: collected.report.frameHeight,
             framesPerSecond: collected.report.framesPerSecond,
+            codec: collected.codec,
           };
           if (
+            next.codec !== previous.codec ||
             next.frameWidth !== previous.frameWidth ||
             next.frameHeight !== previous.frameHeight ||
             Math.round(next.framesPerSecond ?? 0) !==

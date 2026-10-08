@@ -12,51 +12,48 @@ export interface QualityTierDefinition {
   maxBitrate: number;
 }
 
+function tier(
+  id: VideoQualityTier,
+  height: number,
+  frameRate: number,
+  maxBitrate: number,
+): QualityTierDefinition {
+  return { id, height, frameRate, maxBitrate };
+}
+
 export const QUALITY_TIERS: Record<VideoQualityTier, QualityTierDefinition> = {
-  '1080p60': {
-    id: '1080p60',
-    height: 1080,
-    frameRate: 60,
-    maxBitrate: 10_000_000,
-  },
-  '1080p30': {
-    id: '1080p30',
-    height: 1080,
-    frameRate: 30,
-    maxBitrate: 5_000_000,
-  },
-  '720p60': {
-    id: '720p60',
-    height: 720,
-    frameRate: 60,
-    maxBitrate: 5_000_000,
-  },
-  '720p30': {
-    id: '720p30',
-    height: 720,
-    frameRate: 30,
-    maxBitrate: 2_500_000,
-  },
-  '540p30': {
-    id: '540p30',
-    height: 540,
-    frameRate: 30,
-    maxBitrate: 1_500_000,
-  },
-  '540p15': {
-    id: '540p15',
-    height: 540,
-    frameRate: 15,
-    maxBitrate: 800_000,
-  },
+  '1080p60': tier('1080p60', 1080, 60, 12_000_000),
+  '1080p60-low': tier('1080p60-low', 1080, 60, 7_000_000),
+  '1080p30': tier('1080p30', 1080, 30, 6_000_000),
+  '1080p30-low': tier('1080p30-low', 1080, 30, 3_500_000),
+  '720p60': tier('720p60', 720, 60, 6_000_000),
+  '720p60-low': tier('720p60-low', 720, 60, 3_500_000),
+  '720p30': tier('720p30', 720, 30, 3_000_000),
+  '720p30-low': tier('720p30-low', 720, 30, 1_800_000),
+  // Kept for wire compatibility; no ladder goes below 720p30 anymore.
+  '540p30': tier('540p30', 540, 30, 1_500_000),
+  '540p15': tier('540p15', 540, 15, 800_000),
 };
 
+/**
+ * Steps tried under pressure. A 60 FPS choice keeps fluidity as long as
+ * possible; every ladder trims bitrate before resolution and never goes
+ * below 720p30.
+ */
 const LADDERS: Record<string, VideoQualityTier[]> = {
-  '1080p60': ['1080p60', '1080p30', '720p30', '540p30', '540p15'],
-  '1080p30': ['1080p30', '720p30', '540p30', '540p15'],
-  '720p60': ['720p60', '720p30', '540p30', '540p15'],
-  '720p30': ['720p30', '540p30', '540p15'],
+  '1080p60': ['1080p60', '1080p60-low', '720p60', '720p60-low', '720p30-low'],
+  '1080p30': ['1080p30', '1080p30-low', '720p30', '720p30-low'],
+  '720p60': ['720p60', '720p60-low', '720p30-low'],
+  '720p30': ['720p30', '720p30-low'],
 };
+
+// Samples arrive every 2 s.
+const WARMUP_SAMPLES = 3;
+const BAD_SAMPLES_TO_DROP = 2;
+const BASE_STABLE_SAMPLES = 6;
+const MAX_STABLE_SAMPLES = 48;
+// A drop this soon after an upgrade means the upgrade failed.
+const FAILED_UPGRADE_WINDOW = 15;
 
 export interface AdaptiveQualityState {
   level: number;
@@ -64,6 +61,12 @@ export interface AdaptiveQualityState {
   goodSamples: number;
   cooldownSamples: number;
   reason: VideoQualityReason;
+  /** Samples evaluated since the stream started. */
+  samples: number;
+  /** Samples since the last upgrade, or null when the last change was a drop. */
+  sinceUpgrade: number | null;
+  /** Stable samples required before trying the next step up. */
+  stableRequired: number;
 }
 
 export interface AdaptationSample {
@@ -78,7 +81,7 @@ export function qualityLadder(
 ): QualityTierDefinition[] {
   const key = `${options.quality}${options.frameRate}`;
   return (LADDERS[key] ?? LADDERS['720p30'] ?? []).map(
-    (tier) => QUALITY_TIERS[tier],
+    (id) => QUALITY_TIERS[id],
   );
 }
 
@@ -89,55 +92,56 @@ export function initialQualityState(): AdaptiveQualityState {
     goodSamples: 0,
     cooldownSamples: 0,
     reason: 'SOURCE',
+    samples: 0,
+    sinceUpgrade: null,
+    stableRequired: BASE_STABLE_SAMPLES,
   };
 }
 
-function badReason(
-  sample: AdaptationSample,
-  current: QualityTierDefinition,
-): VideoQualityReason | null {
+/**
+ * Only signals that something is actually suffering count. Screen capture
+ * produces frames only when the picture changes, so pauses alone ("freezes")
+ * and a modest bandwidth estimate are normal, not a reason to degrade.
+ */
+function badReason(sample: AdaptationSample): VideoQualityReason | null {
   const receiver = sample.receiver;
   if (sample.qualityLimitationReason === 'cpu') return 'CPU';
+  const lossy =
+    (receiver?.lossRatio ?? 0) >= 0.01 ||
+    (receiver?.jitterBufferMs ?? 0) >= 200;
   if (
     receiver &&
-    (receiver.freezes > 0 ||
-      receiver.stalled ||
-      (receiver.droppedRatio ?? 0) >= 0.08)
+    (receiver.stalled ||
+      (receiver.droppedRatio ?? 0) >= 0.15 ||
+      (receiver.freezes > 0 && lossy))
   )
     return 'RECEIVER';
   if (
     sample.qualityLimitationReason === 'bandwidth' ||
     (receiver?.lossRatio ?? 0) >= 0.03 ||
     (receiver?.jitterMs ?? 0) >= 80 ||
-    (receiver?.jitterBufferMs ?? 0) >= 250 ||
-    (receiver?.roundTripMs ?? sample.roundTripMs ?? 0) >= 350 ||
-    (sample.availableOutgoingBitrate !== null &&
-      sample.availableOutgoingBitrate < current.maxBitrate * 0.75)
+    (receiver?.jitterBufferMs ?? 0) >= 300 ||
+    (receiver?.roundTripMs ?? sample.roundTripMs ?? 0) >= 400
   )
     return 'NETWORK';
   return null;
 }
 
-function isStable(
-  sample: AdaptationSample,
-  next: QualityTierDefinition | undefined,
-): boolean {
+function isStable(sample: AdaptationSample): boolean {
   const receiver = sample.receiver;
-  if (!receiver || sample.qualityLimitationReason === 'other') return false;
+  if (!receiver) return false;
   if (
-    (receiver.lossRatio ?? 0) > 0.01 ||
-    (receiver.droppedRatio ?? 0) > 0.02 ||
-    (receiver.jitterMs ?? 0) > 40 ||
-    (receiver.jitterBufferMs ?? 0) > 180 ||
-    (receiver.roundTripMs ?? sample.roundTripMs ?? 0) > 200 ||
-    receiver.freezes > 0 ||
-    receiver.stalled
+    sample.qualityLimitationReason === 'bandwidth' ||
+    sample.qualityLimitationReason === 'cpu'
   )
     return false;
   return (
-    !next ||
-    sample.availableOutgoingBitrate === null ||
-    sample.availableOutgoingBitrate >= next.maxBitrate * 1.2
+    !receiver.stalled &&
+    (receiver.lossRatio ?? 0) <= 0.01 &&
+    (receiver.droppedRatio ?? 0) <= 0.05 &&
+    (receiver.jitterMs ?? 0) <= 40 &&
+    (receiver.jitterBufferMs ?? 0) <= 200 &&
+    (receiver.roundTripMs ?? sample.roundTripMs ?? 0) <= 250
   );
 }
 
@@ -146,35 +150,65 @@ export function evaluateQuality(
   ladder: QualityTierDefinition[],
   sample: AdaptationSample,
 ): AdaptiveQualityState {
-  const current = ladder[state.level] ?? ladder[0];
-  if (!current) return state;
-  const reason = badReason(sample, current);
-  const nextHigher = state.level > 0 ? ladder[state.level - 1] : undefined;
-  const stable = !reason && isStable(sample, nextHigher);
+  const samples = state.samples + 1;
+  // Bandwidth estimation ramps up after a stream starts; judge it afterwards.
+  const warmingUp = samples <= WARMUP_SAMPLES;
+  const reason = warmingUp ? null : badReason(sample);
+  const stable = !reason && !warmingUp && isStable(sample);
+  const sinceUpgrade =
+    state.sinceUpgrade === null ? null : state.sinceUpgrade + 1;
   const nextState: AdaptiveQualityState = {
     ...state,
+    samples,
+    sinceUpgrade,
     badSamples: reason ? state.badSamples + 1 : 0,
     goodSamples: stable ? state.goodSamples + 1 : 0,
     cooldownSamples: Math.max(0, state.cooldownSamples - 1),
     reason: reason ?? state.reason,
   };
   if (nextState.cooldownSamples > 0) return nextState;
-  if (reason && nextState.badSamples >= 2 && state.level < ladder.length - 1)
+  if (
+    reason &&
+    nextState.badSamples >= BAD_SAMPLES_TO_DROP &&
+    state.level < ladder.length - 1
+  ) {
+    // A failed upgrade makes the next attempt wait twice as long.
+    const failedUpgrade =
+      sinceUpgrade !== null && sinceUpgrade <= FAILED_UPGRADE_WINDOW;
     return {
+      ...nextState,
       level: state.level + 1,
       badSamples: 0,
       goodSamples: 0,
       cooldownSamples: 3,
       reason,
+      sinceUpgrade: null,
+      stableRequired: failedUpgrade
+        ? Math.min(MAX_STABLE_SAMPLES, state.stableRequired * 2)
+        : state.stableRequired,
     };
-  if (stable && nextState.goodSamples >= 10 && state.level > 0)
+  }
+  if (
+    stable &&
+    nextState.goodSamples >= state.stableRequired &&
+    state.level > 0
+  )
     return {
+      ...nextState,
       level: state.level - 1,
       badSamples: 0,
       goodSamples: 0,
-      cooldownSamples: 5,
+      cooldownSamples: 3,
       reason: 'STABLE',
+      sinceUpgrade: 0,
     };
+  // A long healthy run forgives earlier failed upgrades.
+  if (
+    stable &&
+    sinceUpgrade !== null &&
+    sinceUpgrade > FAILED_UPGRADE_WINDOW * 4
+  )
+    return { ...nextState, stableRequired: BASE_STABLE_SAMPLES };
   return nextState;
 }
 
@@ -194,5 +228,8 @@ export async function applyVideoQuality(
     if (scale > 1 || encoding.scaleResolutionDownBy !== undefined)
       encoding.scaleResolutionDownBy = Math.round(scale * 100) / 100;
   }
+  // Within a tier, WebRTC trades a little frame rate and resolution evenly;
+  // the ladder above decides the larger steps and keeps the 720p floor.
+  parameters.degradationPreference = 'balanced';
   await sender.setParameters(parameters);
 }

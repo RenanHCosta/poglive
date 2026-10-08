@@ -6,7 +6,8 @@ import {
 } from '../../shared/protocols/media';
 import type { MediaMessage } from '../../shared/protocols/media';
 import { PeerMedia } from './PeerMedia';
-import { tuneOpus } from './sdp';
+import { MEDIA_SECTION, tuneOpus } from './sdp';
+import { preferHardwareVideo } from './codecs';
 
 // Bumped with the voice transceiver so mismatched builds fail with a clear reason.
 export const CONTROL_CHANNEL = 'poglive-control-v3';
@@ -171,7 +172,9 @@ export class PeerLink {
   }
   async offer(): Promise<void> {
     // Order matters: MEDIA_SECTION addresses transceivers by this index.
-    this.pc.addTransceiver('video', { direction: 'sendrecv' });
+    preferHardwareVideo(
+      this.pc.addTransceiver('video', { direction: 'sendrecv' }),
+    );
     this.pc.addTransceiver('audio', { direction: 'sendrecv' });
     this.pc.addTransceiver('audio', { direction: 'sendrecv' });
     this.attach(this.pc.createDataChannel(CONTROL_CHANNEL));
@@ -224,6 +227,8 @@ export class PeerLink {
       const transceivers = this.pc.getTransceivers();
       for (const transceiver of transceivers)
         transceiver.direction = 'sendrecv';
+      const video = transceivers[MEDIA_SECTION.video];
+      if (video) preferHardwareVideo(video);
       console.info('[WebRTC] Creating answer');
       const created = await this.pc.createAnswer();
       if (this.closed) return;
