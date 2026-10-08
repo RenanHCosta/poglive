@@ -10,6 +10,7 @@ import { Equalizer } from '../common/Equalizer';
 import { SELF_CLIP } from '../../services/clips/ClipManager';
 import { Icon } from '../Icon';
 import { LocalPreview, StreamPlayer } from './StreamPlayer';
+import { ReactionBar, ReactionLayer } from './Reactions';
 
 const IDLE_MS = 2500;
 
@@ -31,6 +32,7 @@ export function VoiceStage({
   const share = useStore(session.share.state);
   const speaking = useStore(session.voice.speaking);
   const clips = useStore(session.clips.view);
+  const previews = useStore(session.previews);
   const settings = useStore(settingsStore);
   const outputDeviceId =
     settings.status === 'READY' ? settings.settings.audio.outputDeviceId : null;
@@ -81,6 +83,7 @@ export function VoiceStage({
           onClick={() => setFocus(focus === key ? null : key)}
         >
           <LocalPreview stream={share.stream} />
+          <ReactionLayer session={session} targetPeerId={selfId} />
           <div className="stream-top">
             <span className="live-badge">
               <i aria-hidden="true" />
@@ -128,6 +131,8 @@ export function VoiceStage({
           outputDeviceId={outputDeviceId}
           inVoice={connected}
           clip={clipFor(peer.peerId)}
+          session={session}
+          preview={previews.get(peer.peerId) ?? null}
           onFocus={() => setFocus(focus === key ? null : key)}
           onWatch={() => {
             session.watch(peer.peerId);
@@ -355,7 +360,11 @@ function StreamTile({
   onWatch,
   onLeave,
   clip,
+  session,
+  preview,
 }: {
+  session: RoomSession;
+  preview: string | null;
   clip: { saving: boolean; save: () => void } | null;
   inVoice: boolean;
   peer: PeerConnectionView;
@@ -383,11 +392,21 @@ function StreamTile({
           onLeave={onLeave}
           clip={clip}
         />
+        <ReactionLayer session={session} targetPeerId={peer.peerId} />
+        {peer.watchState === 'WATCHING' && (
+          <ReactionBar onReact={(emoji) => session.react(peer.peerId, emoji)} />
+        )}
       </div>
     );
   return (
-    <div className={`tile stream-tile preview${focused ? ' focused' : ''}`}>
-      <Avatar peerId={peer.peerId} name={peer.displayName} size={64} />
+    <div
+      className={`tile stream-tile preview${preview ? ' has-thumbnail' : ''}${focused ? ' focused' : ''}`}
+    >
+      {preview ? (
+        <img className="stream-thumbnail" src={preview} alt="" />
+      ) : (
+        <Avatar peerId={peer.peerId} name={peer.displayName} size={64} />
+      )}
       <div className="stream-top">
         <span className="live-badge">
           <i aria-hidden="true" />

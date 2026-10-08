@@ -2,6 +2,7 @@ import type { ChatMessage, RoomEvent } from '../../shared/schemas/chat';
 import { CHAT_LOG_LIMIT, MAX_CHAT_LENGTH } from '../../shared/schemas/chat';
 import { playSound } from './sounds';
 import { Store } from './store';
+import { pushToast } from './toasts';
 
 const DELIVERY_TIMEOUT_MS = 10_000;
 // A typing notice lasts a little longer than the senders' 3 s throttle.
@@ -15,6 +16,10 @@ export type ChatEntry =
       failure?: string;
     })
   | { kind: 'SYSTEM'; id: string; text: string; sentAt: number };
+
+function normalize(text: string): string {
+  return text.replace(/\r\n?/g, '\n').trim();
+}
 
 export function mentions(text: string, displayName: string): boolean {
   const escaped = displayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -59,6 +64,18 @@ export class ChatController {
       void this.load();
     else if (event.type === 'CHAT_MESSAGE' && event.roomId === this.roomId)
       this.accept(event.message, true);
+    else if (event.type === 'CHAT_UPDATED' && event.roomId === this.roomId)
+      this.entries.update((entries) =>
+        entries.map((item) =>
+          item.kind === 'MESSAGE' && item.id === event.message.id
+            ? { ...item, ...event.message }
+            : item,
+        ),
+      );
+    else if (event.type === 'CHAT_DELETED' && event.roomId === this.roomId)
+      this.entries.update((entries) =>
+        entries.filter((item) => item.id !== event.id),
+      );
     else if (event.type === 'CHAT_REJECTED' && event.roomId === this.roomId)
       this.markFailed(
         event.id,
@@ -112,8 +129,8 @@ export class ChatController {
     });
   }
 
-  send(text: string): boolean {
-    const normalized = text.replace(/\r\n?/g, '\n').trim();
+  send(text: string, replyTo: string | null = null): boolean {
+    const normalized = normalize(text);
     if (!normalized || normalized.length > MAX_CHAT_LENGTH || this.closed)
       return false;
     const id = crypto.randomUUID();
@@ -124,9 +141,11 @@ export class ChatController {
       authorName: this.self.displayName,
       text: normalized,
       sentAt: Date.now(),
+      replyTo,
+      editedAt: null,
       delivery: 'PENDING',
     });
-    this.deliver(id, normalized);
+    this.deliver(id, normalized, replyTo);
     this.lastTypingSent = 0;
     return true;
   }
@@ -145,14 +164,79 @@ export class ChatController {
           : item,
       ),
     );
-    this.deliver(id, entry.text);
+    this.deliver(id, entry.text, entry.replyTo);
+  }
+
+  /** Edits one of the user's delivered messages; the host confirms. */
+  edit(id: string, text: string): boolean {
+    const normalized = normalize(text);
+    const entry = this.findMessage(id);
+    if (
+      !entry ||
+      entry.authorId !== this.self.peerId ||
+      entry.delivery !== 'SENT' ||
+      !normalized ||
+      normalized.length > MAX_CHAT_LENGTH
+    )
+      return false;
+    if (normalized === entry.text) return true;
+    const previous = entry;
+    this.replace(id, { ...entry, text: normalized, editedAt: Date.now() });
+    void window.pogLive
+      .command({ type: 'EDIT_CHAT', id, text: normalized })
+      .then((result) => {
+        if (result.status === 'ERROR') {
+          this.replace(id, previous);
+          pushToast(result.message, 'error');
+        }
+      });
+    return true;
+  }
+
+  /** Own messages for everyone; the host may also delete others'. */
+  remove(id: string): void {
+    const entry = this.findMessage(id);
+    if (!entry) return;
+    if (entry.delivery !== 'SENT') {
+      this.discard(id);
+      return;
+    }
+    void window.pogLive.command({ type: 'DELETE_CHAT', id }).then((result) => {
+      if (result.status === 'ERROR') pushToast(result.message, 'error');
+    });
+  }
+
+  findMessage(id: string): Extract<ChatEntry, { kind: 'MESSAGE' }> | undefined {
+    const entry = this.entries.get().find((item) => item.id === id);
+    return entry?.kind === 'MESSAGE' ? entry : undefined;
+  }
+
+  /** The user's latest delivered message, for "arrow up to edit". */
+  lastOwnMessage(): Extract<ChatEntry, { kind: 'MESSAGE' }> | undefined {
+    const entries = this.entries.get();
+    for (let index = entries.length - 1; index >= 0; index--) {
+      const entry = entries[index];
+      if (
+        entry?.kind === 'MESSAGE' &&
+        entry.authorId === this.self.peerId &&
+        entry.delivery === 'SENT'
+      )
+        return entry;
+    }
+    return undefined;
+  }
+
+  private replace(id: string, next: ChatEntry): void {
+    this.entries.update((entries) =>
+      entries.map((item) => (item.id === id ? next : item)),
+    );
   }
 
   discard(id: string): void {
     this.entries.update((entries) => entries.filter((item) => item.id !== id));
   }
 
-  private deliver(id: string, text: string): void {
+  private deliver(id: string, text: string, replyTo: string | null): void {
     this.timers.set(
       id,
       setTimeout(
@@ -161,7 +245,7 @@ export class ChatController {
       ),
     );
     void window.pogLive
-      .command({ type: 'SEND_CHAT', id, text })
+      .command({ type: 'SEND_CHAT', id, text, replyTo })
       .then((result) => {
         if (result.status === 'ERROR') this.markFailed(id, result.message);
       })

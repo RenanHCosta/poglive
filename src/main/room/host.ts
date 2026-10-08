@@ -16,6 +16,7 @@ import type {
   VoiceState,
 } from '../../shared/schemas/room';
 import type { NetworkMessage } from '../../shared/protocols/network';
+import type { Reaction } from '../../shared/schemas/chat';
 import { signalSchema } from '../../shared/protocols/signaling';
 import type { Signal } from '../../shared/protocols/signaling';
 import { SignalRouter } from '../signaling/router';
@@ -37,6 +38,8 @@ interface Member {
   voiceRate: RateWindow;
   voiceAbuse: RateWindow;
   typingRate: RateWindow;
+  reactionRate: RateWindow;
+  previewRate: RateWindow;
   pendingVoice: {
     voice: VoiceState;
     timer: ReturnType<typeof setTimeout>;
@@ -54,6 +57,9 @@ export class RoomHost {
   private readonly chat = new ChatLog();
   private readonly hostChatRate = RateWindow.chat();
   private readonly hostTypingRate = RateWindow.typing();
+  private readonly hostReactionRate = RateWindow.reactions();
+  /** Kicked identities may not rejoin while this room lasts. */
+  private readonly banned = new Set<string>();
   private hostVoice: VoiceState = DISCONNECTED_VOICE;
   private rtcEndpoint: { host: string; port: number } | null = null;
   private closing = false;
@@ -99,12 +105,14 @@ export class RoomHost {
             ? 'INVALID_SECRET'
             : message.roomId !== this.access.roomId
               ? 'WRONG_ROOM'
-              : message.identity.peerId === this.identity.peerId ||
-                  this.members.has(message.identity.peerId)
-                ? 'DUPLICATE_ID'
-                : this.members.size >= MAX_PEERS - 1
-                  ? 'FULL'
-                  : null;
+              : this.banned.has(message.identity.peerId)
+                ? 'KICKED'
+                : message.identity.peerId === this.identity.peerId ||
+                    this.members.has(message.identity.peerId)
+                  ? 'DUPLICATE_ID'
+                  : this.members.size >= MAX_PEERS - 1
+                    ? 'FULL'
+                    : null;
           if (reason) {
             rejected = true;
             channel.send({
@@ -125,6 +133,8 @@ export class RoomHost {
             voiceRate: new RateWindow(VOICE_UPDATES_PER_SECOND, 1000),
             voiceAbuse: new RateWindow(VOICE_ABUSE_PER_SECOND, 1000),
             typingRate: RateWindow.typing(),
+            reactionRate: RateWindow.reactions(),
+            previewRate: RateWindow.previews(),
             pendingVoice: null,
           });
           channel.send({
@@ -233,7 +243,29 @@ export class RoomHost {
           });
           return;
         }
-        this.publishChat(member.identity, message.id, message.text);
+        this.publishChat(
+          member.identity,
+          message.id,
+          message.text,
+          message.replyTo,
+        );
+        return;
+      case 'CHAT_EDIT':
+        if (member.chatRate.take())
+          this.publishEdit(member.identity.peerId, message.id, message.text);
+        return;
+      case 'CHAT_DELETE':
+        if (member.chatRate.take())
+          this.publishDelete(message.id, member.identity.peerId, false);
+        return;
+      case 'REACT':
+        if (member.reactionRate.take())
+          this.publishReaction(memberId, message.targetPeerId, message.emoji);
+        return;
+      case 'STREAM_PREVIEW':
+        // Previews refresh every few seconds; extra ones are dropped.
+        if (member.previewRate.take())
+          this.publishPreview(memberId, message.image);
         return;
       default: {
         const parsed = signalSchema.safeParse(message);
@@ -260,8 +292,55 @@ export class RoomHost {
   sendTyping(): void {
     if (this.hostTypingRate.take()) this.publishTyping(this.identity.peerId);
   }
-  private publishChat(author: Identity, id: string, text: string): void {
-    const message = this.chat.append(author, id, text);
+  private publishEdit(authorId: string, id: string, text: string): void {
+    const message = this.chat.edit(authorId, id, text);
+    if (!message) return;
+    this.broadcast({
+      version: PROTOCOL_VERSION,
+      type: 'CHAT_UPDATED',
+      message,
+    });
+    this.events.onChatUpdated?.(message);
+  }
+  private publishDelete(
+    id: string,
+    requesterId: string,
+    moderator: boolean,
+  ): void {
+    if (!this.chat.remove(id, requesterId, moderator)) return;
+    this.broadcast({ version: PROTOCOL_VERSION, type: 'CHAT_DELETED', id });
+    this.events.onChatDeleted?.(id);
+  }
+  private publishReaction(from: string, target: string, emoji: Reaction): void {
+    const present = target === this.identity.peerId || this.members.has(target);
+    if (!present) return;
+    this.broadcast(
+      {
+        version: PROTOCOL_VERSION,
+        type: 'PEER_REACTION',
+        fromPeerId: from,
+        targetPeerId: target,
+        emoji,
+      },
+      from,
+    );
+    if (from !== this.identity.peerId)
+      this.events.onReaction?.(from, target, emoji);
+  }
+  private publishPreview(peerId: string, image: string | null): void {
+    this.broadcast(
+      { version: PROTOCOL_VERSION, type: 'PEER_PREVIEW', peerId, image },
+      peerId,
+    );
+    if (peerId !== this.identity.peerId) this.events.onPreview?.(peerId, image);
+  }
+  private publishChat(
+    author: Identity,
+    id: string,
+    text: string,
+    replyTo: string | null = null,
+  ): void {
+    const message = this.chat.append(author, id, text, replyTo);
     if (!message) {
       // A retry of a delivered message: confirm it to its author only, so a
       // slow first confirmation never produces a duplicate post.
@@ -340,12 +419,36 @@ export class RoomHost {
     this.hostVoice = voice;
     this.broadcastState();
   }
-  sendChat(id: string, text: string): void {
+  sendChat(id: string, text: string, replyTo: string | null = null): void {
     if (!this.hostChatRate.take()) {
       this.events.onChatRejected?.(id, 'RATE_LIMITED');
       return;
     }
-    this.publishChat(this.identity, id, text);
+    this.publishChat(this.identity, id, text, replyTo);
+  }
+  editChat(id: string, text: string): void {
+    this.publishEdit(this.identity.peerId, id, text);
+  }
+  /** The host moderates: it may delete anyone's message. */
+  deleteChat(id: string): void {
+    this.publishDelete(id, this.identity.peerId, true);
+  }
+  react(targetPeerId: string, emoji: Reaction): void {
+    if (this.hostReactionRate.take())
+      this.publishReaction(this.identity.peerId, targetPeerId, emoji);
+  }
+  setPreview(image: string | null): void {
+    this.publishPreview(this.identity.peerId, image);
+  }
+  /** Removes a member for the rest of this room's life. */
+  kick(peerId: string): boolean {
+    const member = this.members.get(peerId);
+    if (!member) return false;
+    this.banned.add(peerId);
+    member.channel.send({ version: PROTOCOL_VERSION, type: 'KICKED' });
+    // Give the notice a moment to flush before closing.
+    setTimeout(() => member.channel.close(), 100);
+    return true;
   }
   sendSignal(signal: Signal): void {
     this.router.route(this.identity.peerId, signal);

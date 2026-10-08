@@ -1,6 +1,9 @@
 import type { Signal } from '../../shared/protocols/signaling';
 import { PROTOCOL_VERSION } from '../../shared/schemas/room';
-import { mediaMessageSchema } from '../../shared/protocols/media';
+import {
+  KNOWN_MEDIA_TYPES,
+  mediaMessageSchema,
+} from '../../shared/protocols/media';
 import type { MediaMessage } from '../../shared/protocols/media';
 import { PeerMedia } from './PeerMedia';
 import { tuneOpus } from './sdp';
@@ -145,9 +148,17 @@ export class PeerLink {
       } else {
         try {
           if (!this.confirmed) throw new Error('Unconfirmed channel');
-          this.media.receive(
-            mediaMessageSchema.parse(JSON.parse(data) as unknown),
-          );
+          const raw = JSON.parse(data) as unknown;
+          // Control messages from newer builds are ignored, not fatal.
+          if (
+            raw &&
+            typeof raw === 'object' &&
+            'type' in raw &&
+            typeof raw.type === 'string' &&
+            !KNOWN_MEDIA_TYPES.has(raw.type)
+          )
+            return;
+          this.media.receive(mediaMessageSchema.parse(raw));
         } catch {
           this.fail();
         }

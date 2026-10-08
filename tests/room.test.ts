@@ -167,7 +167,7 @@ test('real TLS room: invite, 3 peers, duplicate refusal, wrong secret, leave and
     await host.listen('127.0.0.1');
     const invite = decodeInvite(host.invite);
     assert.equal(encodeInvite(invite), host.invite);
-    assert.match(host.invite, /^PL2\.[A-Za-z0-9_-]{94}$/);
+    assert.match(host.invite, /^PL3.[A-Za-z0-9_-]{94}$/);
     assert.equal(host.invite.length, 98);
     assert.equal(Buffer.from(invite.secret, 'base64url').length, 32);
     const legacyCode =
@@ -538,7 +538,7 @@ test(
       socket.resume();
       socket.write(
         frame({
-          version: 2,
+          version: 3,
           type: 'ROOM_JOIN',
           roomId: invite.roomId,
           identity: identity('Silent'),

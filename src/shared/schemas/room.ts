@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { chatTextSchema } from './chat';
+import { chatTextSchema, previewImageSchema, reactionSchema } from './chat';
 import { displayNameSchema } from './common';
 
 export const MAX_PEERS = 8;
 // Room/signaling wire version. Bump on any incompatible TLS protocol change.
-export const PROTOCOL_VERSION = 2 as const;
+export const PROTOCOL_VERSION = 3 as const;
 export { displayNameSchema };
 export const identitySchema = z
   .object({ peerId: z.uuid(), displayName: displayNameSchema })
@@ -128,8 +128,31 @@ export const commandSchema = z.discriminatedUnion('type', [
       type: z.literal('SEND_CHAT'),
       id: z.uuid(),
       text: chatTextSchema,
+      replyTo: z.uuid().nullable(),
     })
     .strict(),
+  z
+    .object({
+      type: z.literal('EDIT_CHAT'),
+      id: z.uuid(),
+      text: chatTextSchema,
+    })
+    .strict(),
+  z.object({ type: z.literal('DELETE_CHAT'), id: z.uuid() }).strict(),
+  z
+    .object({
+      type: z.literal('REACT'),
+      targetPeerId: z.uuid(),
+      emoji: reactionSchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('SET_PREVIEW'),
+      image: previewImageSchema.nullable(),
+    })
+    .strict(),
+  z.object({ type: z.literal('KICK'), peerId: z.uuid() }).strict(),
 ]);
 export type RoomCommand = z.infer<typeof commandSchema>;
 export const commandResultSchema = z.discriminatedUnion('status', [

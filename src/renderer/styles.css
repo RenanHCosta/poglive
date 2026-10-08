@@ -1822,9 +1822,163 @@ input[type='range'] {
 .message {
   position: relative;
   display: flex;
-  gap: 14px;
+  flex-direction: column;
   padding: 3px 48px 3px 20px;
   margin-top: 14px;
+}
+.message-main {
+  display: flex;
+  gap: 14px;
+}
+.message-reference {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  margin: 0 0 4px 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.message-reference::before {
+  content: '';
+  width: 30px;
+  height: 10px;
+  margin-top: 8px;
+  border-top: 2px solid var(--ink-5);
+  border-left: 2px solid var(--ink-5);
+  border-top-left-radius: 6px;
+}
+.message-reference strong {
+  color: var(--text);
+}
+.message-reference span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.message-reference:hover:not(:disabled) span {
+  color: var(--bone);
+}
+.message-reference:disabled {
+  cursor: default;
+}
+.message-edited {
+  margin-left: 4px;
+  font-size: 11px;
+  color: var(--faint);
+}
+.message.flash {
+  animation: flash 1.6s ease-out;
+}
+@keyframes flash {
+  0%,
+  30% {
+    background: var(--frog-soft);
+  }
+}
+.message-actions {
+  position: absolute;
+  top: -14px;
+  right: 18px;
+  display: flex;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--ink-1);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+  z-index: 2;
+}
+.message:hover .message-actions,
+.message-actions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+.message-actions button {
+  width: 30px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.message-actions button:hover {
+  background: var(--hover);
+  color: var(--bone);
+}
+.message-actions button.danger:hover {
+  color: var(--signal);
+}
+.edit-box {
+  margin-top: 4px;
+}
+.edit-box textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--bone);
+  border-radius: 10px;
+  background: var(--ink-3);
+  outline: none;
+  line-height: 1.4;
+}
+.edit-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+.edit-hint button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--frog);
+  cursor: pointer;
+}
+.reply-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  background: var(--ink-1);
+  font-size: 13px;
+  color: var(--muted);
+}
+.reply-bar strong {
+  color: var(--bone);
+}
+.reply-bar button {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.composer-box.replying {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.delete-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--signal);
+  border-radius: 6px;
+  background: var(--ink-1);
 }
 .message:hover {
   background: rgba(243, 238, 230, 0.025);
@@ -1847,6 +2001,9 @@ input[type='range'] {
 }
 .message .avatar {
   margin-top: 2px;
+}
+.message.system {
+  flex-direction: row;
 }
 .message.mentioned {
   background: var(--amber-soft);
@@ -2291,6 +2448,9 @@ input[type='range'] {
   padding-top: 12px;
   border-top: 1px solid var(--line);
 }
+.kick-button {
+  width: 100%;
+}
 .profile-diagnostic summary {
   font-size: 13px;
   color: var(--muted);
@@ -2620,6 +2780,91 @@ input[type='range'] {
 }
 .stream-tile.preview .avatar {
   margin-bottom: 52px;
+}
+/* Thumbnail of what is being streamed, dimmed under the call to action. */
+.stream-thumbnail {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.85) brightness(0.55);
+}
+.stream-tile.has-thumbnail .stream-invite {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.reaction-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+.reaction-float {
+  position: absolute;
+  left: var(--x);
+  bottom: 12%;
+  font-size: 34px;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6));
+  animation: reaction-rise 2.6s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+@keyframes reaction-rise {
+  0% {
+    opacity: 0;
+    transform: translate(0, 20px) scale(0.6);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1.15);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(var(--sway), -140px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--sway) * -0.5), -240px) scale(0.9);
+  }
+}
+.reaction-bar {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(9, 9, 11, 0.82);
+  border: 1px solid var(--line-strong);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.stream-tile:hover .reaction-bar {
+  opacity: 1;
+}
+.stage.idle .reaction-bar {
+  opacity: 0;
+}
+.reaction-bar button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+.reaction-bar button:hover {
+  background: rgba(243, 238, 230, 0.12);
+  transform: translateY(-2px) scale(1.12);
+}
+.reaction-bar button:active {
+  transform: scale(0.92);
 }
 .stream-error {
   font-family: var(--font-body);

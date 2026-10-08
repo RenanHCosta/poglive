@@ -126,6 +126,7 @@ export function RoomLayout({
                 names={names}
                 roomName={room.room.name}
                 participants={participants}
+                moderator={room.status === 'HOSTING'}
               />
               {showMembers && (
                 <MemberList
@@ -152,6 +153,7 @@ export function RoomLayout({
                     names={names}
                     roomName={room.room.name}
                     participants={participants}
+                    moderator={room.status === 'HOSTING'}
                     compact
                   />
                 </aside>
@@ -167,6 +169,7 @@ export function RoomLayout({
           session={session}
           anchor={member.anchor}
           onClose={() => setMember(null)}
+          canKick={room.status === 'HOSTING'}
         />
       )}
     </>

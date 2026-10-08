@@ -12,6 +12,8 @@ import {
   chatMessageSchema,
   chatRejectionSchema,
   chatTextSchema,
+  previewImageSchema,
+  reactionSchema,
 } from '../schemas/chat';
 
 const envelope = { version: z.literal(PROTOCOL_VERSION) };
@@ -38,7 +40,13 @@ export const networkMessageSchema = z.discriminatedUnion('type', [
     .object({
       ...envelope,
       type: z.literal('ROOM_JOIN_REJECTED'),
-      reason: z.enum(['FULL', 'DUPLICATE_ID', 'WRONG_ROOM', 'INVALID_SECRET']),
+      reason: z.enum([
+        'FULL',
+        'DUPLICATE_ID',
+        'WRONG_ROOM',
+        'INVALID_SECRET',
+        'KICKED',
+      ]),
     })
     .strict(),
   z
@@ -73,8 +81,68 @@ export const networkMessageSchema = z.discriminatedUnion('type', [
       type: z.literal('CHAT_SEND'),
       id: z.uuid(),
       text: chatTextSchema,
+      replyTo: z.uuid().nullable(),
     })
     .strict(),
+  // Member → host: only the author may edit; author or host may delete.
+  z
+    .object({
+      ...envelope,
+      type: z.literal('CHAT_EDIT'),
+      id: z.uuid(),
+      text: chatTextSchema,
+    })
+    .strict(),
+  z
+    .object({ ...envelope, type: z.literal('CHAT_DELETE'), id: z.uuid() })
+    .strict(),
+  // Host → members.
+  z
+    .object({
+      ...envelope,
+      type: z.literal('CHAT_UPDATED'),
+      message: chatMessageSchema,
+    })
+    .strict(),
+  z
+    .object({ ...envelope, type: z.literal('CHAT_DELETED'), id: z.uuid() })
+    .strict(),
+  // Live reactions on someone's stream.
+  z
+    .object({
+      ...envelope,
+      type: z.literal('REACT'),
+      targetPeerId: z.uuid(),
+      emoji: reactionSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...envelope,
+      type: z.literal('PEER_REACTION'),
+      fromPeerId: z.uuid(),
+      targetPeerId: z.uuid(),
+      emoji: reactionSchema,
+    })
+    .strict(),
+  // Stream thumbnail: member → host, then host → everyone else.
+  z
+    .object({
+      ...envelope,
+      type: z.literal('STREAM_PREVIEW'),
+      image: previewImageSchema.nullable(),
+    })
+    .strict(),
+  z
+    .object({
+      ...envelope,
+      type: z.literal('PEER_PREVIEW'),
+      peerId: z.uuid(),
+      image: previewImageSchema.nullable(),
+    })
+    .strict(),
+  // Host → member, right before the host closes the connection.
+  z.object({ ...envelope, type: z.literal('KICKED') }).strict(),
   // Host → members.
   z
     .object({
@@ -108,3 +176,8 @@ export const networkMessageSchema = z.discriminatedUnion('type', [
   z.object({ ...envelope, type: z.literal('PONG'), nonce: z.uuid() }).strict(),
 ]);
 export type NetworkMessage = z.infer<typeof networkMessageSchema>;
+
+/** Message types this build understands; newer types are skipped, not fatal. */
+export const KNOWN_NETWORK_TYPES: ReadonlySet<string> = new Set(
+  networkMessageSchema.options.map((option) => option.shape.type.value),
+);

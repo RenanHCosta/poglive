@@ -22,6 +22,12 @@ export class RateWindow {
   static typing(): RateWindow {
     return new RateWindow(1, 2000);
   }
+  static reactions(): RateWindow {
+    return new RateWindow(8, 2000);
+  }
+  static previews(): RateWindow {
+    return new RateWindow(1, 2500);
+  }
   take(): boolean {
     const time = this.now();
     while (this.stamps.length && time - this.stamps[0]! >= this.windowMs)
@@ -38,7 +44,12 @@ export class ChatLog {
   private readonly ids = new Set<string>();
   private lastSentAt = 0;
   constructor(private readonly now: () => number = Date.now) {}
-  append(author: Identity, id: string, text: string): ChatMessage | null {
+  append(
+    author: Identity,
+    id: string,
+    text: string,
+    replyTo: string | null = null,
+  ): ChatMessage | null {
     if (this.ids.has(id)) return null;
     // Strictly increasing timestamps keep ordering stable across clock steps.
     const sentAt = Math.max(this.now(), this.lastSentAt + 1);
@@ -49,6 +60,9 @@ export class ChatLog {
       authorName: author.displayName,
       text,
       sentAt,
+      // A reply to an unknown message is kept as a plain message.
+      replyTo: replyTo && this.ids.has(replyTo) ? replyTo : null,
+      editedAt: null,
     };
     this.log.push(message);
     this.ids.add(id);
@@ -57,6 +71,30 @@ export class ChatLog {
       if (removed) this.ids.delete(removed.id);
     }
     return message;
+  }
+  /** Only the author may edit; returns the updated message. */
+  edit(authorId: string, id: string, text: string): ChatMessage | null {
+    const index = this.log.findIndex((message) => message.id === id);
+    const current = this.log[index];
+    if (!current || current.authorId !== authorId) return null;
+    if (current.text === text) return null;
+    const updated = {
+      ...current,
+      text,
+      editedAt: Math.max(this.now(), current.sentAt),
+    };
+    this.log[index] = updated;
+    return updated;
+  }
+  /** Authors delete their own messages; the host may delete any. */
+  remove(id: string, requesterId: string, moderator: boolean): boolean {
+    const index = this.log.findIndex((message) => message.id === id);
+    const current = this.log[index];
+    if (!current || (!moderator && current.authorId !== requesterId))
+      return false;
+    this.log.splice(index, 1);
+    this.ids.delete(id);
+    return true;
   }
   find(id: string): ChatMessage | undefined {
     return this.ids.has(id)

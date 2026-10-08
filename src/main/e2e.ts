@@ -146,7 +146,7 @@ export async function runE2E(
     step('remote voice detected');
     // Text chat in both directions.
     await window.webContents.executeJavaScript(
-      `window.pogLive.command({ type: 'SEND_CHAT', id: crypto.randomUUID(), text: 'oi de ${role}' })`,
+      `window.pogLive.command({ type: 'SEND_CHAT', id: crypto.randomUUID(), text: 'oi de ${role}', replyTo: null })`,
     );
     const otherRole = role === 'host' ? 'guest' : 'host';
     await until(
@@ -187,7 +187,21 @@ export async function runE2E(
         60000,
       );
       step('notified of clip');
+      await until(
+        window,
+        'reaction',
+        `!!document.querySelector('.stream-tile.self .reaction-float')`,
+        30000,
+      );
+      step('reaction received');
     } else {
+      // The streamer's thumbnail shows up before anyone starts watching.
+      await until(
+        window,
+        'thumbnail',
+        `!!document.querySelector('.stream-tile.preview .stream-thumbnail')`,
+      );
+      step('stream thumbnail visible');
       await until(window, 'watch', click('.stream-invite .button.primary'));
       await until(
         window,
@@ -236,6 +250,8 @@ export async function runE2E(
       `);
       if (played !== true) throw new Error('Clip does not play');
       step('clip saved and playable');
+      await until(window, 'react', click('.reaction-bar button'));
+      step('reacted');
     }
     // Mute must reach the other side through host presence.
     if (role === 'guest') {

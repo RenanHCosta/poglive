@@ -50,6 +50,9 @@ export const mediaMessageSchema = z.discriminatedUnion('type', [
   }),
 ]);
 export type MediaMessage = z.infer<typeof mediaMessageSchema>;
+export const KNOWN_MEDIA_TYPES: ReadonlySet<string> = new Set(
+  mediaMessageSchema.options.map((option) => option.shape.type.value),
+);
 export type VideoQualityTier = z.infer<typeof videoQualityTierSchema>;
 export type VideoQualityReason = z.infer<typeof videoQualityReasonSchema>;
 export type QualityReport = Extract<MediaMessage, { type: 'QUALITY_REPORT' }>;

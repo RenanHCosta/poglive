@@ -13,13 +13,25 @@ import type {
 import type {
   ChatHistory,
   ChatMessage,
+  Reaction,
   RoomEvent,
 } from '../../shared/schemas/chat';
 import type { RoomEvents } from './events';
 
 type LifecycleCommand = Exclude<
   RoomCommand,
-  { type: 'COPY_INVITE' | 'UPDATE_VOICE' | 'SEND_CHAT' | 'TYPING' }
+  {
+    type:
+      | 'COPY_INVITE'
+      | 'UPDATE_VOICE'
+      | 'SEND_CHAT'
+      | 'TYPING'
+      | 'EDIT_CHAT'
+      | 'DELETE_CHAT'
+      | 'REACT'
+      | 'SET_PREVIEW'
+      | 'KICK';
+  }
 >;
 
 export function localAddresses(): LocalState['addresses'] {
@@ -78,6 +90,31 @@ export class RoomService {
       onTyping: (peerId) => {
         const roomId = this.activeRoomId();
         if (owner() && roomId) this.emit({ type: 'TYPING', roomId, peerId });
+      },
+      onChatUpdated: (message) => {
+        const roomId = this.activeRoomId();
+        if (owner() && roomId)
+          this.emit({ type: 'CHAT_UPDATED', roomId, message });
+      },
+      onChatDeleted: (id) => {
+        const roomId = this.activeRoomId();
+        if (owner() && roomId) this.emit({ type: 'CHAT_DELETED', roomId, id });
+      },
+      onReaction: (fromPeerId, targetPeerId, emoji) => {
+        const roomId = this.activeRoomId();
+        if (owner() && roomId)
+          this.emit({
+            type: 'REACTION',
+            roomId,
+            fromPeerId,
+            targetPeerId,
+            emoji,
+          });
+      },
+      onPreview: (peerId, image) => {
+        const roomId = this.activeRoomId();
+        if (owner() && roomId)
+          this.emit({ type: 'PREVIEW', roomId, peerId, image });
       },
       onHistory: () => {
         const roomId = this.activeRoomId();
@@ -186,8 +223,9 @@ export class RoomService {
             this.client = null;
             this.state = {
               status: 'DISCONNECTED',
-              message:
-                'A conexão com o host foi encerrada ou expirou. Entre novamente com um convite válido.',
+              message: client.kicked
+                ? 'Você foi removido da sala pelo anfitrião.'
+                : 'A conexão com o host foi encerrada ou expirou. Entre novamente com um convite válido.',
             };
             console.info('[Room] Disconnected');
             this.emit({ type: 'STATE' });
@@ -223,10 +261,34 @@ export class RoomService {
     if (this.host) this.host.sendTyping();
     else if (this.client?.room) this.client.sendTyping();
   }
-  sendChat(id: string, text: string): void {
-    if (this.host) this.host.sendChat(id, text);
-    else if (this.client?.room) this.client.sendChat(id, text);
+  sendChat(id: string, text: string, replyTo: string | null = null): void {
+    if (this.host) this.host.sendChat(id, text, replyTo);
+    else if (this.client?.room) this.client.sendChat(id, text, replyTo);
     else throw new Error('Entre em uma sala para enviar mensagens.');
+  }
+  editChat(id: string, text: string): void {
+    if (this.host) this.host.editChat(id, text);
+    else if (this.client?.room) this.client.editChat(id, text);
+    else throw new Error('Entre em uma sala para editar mensagens.');
+  }
+  deleteChat(id: string): void {
+    if (this.host) this.host.deleteChat(id);
+    else if (this.client?.room) this.client.deleteChat(id);
+    else throw new Error('Entre em uma sala para apagar mensagens.');
+  }
+  react(targetPeerId: string, emoji: Reaction): void {
+    if (this.host) this.host.react(targetPeerId, emoji);
+    else if (this.client?.room) this.client.react(targetPeerId, emoji);
+  }
+  setPreview(image: string | null): void {
+    if (this.host) this.host.setPreview(image);
+    else if (this.client?.room) this.client.setPreview(image);
+  }
+  kick(peerId: string): void {
+    if (!this.host)
+      throw new Error('Somente o anfitrião pode remover pessoas.');
+    if (!this.host.kick(peerId))
+      throw new Error('Essa pessoa não está na sala.');
   }
   chatHistory(): ChatHistory {
     const roomId = this.activeRoomId();

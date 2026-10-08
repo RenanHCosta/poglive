@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import type { TLSSocket } from 'node:tls';
-import { networkMessageSchema } from '../../shared/protocols/network';
+import {
+  KNOWN_NETWORK_TYPES,
+  networkMessageSchema,
+} from '../../shared/protocols/network';
 import type { NetworkMessage } from '../../shared/protocols/network';
 import { PROTOCOL_VERSION } from '../../shared/schemas/room';
 
@@ -42,6 +45,18 @@ export class Channel {
             this.buffer.subarray(4, size + 4).toString('utf8'),
           );
           this.buffer = this.buffer.subarray(size + 4);
+          // Message types from newer builds are skipped, not fatal, so
+          // additive features do not force everyone to update at once.
+          if (
+            raw &&
+            typeof raw === 'object' &&
+            'version' in raw &&
+            raw.version === PROTOCOL_VERSION &&
+            'type' in raw &&
+            typeof raw.type === 'string' &&
+            !KNOWN_NETWORK_TYPES.has(raw.type)
+          )
+            continue;
           const message = networkMessageSchema.parse(raw);
           if (message.type === 'PING')
             this.send({

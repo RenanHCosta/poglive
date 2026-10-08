@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Participant } from '../../../shared/schemas/room';
 import type { RoomSession } from '../../services/RoomSession';
 import { settingsStore, updateSettings } from '../../services/settings';
@@ -22,7 +23,9 @@ export function MemberPopover({
   session,
   anchor,
   onClose,
+  canKick = false,
 }: {
+  canKick?: boolean;
   peer: Participant;
   selfId: string;
   session: RoomSession;
@@ -33,6 +36,7 @@ export function MemberPopover({
   const mesh = useStore(session.mesh);
   const link = mesh.peers.find((item) => item.peerId === peer.peerId);
   const self = peer.peerId === selfId;
+  const [confirmKick, setConfirmKick] = useState(false);
   const preference =
     settings.status === 'READY'
       ? (settings.settings.peers[peer.peerId] ?? { volume: 100, muted: false })
@@ -145,6 +149,25 @@ export function MemberPopover({
                 firewall e rede.
               </p>
             </details>
+          )}
+          {canKick && !self && (
+            <button
+              type="button"
+              className={`button ${confirmKick ? 'danger' : 'secondary'} kick-button`}
+              onClick={() => {
+                if (!confirmKick) {
+                  setConfirmKick(true);
+                  return;
+                }
+                session.kick(peer.peerId);
+                onClose();
+              }}
+            >
+              <Icon name="ban" size={16} />
+              {confirmKick
+                ? `Confirmar: remover ${peer.displayName}`
+                : 'Remover da sala'}
+            </button>
           )}
         </div>
       </div>

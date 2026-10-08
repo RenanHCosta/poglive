@@ -3,7 +3,8 @@ import type {
   RoomSnapshot,
   VoiceState,
 } from '../../shared/schemas/room';
-import type { RoomEvent } from '../../shared/schemas/chat';
+import type { Reaction, RoomEvent } from '../../shared/schemas/chat';
+import { capturePreview } from './preview';
 import type { Settings } from '../../shared/schemas/settings';
 import { ChatController } from './ChatController';
 import { ClipManager, SELF_CLIP } from './clips/ClipManager';
@@ -17,6 +18,19 @@ import { Store } from './store';
 import { effectiveMuted, VoiceController } from './voice/VoiceController';
 
 const PRESENCE_INTERVAL_MS = 250;
+
+export interface LiveReaction {
+  id: number;
+  fromPeerId: string;
+  targetPeerId: string;
+  emoji: Reaction;
+}
+
+// Floating reactions disappear after their animation.
+const REACTION_LIFETIME_MS = 2600;
+const MAX_VISIBLE_REACTIONS = 40;
+// Thumbnail refresh while streaming; the host also rate-limits previews.
+const PREVIEW_INTERVAL_MS = 10_000;
 
 export interface MeshView {
   peers: PeerConnectionView[];
@@ -33,6 +47,11 @@ export class RoomSession {
   readonly share = new ScreenShare();
   readonly chat: ChatController;
   readonly clips: ClipManager;
+  readonly reactions = new Store<readonly LiveReaction[]>([]);
+  /** Latest stream thumbnail per streaming peer. */
+  readonly previews = new Store<ReadonlyMap<string, string>>(new Map());
+  private reactionId = 0;
+  private previewTimer: ReturnType<typeof setInterval> | undefined;
   private readonly clippedAt = new Map<string, number>();
   private readonly peerMesh: PeerMesh;
   private readonly unsubscribe: (() => void)[] = [];
@@ -76,6 +95,7 @@ export class RoomSession {
         // Going live happens in the voice channel, as viewers expect.
         if (capture) this.ensureVoice();
         this.syncClips();
+        this.syncPreview();
         this.syncPresence();
       }),
       this.voice.view.subscribe(() => {
@@ -95,7 +115,71 @@ export class RoomSession {
   }
 
   handleRoomEvent(event: RoomEvent): void {
-    this.chat.handle(event);
+    if ('roomId' in event && event.roomId !== this.roomId) return;
+    if (event.type === 'REACTION')
+      this.showReaction(event.fromPeerId, event.targetPeerId, event.emoji);
+    else if (event.type === 'PREVIEW') {
+      const next = new Map(this.previews.get());
+      if (event.image) next.set(event.peerId, event.image);
+      else next.delete(event.peerId);
+      this.previews.set(next);
+    } else this.chat.handle(event);
+  }
+
+  /** Sends a reaction to a stream and shows it locally right away. */
+  react(targetPeerId: string, emoji: Reaction): void {
+    this.showReaction(this.self.peerId, targetPeerId, emoji);
+    void window.pogLive
+      .command({ type: 'REACT', targetPeerId, emoji })
+      .catch(() => {});
+  }
+
+  kick(peerId: string): void {
+    void window.pogLive.command({ type: 'KICK', peerId }).then((result) => {
+      if (result.status === 'ERROR') pushToast(result.message, 'error');
+    });
+  }
+
+  private showReaction(
+    fromPeerId: string,
+    targetPeerId: string,
+    emoji: Reaction,
+  ): void {
+    const reaction = { id: ++this.reactionId, fromPeerId, targetPeerId, emoji };
+    this.reactions.update((items) =>
+      [...items, reaction].slice(-MAX_VISIBLE_REACTIONS),
+    );
+    setTimeout(() => {
+      this.reactions.update((items) =>
+        items.filter((item) => item.id !== reaction.id),
+      );
+    }, REACTION_LIFETIME_MS);
+  }
+
+  /**
+   * While live, a small JPEG of the capture goes to the room every few
+   * seconds so others can see what is on before they start watching.
+   */
+  private syncPreview(): void {
+    const capture = this.share.capture.get();
+    clearInterval(this.previewTimer);
+    this.previewTimer = undefined;
+    if (!capture) {
+      void window.pogLive
+        .command({ type: 'SET_PREVIEW', image: null })
+        .catch(() => {});
+      return;
+    }
+    const send = () => {
+      void capturePreview(capture.stream).then((image) => {
+        if (image && this.share.capture.get() === capture && !this.closed)
+          void window.pogLive
+            .command({ type: 'SET_PREVIEW', image })
+            .catch(() => {});
+      });
+    };
+    setTimeout(send, 1500);
+    this.previewTimer = setInterval(send, PREVIEW_INTERVAL_MS);
   }
 
   /** Roster from the authoritative room state, for join/leave notices. */
@@ -172,6 +256,17 @@ export class RoomSession {
   private meshChanged(peers: PeerConnectionView[], error: string | null): void {
     if (this.closed) return;
     this.mesh.set({ peers, error });
+    // Thumbnails of streams that ended or of people who left are dropped.
+    const previews = this.previews.get();
+    const streaming = new Set(
+      peers
+        .filter((peer) => peer.presence.streaming)
+        .map((peer) => peer.peerId),
+    );
+    if ([...previews.keys()].some((peerId) => !streaming.has(peerId)))
+      this.previews.set(
+        new Map([...previews].filter(([peerId]) => streaming.has(peerId))),
+      );
     this.syncClips();
     this.voice.setRemotes(
       peers.map((peer) => ({
@@ -242,6 +337,7 @@ export class RoomSession {
 
   close(): void {
     this.closed = true;
+    clearInterval(this.previewTimer);
     clearTimeout(this.presenceTimer);
     for (const stop of this.unsubscribe) stop();
     this.clips.close();

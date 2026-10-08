@@ -299,7 +299,15 @@ export function registerIpc(
           rooms.updateVoice(command.voice);
         else if (command.type === 'TYPING') rooms.sendTyping();
         else if (command.type === 'SEND_CHAT')
-          rooms.sendChat(command.id, command.text);
+          rooms.sendChat(command.id, command.text, command.replyTo);
+        else if (command.type === 'EDIT_CHAT')
+          rooms.editChat(command.id, command.text);
+        else if (command.type === 'DELETE_CHAT') rooms.deleteChat(command.id);
+        else if (command.type === 'REACT')
+          rooms.react(command.targetPeerId, command.emoji);
+        else if (command.type === 'SET_PREVIEW')
+          rooms.setPreview(command.image);
+        else if (command.type === 'KICK') rooms.kick(command.peerId);
         else await rooms.execute(command);
         return { status: 'OK' };
       } catch (error: unknown) {

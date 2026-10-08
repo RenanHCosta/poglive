@@ -9,7 +9,7 @@ import type {
   RoomSnapshot,
   VoiceState,
 } from '../../shared/schemas/room';
-import type { ChatMessage } from '../../shared/schemas/chat';
+import type { ChatMessage, Reaction } from '../../shared/schemas/chat';
 import { CHAT_LOG_LIMIT } from '../../shared/schemas/chat';
 import type { NetworkMessage } from '../../shared/protocols/network';
 import { signalSchema } from '../../shared/protocols/signaling';
@@ -22,6 +22,8 @@ export class RoomClient {
   private snapshotValue: RoomSnapshot | null = null;
   private readonly chat: ChatMessage[] = [];
   private closing = false;
+  /** Set when the host removed this member; explains the disconnect. */
+  kicked = false;
   constructor(private readonly events: RoomEvents = {}) {}
   get room(): RoomSnapshot | null {
     return this.snapshotValue;
@@ -72,7 +74,9 @@ export class RoomClient {
               ? 'Esta identidade já está na sala. Use outro perfil para testar.'
               : message.reason === 'FULL'
                 ? 'A sala atingiu o limite de 8 participantes.'
-                : 'O convite foi recusado. Confira o código de acesso.';
+                : message.reason === 'KICKED'
+                  ? 'Você foi removido desta sala pelo anfitrião.'
+                  : 'O convite foi recusado. Confira o código de acesso.';
           socket.destroy();
           return;
         }
@@ -131,6 +135,41 @@ export class RoomClient {
           case 'CHAT_REJECTED':
             this.events.onChatRejected?.(message.id, message.reason);
             return;
+          case 'CHAT_UPDATED': {
+            const index = this.chat.findIndex(
+              (item) => item.id === message.message.id,
+            );
+            if (index >= 0) this.chat[index] = message.message;
+            this.events.onChatUpdated?.(message.message);
+            return;
+          }
+          case 'CHAT_DELETED': {
+            const index = this.chat.findIndex((item) => item.id === message.id);
+            if (index >= 0) this.chat.splice(index, 1);
+            this.events.onChatDeleted?.(message.id);
+            return;
+          }
+          case 'PEER_REACTION':
+            if (
+              this.inRoom(message.fromPeerId) &&
+              this.inRoom(message.targetPeerId)
+            )
+              this.events.onReaction?.(
+                message.fromPeerId,
+                message.targetPeerId,
+                message.emoji,
+              );
+            return;
+          case 'PEER_PREVIEW':
+            if (
+              message.peerId !== identity.peerId &&
+              this.inRoom(message.peerId)
+            )
+              this.events.onPreview?.(message.peerId, message.image);
+            return;
+          case 'KICKED':
+            this.kicked = true;
+            return;
           default:
             socket.destroy();
         }
@@ -157,6 +196,11 @@ export class RoomClient {
         else if (!this.closing) onDisconnect();
       });
     });
+  }
+  private inRoom(peerId: string): boolean {
+    return !!this.snapshotValue?.participants.some(
+      (peer) => peer.peerId === peerId,
+    );
   }
   /** Returns false for a message ID that was already delivered. */
   private remember(message: ChatMessage): boolean {
@@ -186,12 +230,39 @@ export class RoomClient {
   sendTyping(): void {
     this.live().send({ version: PROTOCOL_VERSION, type: 'TYPING' });
   }
-  sendChat(id: string, text: string): void {
+  sendChat(id: string, text: string, replyTo: string | null = null): void {
     this.live().send({
       version: PROTOCOL_VERSION,
       type: 'CHAT_SEND',
       id,
       text,
+      replyTo,
+    });
+  }
+  editChat(id: string, text: string): void {
+    this.live().send({
+      version: PROTOCOL_VERSION,
+      type: 'CHAT_EDIT',
+      id,
+      text,
+    });
+  }
+  deleteChat(id: string): void {
+    this.live().send({ version: PROTOCOL_VERSION, type: 'CHAT_DELETE', id });
+  }
+  react(targetPeerId: string, emoji: Reaction): void {
+    this.live().send({
+      version: PROTOCOL_VERSION,
+      type: 'REACT',
+      targetPeerId,
+      emoji,
+    });
+  }
+  setPreview(image: string | null): void {
+    this.live().send({
+      version: PROTOCOL_VERSION,
+      type: 'STREAM_PREVIEW',
+      image,
     });
   }
 }

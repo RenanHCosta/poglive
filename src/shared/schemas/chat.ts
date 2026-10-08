@@ -28,9 +28,33 @@ export const chatMessageSchema = z
     authorName: displayNameSchema,
     text: chatTextSchema,
     sentAt: z.number().int().min(0).max(8.64e15),
+    /** Message this one answers; may point to one no longer in the log. */
+    replyTo: z.uuid().nullable(),
+    editedAt: z.number().int().min(0).max(8.64e15).nullable(),
   })
   .strict();
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
+
+/** Fixed set: reactions are a signal, not a second chat. */
+export const REACTIONS = [
+  '🔥',
+  '😂',
+  '👏',
+  '😮',
+  '❤️',
+  '💀',
+  '🎉',
+  '👀',
+] as const;
+export const reactionSchema = z.enum(REACTIONS);
+export type Reaction = z.infer<typeof reactionSchema>;
+
+// Small JPEG thumbnail of a stream, shown before anyone starts watching.
+export const MAX_PREVIEW_LENGTH = 40_000;
+export const previewImageSchema = z
+  .string()
+  .max(MAX_PREVIEW_LENGTH)
+  .regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/);
 
 export const chatRejectionSchema = z.enum(['RATE_LIMITED', 'UNAVAILABLE']);
 export type ChatRejection = z.infer<typeof chatRejectionSchema>;
@@ -55,6 +79,33 @@ export const roomEventSchema = z.discriminatedUnion('type', [
       type: z.literal('CHAT_MESSAGE'),
       roomId: z.uuid(),
       message: chatMessageSchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('CHAT_UPDATED'),
+      roomId: z.uuid(),
+      message: chatMessageSchema,
+    })
+    .strict(),
+  z
+    .object({ type: z.literal('CHAT_DELETED'), roomId: z.uuid(), id: z.uuid() })
+    .strict(),
+  z
+    .object({
+      type: z.literal('REACTION'),
+      roomId: z.uuid(),
+      fromPeerId: z.uuid(),
+      targetPeerId: z.uuid(),
+      emoji: reactionSchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('PREVIEW'),
+      roomId: z.uuid(),
+      peerId: z.uuid(),
+      image: previewImageSchema.nullable(),
     })
     .strict(),
   z

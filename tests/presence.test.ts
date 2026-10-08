@@ -265,7 +265,7 @@ test('members cannot send host-only messages', async () => {
     socket.resume();
     const memberIdentity = identity('Forger');
     send({
-      version: 2,
+      version: 3,
       type: 'ROOM_JOIN',
       roomId: invite.roomId,
       identity: memberIdentity,
@@ -273,7 +273,7 @@ test('members cannot send host-only messages', async () => {
     });
     await until(() => host.snapshot().participants.length === 2);
     send({
-      version: 2,
+      version: 3,
       type: 'CHAT_MESSAGE',
       message: {
         id: randomUUID(),
@@ -317,7 +317,7 @@ test('chat log is bounded and history batches fit the transport frame', () => {
   assert.equal(small.historyBatches().flat().length, CHAT_HISTORY_LIMIT);
   for (const batch of batches) {
     const frame = JSON.stringify({
-      version: 2,
+      version: 3,
       type: 'CHAT_HISTORY',
       messages: batch,
     });
@@ -369,6 +369,10 @@ test('legacy invitations explain that the host must update', () => {
     /versão anterior do Poglive/,
   );
   assert.throws(() => decodeInvite('VS1.abc'), /versão anterior do Poglive/);
+  assert.throws(
+    () => decodeInvite(`PL2.${'A'.repeat(94)}`),
+    /versão anterior do Poglive/,
+  );
   assert.throws(() => decodeInvite('PL3.abc'), /inválido/);
 });
 
