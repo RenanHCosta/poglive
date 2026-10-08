@@ -8,6 +8,8 @@ import { capturePreview } from './preview';
 import type { Settings } from '../../shared/schemas/settings';
 import { ChatController } from './ChatController';
 import { ClipManager, SELF_CLIP } from './clips/ClipManager';
+import { ClipShare } from './clips/ClipShare';
+import { WebmClipBuffer } from './clips/webm';
 import type { ClipSource } from './clips/ClipManager';
 import { pushToast } from './toasts';
 import { PeerMesh } from './PeerMesh';
@@ -47,6 +49,7 @@ export class RoomSession {
   readonly share = new ScreenShare();
   readonly chat: ChatController;
   readonly clips: ClipManager;
+  readonly clipShare: ClipShare;
   readonly reactions = new Store<readonly LiveReaction[]>([]);
   /** Latest stream thumbnail per streaming peer. */
   readonly previews = new Store<ReadonlyMap<string, string>>(new Map());
@@ -77,7 +80,14 @@ export class RoomSession {
           ? `${self.displayName} (minha transmissão)`
           : (this.nameOf(key) ?? 'Transmissão'),
       (key) => this.peerMesh.notifyClip(key),
+      (key, bytes) => this.shareClip(key, bytes),
     );
+    this.clipShare = new ClipShare(self.peerId, {
+      requestFile: (peerId, fileId) =>
+        this.peerMesh.requestFile(peerId, fileId),
+      sendFile: (peerId, fileId, bytes) =>
+        this.peerMesh.sendFile(peerId, fileId, bytes),
+    });
     this.voice = new VoiceController(self.peerId, settings, (track) =>
       this.peerMesh.setVoice(track, this.voice.connected),
     );
@@ -86,7 +96,12 @@ export class RoomSession {
       self.peerId,
       rtcEndpoint,
       (peers, error) => this.meshChanged(peers, error),
-      (peerId) => this.clippedByPeer(peerId),
+      {
+        clipped: (peerId) => this.clippedByPeer(peerId),
+        fileRequested: (peerId, fileId) => this.clipShare.serve(peerId, fileId),
+        fileChannel: (peerId, fileId, channel) =>
+          this.clipShare.receive(peerId, fileId, channel),
+      },
     );
     this.unsubscribe.push(
       this.share.capture.subscribe(() => {
@@ -242,6 +257,25 @@ export class RoomSession {
     this.clips.sync(sources);
   }
 
+  /** Posts a saved clip in chat; viewers fetch it from this computer. */
+  shareClip(key: string, bytes: Uint8Array): void {
+    const parsed = new WebmClipBuffer(10 * 60 * 1000);
+    parsed.push(bytes);
+    const streamer = key === SELF_CLIP ? null : (this.nameOf(key) ?? 'alguém');
+    const name = streamer
+      ? `Clipe de ${streamer}`
+      : `Clipe de ${this.self.displayName}`;
+    const attachment = this.clipShare.offer(bytes, name, parsed.bufferedMs());
+    const seconds = Math.round(attachment.durationMs / 1000);
+    this.chat.send(
+      streamer
+        ? `🎬 Clipe da transmissão de ${streamer} (${seconds} s)`
+        : `🎬 Clipe da minha transmissão (${seconds} s)`,
+      null,
+      attachment,
+    );
+  }
+
   private clippedByPeer(peerId: string): void {
     const now = Date.now();
     // One notice per viewer every 10 s, however often they clip.
@@ -341,6 +375,7 @@ export class RoomSession {
     clearTimeout(this.presenceTimer);
     for (const stop of this.unsubscribe) stop();
     this.clips.close();
+    this.clipShare.close();
     this.share.close();
     this.voice.close();
     this.chat.close();

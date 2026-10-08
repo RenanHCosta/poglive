@@ -146,7 +146,7 @@ export async function runE2E(
     step('remote voice detected');
     // Text chat in both directions.
     await window.webContents.executeJavaScript(
-      `window.pogLive.command({ type: 'SEND_CHAT', id: crypto.randomUUID(), text: 'oi de ${role}', replyTo: null })`,
+      `window.pogLive.command({ type: 'SEND_CHAT', id: crypto.randomUUID(), text: 'oi de ${role}', replyTo: null, attachment: null })`,
     );
     const otherRole = role === 'host' ? 'guest' : 'host';
     await until(
@@ -187,6 +187,22 @@ export async function runE2E(
         60000,
       );
       step('notified of clip');
+      // The clip was posted in chat: fetch it peer to peer and play it.
+      await until(window, 'open chat', click('[aria-label="Mostrar chat"]'));
+      await until(
+        window,
+        'clip in chat',
+        click('.clip-card .button.primary', 'Assistir clipe'),
+        30000,
+      );
+      await until(
+        window,
+        'clip downloaded',
+        `(() => { const video = document.querySelector('.clip-card-video'); return !!video && video.readyState >= 1 && video.duration > 1; })()`,
+        30000,
+      );
+      step('shared clip downloaded from chat');
+      await until(window, 'close chat', click('[aria-label="Mostrar chat"]'));
       await until(
         window,
         'reaction',

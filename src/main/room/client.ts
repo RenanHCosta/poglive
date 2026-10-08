@@ -230,13 +230,19 @@ export class RoomClient {
   sendTyping(): void {
     this.live().send({ version: PROTOCOL_VERSION, type: 'TYPING' });
   }
-  sendChat(id: string, text: string, replyTo: string | null = null): void {
+  sendChat(
+    id: string,
+    text: string,
+    replyTo: string | null = null,
+    attachment: ChatMessage['attachment'] = null,
+  ): void {
     this.live().send({
       version: PROTOCOL_VERSION,
       type: 'CHAT_SEND',
       id,
       text,
       replyTo,
+      attachment,
     });
   }
   editChat(id: string, text: string): void {

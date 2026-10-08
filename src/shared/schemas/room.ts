@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { chatTextSchema, previewImageSchema, reactionSchema } from './chat';
+import {
+  chatTextSchema,
+  clipAttachmentSchema,
+  previewImageSchema,
+  reactionSchema,
+} from './chat';
 import { displayNameSchema } from './common';
 
 export const MAX_PEERS = 8;
@@ -129,6 +134,7 @@ export const commandSchema = z.discriminatedUnion('type', [
       id: z.uuid(),
       text: chatTextSchema,
       replyTo: z.uuid().nullable(),
+      attachment: clipAttachmentSchema.nullable(),
     })
     .strict(),
   z

@@ -573,6 +573,13 @@ function ClipSection({ settings }: { settings: Settings }) {
         label="Clipes da minha transmissão"
         description="Também guarda os últimos segundos do que você transmite, para salvar seus próprios momentos."
       />
+      <Toggle
+        checked={clips.shareToChat}
+        disabled={!clips.enabled}
+        onChange={(shareToChat) => setClips({ shareToChat })}
+        label="Enviar clipes no chat ao salvar"
+        description="O clipe aparece no #chat da sala e quem clicar baixa direto do seu computador. Desligado, o aviso de clipe salvo oferece o botão de enviar."
+      />
       <div>
         <button
           type="button"

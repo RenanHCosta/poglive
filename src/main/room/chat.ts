@@ -49,6 +49,7 @@ export class ChatLog {
     id: string,
     text: string,
     replyTo: string | null = null,
+    attachment: ChatMessage['attachment'] = null,
   ): ChatMessage | null {
     if (this.ids.has(id)) return null;
     // Strictly increasing timestamps keep ordering stable across clock steps.
@@ -62,6 +63,7 @@ export class ChatLog {
       sentAt,
       // A reply to an unknown message is kept as a plain message.
       replyTo: replyTo && this.ids.has(replyTo) ? replyTo : null,
+      attachment,
       editedAt: null,
     };
     this.log.push(message);

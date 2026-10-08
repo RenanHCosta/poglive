@@ -12,6 +12,7 @@ import {
   chatMessageSchema,
   chatRejectionSchema,
   chatTextSchema,
+  clipAttachmentSchema,
   previewImageSchema,
   reactionSchema,
 } from '../schemas/chat';
@@ -82,6 +83,7 @@ export const networkMessageSchema = z.discriminatedUnion('type', [
       id: z.uuid(),
       text: chatTextSchema,
       replyTo: z.uuid().nullable(),
+      attachment: clipAttachmentSchema.nullable(),
     })
     .strict(),
   // Member → host: only the author may edit; author or host may delete.

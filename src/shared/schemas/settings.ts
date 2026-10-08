@@ -60,6 +60,7 @@ export const settingsSchema = z
         enabled: z.boolean(),
         durationSeconds: z.union([z.literal(15), z.literal(30), z.literal(60)]),
         recordOwnStream: z.boolean(),
+        shareToChat: z.boolean(),
       })
       .strict(),
     stream: captureOptionsSchema,
@@ -93,7 +94,12 @@ export const DEFAULT_SETTINGS: Settings = {
     SAVE_CLIP: 'Alt+Shift+C',
   },
   notifications: { sounds: true },
-  clips: { enabled: true, durationSeconds: 30, recordOwnStream: false },
+  clips: {
+    enabled: true,
+    durationSeconds: 30,
+    recordOwnStream: false,
+    shareToChat: true,
+  },
   stream: {
     quality: '1080p',
     frameRate: 30,

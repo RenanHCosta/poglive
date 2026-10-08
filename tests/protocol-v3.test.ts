@@ -248,3 +248,41 @@ test('unknown message types from newer builds are ignored, not fatal', async () 
     await host.close();
   }
 });
+
+test('clip attachments are relayed as descriptions only', async () => {
+  const host = new RoomHost(identity('Host'), 'Clipes', () => {});
+  const seen: ChatMessage[] = [];
+  const author = new RoomClient();
+  const viewer = new RoomClient({ onChat: (message) => seen.push(message) });
+  try {
+    await host.listen('127.0.0.1');
+    const invite = decodeInvite(host.invite);
+    await author.join(invite, identity('Autor'), () => {});
+    await viewer.join(invite, identity('Leitor'), () => {});
+    const attachment = {
+      kind: 'clip' as const,
+      id: randomUUID(),
+      name: 'Clipe de Autor',
+      size: 22_000_000,
+      durationMs: 30_000,
+    };
+    author.sendChat(randomUUID(), '🎬 Clipe (30 s)', null, attachment);
+    await until(() => seen.length === 1);
+    assert.deepEqual(seen[0]?.attachment, attachment);
+    assert.equal(
+      networkMessageSchema.safeParse({
+        version: 3,
+        type: 'CHAT_SEND',
+        id: randomUUID(),
+        text: 'grande demais',
+        replyTo: null,
+        attachment: { ...attachment, size: 600 * 1024 * 1024 },
+      }).success,
+      false,
+    );
+  } finally {
+    author.close();
+    viewer.close();
+    await host.close();
+  }
+});

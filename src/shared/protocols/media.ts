@@ -37,6 +37,12 @@ export const mediaMessageSchema = z.discriminatedUnion('type', [
   z.strictObject({ ...stream, type: z.literal('WATCH_ACCEPTED') }),
   // Viewer → streamer: a clip of this stream was saved, for transparency.
   z.strictObject({ ...stream, type: z.literal('CLIP_SAVED') }),
+  // Asks the author of a chat attachment to send it over a file channel.
+  z.strictObject({
+    version: z.literal(1),
+    type: z.literal('FILE_REQUEST'),
+    fileId: z.uuid(),
+  }),
   z.strictObject({
     ...stream,
     type: z.literal('QUALITY_REPORT'),

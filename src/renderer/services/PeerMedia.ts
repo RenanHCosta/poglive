@@ -69,6 +69,7 @@ export class PeerMedia {
     private readonly changed: () => void,
     private readonly fail: () => void,
     private readonly clipped: () => void = () => {},
+    private readonly fileRequested: (fileId: string) => void = () => {},
   ) {
     pc.ontrack = ({ track, transceiver }) => {
       if (this.closed) return;
@@ -190,6 +191,9 @@ export class PeerMedia {
         this.accepted = true;
         this.checkReceiving();
         break;
+      case 'FILE_REQUEST':
+        this.fileRequested(message.fileId);
+        return;
       case 'CLIP_SAVED':
         if (message.streamId === this.local?.streamId) this.clipped();
         return;
@@ -214,6 +218,10 @@ export class PeerMedia {
         break;
     }
     this.changed();
+  }
+  requestFile(fileId: string): void {
+    if (this.ready && !this.closed)
+      this.send({ version: 1, type: 'FILE_REQUEST', fileId });
   }
   /** Tells the streamer that a clip of their stream was saved. */
   notifyClip(): void {

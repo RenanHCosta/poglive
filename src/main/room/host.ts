@@ -16,7 +16,7 @@ import type {
   VoiceState,
 } from '../../shared/schemas/room';
 import type { NetworkMessage } from '../../shared/protocols/network';
-import type { Reaction } from '../../shared/schemas/chat';
+import type { ChatMessage, Reaction } from '../../shared/schemas/chat';
 import { signalSchema } from '../../shared/protocols/signaling';
 import type { Signal } from '../../shared/protocols/signaling';
 import { SignalRouter } from '../signaling/router';
@@ -248,6 +248,7 @@ export class RoomHost {
           message.id,
           message.text,
           message.replyTo,
+          message.attachment,
         );
         return;
       case 'CHAT_EDIT':
@@ -339,8 +340,9 @@ export class RoomHost {
     id: string,
     text: string,
     replyTo: string | null = null,
+    attachment: ChatMessage['attachment'] = null,
   ): void {
-    const message = this.chat.append(author, id, text, replyTo);
+    const message = this.chat.append(author, id, text, replyTo, attachment);
     if (!message) {
       // A retry of a delivered message: confirm it to its author only, so a
       // slow first confirmation never produces a duplicate post.
@@ -419,12 +421,17 @@ export class RoomHost {
     this.hostVoice = voice;
     this.broadcastState();
   }
-  sendChat(id: string, text: string, replyTo: string | null = null): void {
+  sendChat(
+    id: string,
+    text: string,
+    replyTo: string | null = null,
+    attachment: ChatMessage['attachment'] = null,
+  ): void {
     if (!this.hostChatRate.take()) {
       this.events.onChatRejected?.(id, 'RATE_LIMITED');
       return;
     }
-    this.publishChat(this.identity, id, text, replyTo);
+    this.publishChat(this.identity, id, text, replyTo, attachment);
   }
   editChat(id: string, text: string): void {
     this.publishEdit(this.identity.peerId, id, text);

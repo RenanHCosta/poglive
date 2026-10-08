@@ -9,6 +9,7 @@ import { Avatar } from '../common/Avatar';
 import { Modal } from '../common/Modal';
 import { Icon } from '../Icon';
 import { MessageContent } from './MessageContent';
+import { ClipCard } from './ClipCard';
 
 // Consecutive messages from one author within this window share a header.
 const GROUP_WINDOW_MS = 7 * 60 * 1000;
@@ -117,6 +118,7 @@ export function ChatView({
           {entries.map((entry, index) => (
             <MessageRow
               key={entry.id}
+              session={session}
               entry={entry}
               previous={entries[index - 1]}
               self={self}
@@ -211,6 +213,7 @@ export function ChatView({
 }
 
 function MessageRow({
+  session,
   entry,
   previous,
   self,
@@ -227,6 +230,7 @@ function MessageRow({
   onRetry,
   onDiscard,
 }: {
+  session: RoomSession;
   entry: ChatEntry;
   previous: ChatEntry | undefined;
   self: Identity;
@@ -328,6 +332,13 @@ function MessageRow({
                   names={names}
                   selfName={self.displayName}
                 />
+                {entry.attachment && entry.delivery === 'SENT' && (
+                  <ClipCard
+                    session={session}
+                    authorId={entry.authorId}
+                    attachment={entry.attachment}
+                  />
+                )}
                 {entry.editedAt && (
                   <span
                     className="message-edited"

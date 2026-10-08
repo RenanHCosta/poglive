@@ -11,6 +11,19 @@ import { preferHardwareVideo } from './codecs';
 
 // Bumped with the voice transceiver so mismatched builds fail with a clear reason.
 export const CONTROL_CHANNEL = 'poglive-control-v3';
+// One short-lived data channel per shared file, opened by the sender.
+export const FILE_CHANNEL_PREFIX = 'poglive-file-v1:';
+const FILE_CHANNEL_PATTERN =
+  /^poglive-file-v1:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+const FILE_CHUNK_BYTES = 64 * 1024;
+const FILE_BUFFER_HIGH = 4 * 1024 * 1024;
+const FILE_BUFFER_LOW = 1024 * 1024;
+
+export interface LinkHooks {
+  clipped?: () => void;
+  fileRequested?: (fileId: string) => void;
+  fileChannel?: (fileId: string, channel: RTCDataChannel) => void;
+}
 
 export type LinkStatus = 'CONNECTING' | 'CONNECTED' | 'DISCONNECTED' | 'ERROR';
 type Candidate = Extract<Signal, { type: 'ICE_CANDIDATE' }>['candidate'];
@@ -46,7 +59,7 @@ export class PeerLink {
     rtcEndpoint: { host: string; port: number },
     private readonly send: (signal: Signal) => Promise<void>,
     private readonly changed: () => void,
-    clipped: () => void = () => {},
+    private readonly hooks: LinkHooks = {},
   ) {
     this.pc = new RTCPeerConnection({
       iceServers: [{ urls: `stun:${rtcEndpoint.host}:${rtcEndpoint.port}` }],
@@ -56,7 +69,8 @@ export class PeerLink {
       (message) => this.sendControl(message),
       this.changed,
       () => this.fail(),
-      clipped,
+      () => this.hooks.clipped?.(),
+      (fileId) => this.hooks.fileRequested?.(fileId),
     );
     this.deadline = setTimeout(() => this.fail('TIMEOUT_25S'), 25000);
     this.pc.onicecandidate = ({ candidate }) => {
@@ -85,6 +99,14 @@ export class PeerLink {
       } else void this.sendIce(value).catch(() => this.fail());
     };
     this.pc.ondatachannel = ({ channel }) => {
+      const file = FILE_CHANNEL_PATTERN.exec(channel.label);
+      if (file?.[1]) {
+        // File channels are only accepted once the link is confirmed.
+        if (this.confirmed && this.hooks.fileChannel)
+          this.hooks.fileChannel(file[1], channel);
+        else channel.close();
+        return;
+      }
       if (channel.label !== CONTROL_CHANNEL) {
         channel.close();
         this.fail('INCOMPATIBLE_VERSION');
@@ -169,6 +191,55 @@ export class PeerLink {
     channel.onclose = () => {
       if (!this.closed) this.fail();
     };
+  }
+  /** Streams a file over a dedicated channel with bounded buffering. */
+  async sendFile(fileId: string, bytes: Uint8Array): Promise<void> {
+    if (this.closed || !this.confirmed) throw new Error('Link not ready');
+    const channel = this.pc.createDataChannel(
+      `${FILE_CHANNEL_PREFIX}${fileId}`,
+      {
+        ordered: true,
+      },
+    );
+    channel.binaryType = 'arraybuffer';
+    channel.bufferedAmountLowThreshold = FILE_BUFFER_LOW;
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(
+          () => reject(new Error('File channel timeout')),
+          10000,
+        );
+        channel.onopen = () => {
+          clearTimeout(timer);
+          resolve();
+        };
+        channel.onclose = () => {
+          clearTimeout(timer);
+          reject(new Error('File channel closed'));
+        };
+      });
+      for (let offset = 0; offset < bytes.length; offset += FILE_CHUNK_BYTES) {
+        if (this.closed || channel.readyState !== 'open')
+          throw new Error('File channel closed');
+        if (channel.bufferedAmount > FILE_BUFFER_HIGH)
+          await new Promise<void>((resolve) => {
+            channel.onbufferedamountlow = () => resolve();
+          });
+        channel.send(bytes.slice(offset, offset + FILE_CHUNK_BYTES));
+      }
+      channel.send('END');
+      // Let SCTP drain before closing so the receiver gets every byte.
+      while (channel.bufferedAmount > 0 && channel.readyState === 'open')
+        await new Promise((resolve) => setTimeout(resolve, 50));
+    } finally {
+      channel.onclose = null;
+      setTimeout(() => channel.close(), 1000);
+    }
+  }
+  requestFile(fileId: string): boolean {
+    if (this.closed || !this.confirmed) return false;
+    this.media.requestFile(fileId);
+    return true;
   }
   async offer(): Promise<void> {
     // Order matters: MEDIA_SECTION addresses transceivers by this index.

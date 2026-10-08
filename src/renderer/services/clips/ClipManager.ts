@@ -38,6 +38,7 @@ export class ClipManager {
     private settings: Settings['clips'],
     private readonly label: (key: string) => string,
     private readonly notify: (key: string) => void,
+    private readonly share: (key: string, bytes: Uint8Array) => void,
   ) {}
 
   setSettings(settings: Settings['clips']): void {
@@ -128,10 +129,17 @@ export class ClipManager {
         return;
       }
       void playSound('clip');
-      pushToast(`Clipe salvo: ${result.fileName}`, 'success', {
-        label: 'Mostrar',
-        run: () => void window.pogLive.revealClip(result.fileName),
-      });
+      if (this.settings.shareToChat) {
+        this.share(key, bytes);
+        pushToast('Clipe salvo e enviado no #chat.', 'success', {
+          label: 'Mostrar',
+          run: () => void window.pogLive.revealClip(result.fileName),
+        });
+      } else
+        pushToast(`Clipe salvo: ${result.fileName}`, 'success', {
+          label: 'Enviar no chat',
+          run: () => this.share(key, bytes),
+        });
       if (key !== SELF_CLIP) this.notify(key);
     } catch {
       pushToast('Não foi possível salvar o clipe.', 'error');

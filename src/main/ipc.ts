@@ -299,7 +299,12 @@ export function registerIpc(
           rooms.updateVoice(command.voice);
         else if (command.type === 'TYPING') rooms.sendTyping();
         else if (command.type === 'SEND_CHAT')
-          rooms.sendChat(command.id, command.text, command.replyTo);
+          rooms.sendChat(
+            command.id,
+            command.text,
+            command.replyTo,
+            command.attachment,
+          );
         else if (command.type === 'EDIT_CHAT')
           rooms.editChat(command.id, command.text);
         else if (command.type === 'DELETE_CHAT') rooms.deleteChat(command.id);

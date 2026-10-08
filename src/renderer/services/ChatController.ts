@@ -129,7 +129,11 @@ export class ChatController {
     });
   }
 
-  send(text: string, replyTo: string | null = null): boolean {
+  send(
+    text: string,
+    replyTo: string | null = null,
+    attachment: ChatMessage['attachment'] = null,
+  ): boolean {
     const normalized = normalize(text);
     if (!normalized || normalized.length > MAX_CHAT_LENGTH || this.closed)
       return false;
@@ -142,10 +146,11 @@ export class ChatController {
       text: normalized,
       sentAt: Date.now(),
       replyTo,
+      attachment,
       editedAt: null,
       delivery: 'PENDING',
     });
-    this.deliver(id, normalized, replyTo);
+    this.deliver(id, normalized, replyTo, attachment);
     this.lastTypingSent = 0;
     return true;
   }
@@ -164,7 +169,7 @@ export class ChatController {
           : item,
       ),
     );
-    this.deliver(id, entry.text, entry.replyTo);
+    this.deliver(id, entry.text, entry.replyTo, entry.attachment);
   }
 
   /** Edits one of the user's delivered messages; the host confirms. */
@@ -236,7 +241,12 @@ export class ChatController {
     this.entries.update((entries) => entries.filter((item) => item.id !== id));
   }
 
-  private deliver(id: string, text: string, replyTo: string | null): void {
+  private deliver(
+    id: string,
+    text: string,
+    replyTo: string | null,
+    attachment: ChatMessage['attachment'] = null,
+  ): void {
     this.timers.set(
       id,
       setTimeout(
@@ -245,7 +255,7 @@ export class ChatController {
       ),
     );
     void window.pogLive
-      .command({ type: 'SEND_CHAT', id, text, replyTo })
+      .command({ type: 'SEND_CHAT', id, text, replyTo, attachment })
       .then((result) => {
         if (result.status === 'ERROR') this.markFailed(id, result.message);
       })

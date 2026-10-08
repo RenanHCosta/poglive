@@ -21,6 +21,27 @@ export const chatTextSchema = z
     'Caracteres não permitidos',
   );
 
+export const MAX_ATTACHMENT_BYTES = 512 * 1024 * 1024;
+
+/**
+ * A clip shared in chat. The host only relays this description; the bytes
+ * go straight from the author's computer to whoever opens it.
+ */
+export const clipAttachmentSchema = z
+  .object({
+    kind: z.literal('clip'),
+    id: z.uuid(),
+    name: z.string().min(1).max(120),
+    size: z.number().int().min(1).max(MAX_ATTACHMENT_BYTES),
+    durationMs: z
+      .number()
+      .int()
+      .min(0)
+      .max(10 * 60 * 1000),
+  })
+  .strict();
+export type ClipAttachment = z.infer<typeof clipAttachmentSchema>;
+
 export const chatMessageSchema = z
   .object({
     id: z.uuid(),
@@ -30,6 +51,7 @@ export const chatMessageSchema = z
     sentAt: z.number().int().min(0).max(8.64e15),
     /** Message this one answers; may point to one no longer in the log. */
     replyTo: z.uuid().nullable(),
+    attachment: clipAttachmentSchema.nullable(),
     editedAt: z.number().int().min(0).max(8.64e15).nullable(),
   })
   .strict();

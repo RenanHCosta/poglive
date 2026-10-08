@@ -261,9 +261,15 @@ export class RoomService {
     if (this.host) this.host.sendTyping();
     else if (this.client?.room) this.client.sendTyping();
   }
-  sendChat(id: string, text: string, replyTo: string | null = null): void {
-    if (this.host) this.host.sendChat(id, text, replyTo);
-    else if (this.client?.room) this.client.sendChat(id, text, replyTo);
+  sendChat(
+    id: string,
+    text: string,
+    replyTo: string | null = null,
+    attachment: ChatMessage['attachment'] = null,
+  ): void {
+    if (this.host) this.host.sendChat(id, text, replyTo, attachment);
+    else if (this.client?.room)
+      this.client.sendChat(id, text, replyTo, attachment);
     else throw new Error('Entre em uma sala para enviar mensagens.');
   }
   editChat(id: string, text: string): void {

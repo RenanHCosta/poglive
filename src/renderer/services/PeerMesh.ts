@@ -17,6 +17,16 @@ import type {
 const RETRY_DELAYS_MS = [2000, 5000, 10000, 20000, 30000];
 const WAITING_TIMEOUT_MS = 30000;
 
+export interface MeshHooks {
+  clipped?: (peerId: string) => void;
+  fileRequested?: (peerId: string, fileId: string) => void;
+  fileChannel?: (
+    peerId: string,
+    fileId: string,
+    channel: RTCDataChannel,
+  ) => void;
+}
+
 export interface PeerConnectionView {
   peerId: string;
   displayName: string;
@@ -57,7 +67,7 @@ export class PeerMesh {
       peers: PeerConnectionView[],
       error: string | null,
     ) => void,
-    private readonly clipped: (peerId: string) => void = () => {},
+    private readonly hooks: MeshHooks = {},
   ) {}
   start(): void {
     this.timer = setTimeout(() => {
@@ -93,6 +103,19 @@ export class PeerMesh {
   }
   stopWatching(peerId: string): void {
     this.links.get(peerId)?.media.stopWatching();
+  }
+  requestFile(peerId: string, fileId: string): boolean {
+    const link = this.links.get(peerId);
+    return link?.status === 'CONNECTED' ? link.requestFile(fileId) : false;
+  }
+  async sendFile(
+    peerId: string,
+    fileId: string,
+    bytes: Uint8Array,
+  ): Promise<void> {
+    const link = this.links.get(peerId);
+    if (!link || link.status !== 'CONNECTED') throw new Error('No direct link');
+    await link.sendFile(fileId, bytes);
   }
   notifyClip(peerId: string): void {
     this.links.get(peerId)?.media.notifyClip();
@@ -185,7 +208,12 @@ export class PeerMesh {
       this.rtcEndpoint,
       this.send,
       () => this.changed(peerId, link),
-      () => this.clipped(peerId),
+      {
+        clipped: () => this.hooks.clipped?.(peerId),
+        fileRequested: (fileId) => this.hooks.fileRequested?.(peerId, fileId),
+        fileChannel: (fileId, channel) =>
+          this.hooks.fileChannel?.(peerId, fileId, channel),
+      },
     );
     this.links.set(peerId, link);
     link.media.setCapture(this.capture);
