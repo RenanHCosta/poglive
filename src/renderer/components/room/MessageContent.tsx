@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { parseMarkdown } from '../../services/markdown';
 import type { MarkdownNode } from '../../services/markdown';
@@ -90,7 +90,7 @@ function render(
   });
 }
 
-export function MessageContent({
+export const MessageContent = memo(function MessageContent({
   text,
   names,
   selfName,
@@ -101,4 +101,4 @@ export function MessageContent({
 }) {
   const nodes = useMemo(() => parseMarkdown(text, names), [text, names]);
   return <div className="message-text">{render(nodes, selfName)}</div>;
-}
+});

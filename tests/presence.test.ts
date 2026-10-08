@@ -5,7 +5,11 @@ import { connect } from 'node:tls';
 import type { TLSSocket } from 'node:tls';
 import { RoomHost } from '../src/main/room/host';
 import { RoomClient } from '../src/main/room/client';
-import { ChatLog, RateWindow } from '../src/main/room/chat';
+import {
+  ChatLog,
+  HISTORY_TOTAL_BYTES,
+  RateWindow,
+} from '../src/main/room/chat';
 import { decodeInvite } from '../src/main/room/invite';
 import { TLS_OPTIONS } from '../src/main/transport/channel';
 import { matchesCertificate } from '../src/main/transport/certificate';
@@ -165,21 +169,68 @@ test('chat flood is rejected per member without closing the connection', async (
   }
 });
 
-test('presence flooding closes the offending connection', async () => {
+test('presence bursts are coalesced and only abuse disconnects', async () => {
   const host = new RoomHost(identity('Host'), 'Abuse', () => {});
-  let disconnected = false;
-  const b = new RoomClient();
+  let honestDisconnected = false;
+  let abuserDisconnected = false;
+  const honest = new RoomClient();
+  const abuser = new RoomClient();
   try {
     await host.listen('127.0.0.1');
-    await b.join(decodeInvite(host.invite), identity('Abuser'), () => {
-      disconnected = true;
+    const invite = decodeInvite(host.invite);
+    const honestIdentity = identity('Rápido');
+    await honest.join(invite, honestIdentity, () => {
+      honestDisconnected = true;
     });
-    for (let index = 0; index < 20; index++)
-      b.updateVoice(voice({ muted: index % 2 === 0 }));
-    await until(() => disconnected);
-    await until(() => host.snapshot().participants.length === 1);
+    await abuser.join(invite, identity('Abuser'), () => {
+      abuserDisconnected = true;
+    });
+    // Fast toggling stays connected and converges on the last state.
+    for (let index = 0; index < 25; index++)
+      honest.updateVoice(voice({ muted: index % 2 === 0 }));
+    await until(
+      () =>
+        host
+          .snapshot()
+          .participants.find((peer) => peer.peerId === honestIdentity.peerId)
+          ?.voice.muted === true,
+      2500,
+    );
+    assert.equal(honestDisconnected, false);
+    for (let index = 0; index < 80; index++)
+      abuser.updateVoice(voice({ muted: index % 2 === 0 }));
+    await until(() => abuserDisconnected);
+    await until(() => host.snapshot().participants.length === 2);
+    assert.equal(honestDisconnected, false);
   } finally {
-    b.close();
+    honest.close();
+    abuser.close();
+    await host.close();
+  }
+});
+
+test('retrying a delivered message confirms it without posting twice', async () => {
+  const host = new RoomHost(identity('Host'), 'Retry', () => {});
+  const seen: ChatMessage[] = [];
+  const other: ChatMessage[] = [];
+  const author = new RoomClient({ onChat: (message) => seen.push(message) });
+  const watcher = new RoomClient({ onChat: (message) => other.push(message) });
+  try {
+    await host.listen('127.0.0.1');
+    const invite = decodeInvite(host.invite);
+    await author.join(invite, identity('Autor'), () => {});
+    await watcher.join(invite, identity('Leitor'), () => {});
+    const id = randomUUID();
+    author.sendChat(id, 'uma vez');
+    await until(() => other.length === 1);
+    author.sendChat(id, 'uma vez');
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    assert.equal(other.length, 1);
+    assert.equal(host.chatHistory().length, 1);
+    assert.equal(seen.length, 1);
+  } finally {
+    author.close();
+    watcher.close();
     await host.close();
   }
 });
@@ -241,19 +292,29 @@ test('members cannot send host-only messages', async () => {
 });
 
 test('chat log is bounded and history batches fit the transport frame', () => {
-  let now = 1000;
+  const now = 1000;
   const log = new ChatLog(() => now);
   const author = identity('Autor');
   for (let index = 0; index < CHAT_LOG_LIMIT + 20; index++) {
     log.append(author, randomUUID(), 'x'.repeat(2000));
-    now += 0; // Equal clock readings must still produce increasing timestamps.
   }
   const messages = log.messages();
   assert.equal(messages.length, CHAT_LOG_LIMIT);
   for (let index = 1; index < messages.length; index++)
     assert.ok(messages[index]!.sentAt > messages[index - 1]!.sentAt);
   const batches = log.historyBatches();
-  assert.equal(batches.flat().length, CHAT_HISTORY_LIMIT);
+  const history = batches.flat();
+  assert.ok(history.length > 0 && history.length <= CHAT_HISTORY_LIMIT);
+  // The newest messages are kept, oldest first, within the byte budget.
+  assert.equal(
+    history[history.length - 1]?.id,
+    messages[messages.length - 1]?.id,
+  );
+  assert.ok(Buffer.byteLength(JSON.stringify(history)) <= HISTORY_TOTAL_BYTES);
+  const small = new ChatLog();
+  for (let index = 0; index < 150; index++)
+    small.append(author, randomUUID(), `mensagem ${index}`);
+  assert.equal(small.historyBatches().flat().length, CHAT_HISTORY_LIMIT);
   for (const batch of batches) {
     const frame = JSON.stringify({
       version: 2,

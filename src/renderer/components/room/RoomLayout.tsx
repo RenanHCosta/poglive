@@ -40,10 +40,10 @@ export function RoomLayout({
   } | null>(null);
   const unread = useStore(session.chat.unread);
   const participants = room.room.participants;
-  const names = useMemo(
-    () => participants.map((peer) => peer.displayName),
-    [participants],
-  );
+  // Presence updates replace the participants array; only a change in names
+  // should re-parse chat messages.
+  const namesKey = participants.map((peer) => peer.displayName).join('\n');
+  const names = useMemo(() => namesKey.split('\n'), [namesKey]);
   const openMember = useCallback(
     (peerId: string, anchor: Anchor) => setMember({ peerId, anchor }),
     [],

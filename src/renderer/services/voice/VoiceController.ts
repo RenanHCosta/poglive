@@ -83,19 +83,22 @@ export class VoiceController {
     void this.playback.setSink(this.settings.audio.outputDeviceId);
     this.applyOutput();
     let micError: string | null = null;
+    let mic: MicrophoneInput | null = null;
     try {
-      this.mic = await MicrophoneInput.open(this.settings.audio);
+      mic = await MicrophoneInput.open(this.settings.audio);
     } catch (error: unknown) {
       micError =
         error instanceof MicrophoneError
           ? error.message
           : 'Não foi possível abrir o microfone.';
     }
-    if (generation !== this.generation) {
-      this.mic?.close();
-      this.mic = null;
+    // A leave (and maybe another join) happened meanwhile: never touch the
+    // microphone that a newer join owns.
+    if (generation !== this.generation || this.closed) {
+      mic?.close();
       return;
     }
+    this.mic = mic;
     this.view.update((view) => ({
       ...view,
       status: 'CONNECTED',

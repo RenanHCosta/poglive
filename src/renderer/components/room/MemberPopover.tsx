@@ -70,17 +70,27 @@ export function MemberPopover({
             <div className={`profile-link ${link.status.toLowerCase()}`}>
               <Icon name="signal" size={16} />
               <span>{LINK_LABELS[link.status]}</span>
-              {link.status === 'ERROR' && !incompatible && (
-                <button
-                  type="button"
-                  className="button small"
-                  onClick={() => session.reconnect(peer.peerId)}
-                >
-                  Tentar de novo
-                </button>
-              )}
+              {link.status === 'ERROR' &&
+                !incompatible &&
+                selfId < peer.peerId && (
+                  <button
+                    type="button"
+                    className="button small"
+                    onClick={() => session.reconnect(peer.peerId)}
+                  >
+                    Tentar de novo
+                  </button>
+                )}
             </div>
           )}
+          {link?.status === 'ERROR' &&
+            !incompatible &&
+            selfId > peer.peerId && (
+              <p className="field-hint">
+                O computador dessa pessoa refaz a conexão automaticamente em
+                alguns segundos.
+              </p>
+            )}
           {incompatible && (
             <p className="profile-warning">
               Esta pessoa usa uma versão diferente do Poglive. Atualizem o app e

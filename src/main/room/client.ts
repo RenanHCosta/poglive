@@ -113,6 +113,7 @@ export class RoomClient {
             return; // ROOM_STATE is authoritative; these are notifications.
           case 'CHAT_HISTORY':
             for (const item of message.messages) this.remember(item);
+            this.events.onHistory?.();
             return;
           case 'CHAT_MESSAGE':
             if (this.remember(message.message))

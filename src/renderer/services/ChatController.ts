@@ -46,7 +46,9 @@ export class ChatController {
 
   handle(event: RoomEvent): void {
     if (this.closed) return;
-    if (event.type === 'CHAT_MESSAGE' && event.roomId === this.roomId)
+    if (event.type === 'CHAT_HISTORY' && event.roomId === this.roomId)
+      void this.load();
+    else if (event.type === 'CHAT_MESSAGE' && event.roomId === this.roomId)
       this.accept(event.message, true);
     else if (event.type === 'CHAT_REJECTED' && event.roomId === this.roomId)
       this.markFailed(
@@ -95,16 +97,16 @@ export class ChatController {
       .get()
       .find((item) => item.kind === 'MESSAGE' && item.id === id);
     if (entry?.kind !== 'MESSAGE' || entry.delivery !== 'FAILED') return;
-    // A fresh ID: the host may have dropped the first attempt as a duplicate.
-    const nextId = crypto.randomUUID();
+    // Same ID: if the first attempt did arrive, the host only re-confirms it
+    // to us instead of posting the message twice.
     this.entries.update((entries) =>
       entries.map((item) =>
         item.kind === 'MESSAGE' && item.id === id
-          ? { ...item, id: nextId, delivery: 'PENDING', sentAt: Date.now() }
+          ? { ...item, delivery: 'PENDING', sentAt: Date.now() }
           : item,
       ),
     );
-    this.deliver(nextId, entry.text);
+    this.deliver(id, entry.text);
   }
 
   discard(id: string): void {

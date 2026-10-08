@@ -78,24 +78,36 @@ function parseInline(
   names: string[],
 ): MarkdownNode[] {
   if (depth > MAX_DEPTH) return text ? [{ type: 'text', value: text }] : [];
-  const active = rules(names);
+  // Each rule keeps its next match from the cursor; a rule is re-run only
+  // after the cursor passes its cached match, and a rule that found nothing
+  // never runs again. This keeps adversarial messages near linear.
+  const active = rules(names).map((rule) => ({
+    rule,
+    pattern: new RegExp(rule.pattern.source, `${rule.pattern.flags}g`),
+    next: undefined as RegExpExecArray | null | undefined,
+  }));
   const nodes: MarkdownNode[] = [];
-  let rest = text;
-  while (rest) {
-    let best: { match: RegExpExecArray; rule: Rule } | null = null;
-    for (const rule of active) {
-      const match = rule.pattern.exec(rest);
-      if (match && (!best || match.index < best.match.index))
-        best = { match, rule };
+  let cursor = 0;
+  while (cursor < text.length) {
+    let best: (typeof active)[number] | null = null;
+    for (const entry of active) {
+      if (entry.next === null) continue;
+      if (entry.next === undefined || entry.next.index < cursor) {
+        entry.pattern.lastIndex = cursor;
+        entry.next = entry.pattern.exec(text);
+        if (entry.next === null) continue;
+      }
+      if (!best?.next || entry.next.index < best.next.index) best = entry;
     }
-    if (!best) {
-      nodes.push({ type: 'text', value: rest });
+    const match = best?.next;
+    if (!best || !match) {
+      nodes.push({ type: 'text', value: text.slice(cursor) });
       break;
     }
-    if (best.match.index > 0)
-      nodes.push({ type: 'text', value: rest.slice(0, best.match.index) });
-    nodes.push(best.rule.build(best.match, depth));
-    rest = rest.slice(best.match.index + best.match[0].length);
+    if (match.index > cursor)
+      nodes.push({ type: 'text', value: text.slice(cursor, match.index) });
+    nodes.push(best.rule.build(match, depth));
+    cursor = match.index + match[0].length;
   }
   return mergeText(nodes);
 }

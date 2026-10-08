@@ -113,7 +113,7 @@ export class ScreenShare {
           );
           if (this.generation !== current) {
             audio.stop();
-            release(media);
+            await this.abandon(media);
             return;
           }
           media.addTrack(audio);
@@ -129,7 +129,7 @@ export class ScreenShare {
       track.contentHint = options.frameRate === 60 ? 'motion' : 'detail';
       await track.applyConstraints(constraints);
       if (this.generation !== current) {
-        release(media);
+        await this.abandon(media);
         return;
       }
       if (track.readyState !== 'live')
@@ -188,6 +188,20 @@ export class ScreenShare {
         void window.pogLive.captureCancel().catch(() => {});
       }
     }
+  }
+
+  /**
+   * A superseded start (cancelled or replaced) after the swap: the previous
+   * capture is already gone, so tear down everything this attempt created,
+   * including the process-audio helper, unless a newer attempt owns it.
+   */
+  private async abandon(media: MediaStream): Promise<void> {
+    release(media);
+    if (this.stream !== media) return;
+    this.stream = null;
+    this.live = null;
+    this.capture.set(null);
+    await stopProcessAudio();
   }
 
   /** A failed switch keeps the running share and surfaces the error on it. */

@@ -4,6 +4,9 @@ import type { Identity } from '../../shared/schemas/room';
 
 // Leaves room for the envelope inside the 64 KiB transport frame.
 const HISTORY_BATCH_BYTES = 48 * 1024;
+// The admission burst (accept + history + state) is written in one tick and
+// must stay well under the 256 KiB backpressure cutoff in Channel.send.
+export const HISTORY_TOTAL_BYTES = 160 * 1024;
 
 /** Sliding-window limiter: at most `limit` events per `windowMs`. */
 export class RateWindow {
@@ -52,12 +55,26 @@ export class ChatLog {
     }
     return message;
   }
+  find(id: string): ChatMessage | undefined {
+    return this.ids.has(id)
+      ? this.log.find((message) => message.id === id)
+      : undefined;
+  }
   messages(): ChatMessage[] {
     return [...this.log];
   }
-  /** Most recent history, oldest first, split to respect the frame limit. */
+  /**
+   * Most recent history, oldest first, bounded by count and total bytes and
+   * split to respect the frame limit.
+   */
   historyBatches(): ChatMessage[][] {
-    const recent = this.log.slice(-CHAT_HISTORY_LIMIT);
+    const recent: ChatMessage[] = [];
+    let total = 0;
+    for (const message of this.log.slice(-CHAT_HISTORY_LIMIT).reverse()) {
+      total += Buffer.byteLength(JSON.stringify(message)) + 1;
+      if (total > HISTORY_TOTAL_BYTES) break;
+      recent.unshift(message);
+    }
     const batches: ChatMessage[][] = [];
     let current: ChatMessage[] = [];
     let bytes = 0;

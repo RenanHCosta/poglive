@@ -13,6 +13,8 @@ import { playSound } from './sounds';
 import { Store } from './store';
 import { effectiveMuted, VoiceController } from './voice/VoiceController';
 
+const PRESENCE_INTERVAL_MS = 250;
+
 export interface MeshView {
   peers: PeerConnectionView[];
   error: string | null;
@@ -31,6 +33,7 @@ export class RoomSession {
   private readonly unsubscribe: (() => void)[] = [];
   private lastPresence: string | null = null;
   private presenceTimer: ReturnType<typeof setTimeout> | undefined;
+  private lastPresenceAt = 0;
   private roster: RoomSnapshot['participants'] | null = null;
   private streamIds = new Map<string, string>();
   private closed = false;
@@ -141,24 +144,35 @@ export class RoomSession {
     };
   }
 
-  /** Coalesces rapid toggles into one presence update for the host. */
+  /**
+   * Throttles presence to at most one update per PRESENCE_INTERVAL_MS (well
+   * under the host's rate), always delivering the latest state at the end.
+   */
   private syncPresence(): void {
-    if (this.closed) return;
-    clearTimeout(this.presenceTimer);
-    this.presenceTimer = setTimeout(() => {
-      const presence = this.presence();
-      const key = JSON.stringify(presence);
-      if (key === this.lastPresence || this.closed) return;
-      this.lastPresence = key;
-      void window.pogLive
-        .command({ type: 'UPDATE_VOICE', voice: presence })
-        .then((result) => {
-          if (result.status === 'ERROR') this.lastPresence = null;
-        })
-        .catch(() => {
-          this.lastPresence = null;
-        });
-    }, 60);
+    if (this.closed || this.presenceTimer !== undefined) return;
+    const wait = Math.max(
+      0,
+      this.lastPresenceAt + PRESENCE_INTERVAL_MS - Date.now(),
+    );
+    this.presenceTimer = setTimeout(
+      () => {
+        this.presenceTimer = undefined;
+        this.lastPresenceAt = Date.now();
+        const presence = this.presence();
+        const key = JSON.stringify(presence);
+        if (key === this.lastPresence || this.closed) return;
+        this.lastPresence = key;
+        void window.pogLive
+          .command({ type: 'UPDATE_VOICE', voice: presence })
+          .then((result) => {
+            if (result.status === 'ERROR') this.lastPresence = null;
+          })
+          .catch(() => {
+            this.lastPresence = null;
+          });
+      },
+      Math.max(wait, 30),
+    );
   }
 
   close(): void {

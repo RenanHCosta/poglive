@@ -75,6 +75,10 @@ export class RoomService {
         if (owner() && roomId)
           this.emit({ type: 'CHAT_MESSAGE', roomId, message });
       },
+      onHistory: () => {
+        const roomId = this.activeRoomId();
+        if (owner() && roomId) this.emit({ type: 'CHAT_HISTORY', roomId });
+      },
       onChatRejected: (id, reason) => {
         const roomId = this.activeRoomId();
         if (owner() && roomId)

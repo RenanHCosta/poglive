@@ -45,6 +45,9 @@ export class CaptureService {
           'mediaTypes' in details &&
           Array.isArray(details.mediaTypes) &&
           details.mediaTypes.length === 0;
+        // Audio-only requests are microphones: Chromium's legacy desktop
+        // capture through getUserMedia always includes video, which stays
+        // denied here and must use the one-shot display handler below.
         const microphone =
           permission === 'media' &&
           'mediaTypes' in details &&

@@ -23,8 +23,11 @@ import { LanStunServer } from '../networking/lan-stun-server';
 import { ChatLog, RateWindow } from './chat';
 import type { RoomEvents } from './events';
 
-// Presence changes are human-driven; anything faster is a misbehaving client.
+// Presence changes are human-driven. Bursts beyond the normal rate are
+// coalesced (last state wins); only an absurd rate counts as abuse.
 const VOICE_UPDATES_PER_SECOND = 10;
+const VOICE_ABUSE_PER_SECOND = 50;
+const VOICE_COALESCE_MS = 1000;
 
 interface Member {
   identity: Identity;
@@ -32,6 +35,11 @@ interface Member {
   voice: VoiceState;
   chatRate: RateWindow;
   voiceRate: RateWindow;
+  voiceAbuse: RateWindow;
+  pendingVoice: {
+    voice: VoiceState;
+    timer: ReturnType<typeof setTimeout>;
+  } | null;
 }
 
 export class RoomHost {
@@ -113,6 +121,8 @@ export class RoomHost {
             voice: DISCONNECTED_VOICE,
             chatRate: RateWindow.chat(),
             voiceRate: new RateWindow(VOICE_UPDATES_PER_SECOND, 1000),
+            voiceAbuse: new RateWindow(VOICE_ABUSE_PER_SECOND, 1000),
+            pendingVoice: null,
           });
           channel.send({
             version: PROTOCOL_VERSION,
@@ -144,6 +154,10 @@ export class RoomHost {
         socket.once('close', () => {
           clearTimeout(admissionTimer);
           this.channels.delete(channel);
+          const pending = memberId
+            ? this.members.get(memberId)?.pendingVoice
+            : null;
+          if (pending) clearTimeout(pending.timer);
           if (memberId && this.members.delete(memberId) && !this.closing) {
             this.router.remove(memberId);
             this.broadcast({
@@ -180,11 +194,27 @@ export class RoomHost {
     }
     switch (message.type) {
       case 'VOICE_STATE':
-        if (!member.voiceRate.take()) {
+        if (!member.voiceAbuse.take()) {
           channel.close();
           return;
         }
-        this.setMemberVoice(member, message.voice);
+        if (member.pendingVoice) {
+          member.pendingVoice.voice = message.voice;
+          return;
+        }
+        if (member.voiceRate.take()) {
+          this.setMemberVoice(member, message.voice);
+          return;
+        }
+        member.pendingVoice = {
+          voice: message.voice,
+          timer: setTimeout(() => {
+            const pending = member.pendingVoice;
+            member.pendingVoice = null;
+            if (pending && this.members.get(memberId) === member)
+              this.setMemberVoice(member, pending.voice);
+          }, VOICE_COALESCE_MS),
+        };
         return;
       case 'CHAT_SEND':
         if (!member.chatRate.take()) {
@@ -215,7 +245,21 @@ export class RoomHost {
   }
   private publishChat(author: Identity, id: string, text: string): void {
     const message = this.chat.append(author, id, text);
-    if (!message) return; // Duplicate ID: the first delivery already went out.
+    if (!message) {
+      // A retry of a delivered message: confirm it to its author only, so a
+      // slow first confirmation never produces a duplicate post.
+      const existing = this.chat.find(id);
+      if (existing?.authorId !== author.peerId) return;
+      if (author.peerId === this.identity.peerId)
+        this.events.onChat?.(existing);
+      else
+        this.members.get(author.peerId)?.channel.send({
+          version: PROTOCOL_VERSION,
+          type: 'CHAT_MESSAGE',
+          message: existing,
+        });
+      return;
+    }
     this.broadcast({
       version: PROTOCOL_VERSION,
       type: 'CHAT_MESSAGE',
@@ -304,6 +348,8 @@ export class RoomHost {
   }
   async close(): Promise<void> {
     this.closing = true;
+    for (const member of this.members.values())
+      if (member.pendingVoice) clearTimeout(member.pendingVoice.timer);
     for (const channel of this.channels) channel.close();
     for (const socket of this.sockets) socket.destroy();
     await Promise.all([

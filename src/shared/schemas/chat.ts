@@ -46,6 +46,7 @@ export type ChatHistory = z.infer<typeof chatHistorySchema>;
 /** Main → renderer notifications. State changes carry no payload: the renderer refetches. */
 export const roomEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('STATE') }).strict(),
+  z.object({ type: z.literal('CHAT_HISTORY'), roomId: z.uuid() }).strict(),
   z
     .object({
       type: z.literal('CHAT_MESSAGE'),

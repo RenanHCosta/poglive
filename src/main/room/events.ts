@@ -5,4 +5,6 @@ export interface RoomEvents {
   onChange?: () => void;
   onChat?: (message: ChatMessage) => void;
   onChatRejected?: (id: string, reason: ChatRejection) => void;
+  /** History arrives after admission; observers should re-read it. */
+  onHistory?: () => void;
 }
