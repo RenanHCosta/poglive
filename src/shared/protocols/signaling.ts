@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { roomSnapshotSchema } from '../schemas/room';
+import { PROTOCOL_VERSION, roomSnapshotSchema } from '../schemas/room';
 
 const route = {
-  version: z.literal(1),
+  version: z.literal(PROTOCOL_VERSION),
   roomId: z.uuid(),
   fromPeerId: z.uuid(),
   toPeerId: z.uuid(),

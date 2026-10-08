@@ -5,14 +5,26 @@ import { resolve } from 'node:path';
 import type { ChildProcessWithoutNullStreams } from 'node:child_process';
 import { IPC } from '../../shared/contracts';
 
+export type ProcessAudioRequest =
+  | { mode: 'INCLUDE_WINDOW'; windowHandle: string }
+  | { mode: 'EXCLUDE_PROCESS_TREE'; processId: number };
+
+function helperArguments(request: ProcessAudioRequest): string[] {
+  if (request.mode === 'INCLUDE_WINDOW') {
+    if (!/^\d{1,20}$/.test(request.windowHandle))
+      throw new Error('Invalid window handle');
+    return ['--include-window', request.windowHandle];
+  }
+  if (!Number.isSafeInteger(request.processId) || request.processId <= 0)
+    throw new Error('Invalid process ID');
+  return ['--exclude-process-tree', String(request.processId)];
+}
+
 export class ProcessAudioService {
   private child: ChildProcessWithoutNullStreams | null = null;
 
-  start(
-    windowHandle: string | null,
-    excludeDiscord: boolean,
-    contents: WebContents,
-  ): void {
+  start(request: ProcessAudioRequest, contents: WebContents): void {
+    const args = helperArguments(request);
     this.stop();
     const executable = app.isPackaged
       ? resolve(process.resourcesPath, 'poglive-process-audio.exe')
@@ -20,14 +32,10 @@ export class ProcessAudioService {
           app.getAppPath(),
           'native/process-audio/build/bin/poglive-process-audio.exe',
         );
-    const child = spawn(
-      executable,
-      excludeDiscord ? ['--exclude-discord'] : [windowHandle!],
-      {
-        windowsHide: true,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      },
-    );
+    const child = spawn(executable, args, {
+      windowsHide: true,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
     this.child = child;
     let errorCode = '';
     child.stdout.on('data', (chunk: Buffer) => {

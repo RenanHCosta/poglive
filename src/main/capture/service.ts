@@ -4,11 +4,7 @@ import type { CaptureSourcesResult } from '../../shared/schemas/capture';
 
 export class CaptureService {
   private sources = new Set<string>();
-  private pending: {
-    id: string;
-    expires: number;
-    systemAudio: boolean;
-  } | null = null;
+  private pending: { id: string; expires: number } | null = null;
   private generation = 0;
   constructor(
     private readonly getWindow: () => BrowserWindow | null,
@@ -76,8 +72,8 @@ export class CaptureService {
           request.frame !== window.webContents.mainFrame ||
           !request.userGesture ||
           !request.videoRequested ||
+          request.audioRequested ||
           !selected ||
-          request.audioRequested !== selected.systemAudio ||
           selected.expires < Date.now()
         ) {
           console.warn('[Capture] Request rejected', {
@@ -108,10 +104,7 @@ export class CaptureService {
             )
               callback({});
             else {
-              callback({
-                video: source,
-                ...(selected.systemAudio ? { audio: 'loopback' } : {}),
-              });
+              callback({ video: source });
               console.info('[Capture] Source granted');
             }
           })
@@ -151,13 +144,11 @@ export class CaptureService {
       };
     }
   }
-  select(id: string, systemAudio = false): void {
-    if (systemAudio && process.platform !== 'win32')
-      throw new Error('System audio requires Windows');
+  select(id: string): void {
     if (!this.sources.has(id))
       throw new Error('Fonte indisponível. Atualize a lista.');
     this.generation++;
-    this.pending = { id, expires: Date.now() + 10000, systemAudio };
+    this.pending = { id, expires: Date.now() + 10000 };
   }
   windowHandle(id: string): string {
     if (!this.sources.has(id)) throw new Error('Fonte não autorizada.');

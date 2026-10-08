@@ -45,7 +45,7 @@ export function CapturePanel({
     quality: '720p',
     frameRate: 30,
     adaptiveQuality: true,
-    audioMode: 'SYSTEM_EXCEPT_DISCORD',
+    audioMode: 'SYSTEM',
   });
   return (
     <section className="panel share-card" aria-labelledby="capture-title">
@@ -123,8 +123,7 @@ export function CapturePanel({
                 if (
                   audioMode === 'NONE' ||
                   audioMode === 'SYSTEM' ||
-                  audioMode === 'WINDOW' ||
-                  audioMode === 'SYSTEM_EXCEPT_DISCORD'
+                  audioMode === 'WINDOW'
                 )
                   setOptions({ ...options, audioMode });
                 if (audioMode === 'WINDOW') setKind('window');
@@ -132,10 +131,7 @@ export function CapturePanel({
             >
               <option value="NONE">Sem áudio</option>
               <option value="WINDOW">Somente a janela escolhida</option>
-              <option value="SYSTEM_EXCEPT_DISCORD">
-                Tudo menos o Discord
-              </option>
-              <option value="SYSTEM">Todo o áudio do sistema</option>
+              <option value="SYSTEM">Áudio do computador</option>
             </select>
           </label>
           <p className="helper">

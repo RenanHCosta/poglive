@@ -14,6 +14,7 @@ import {
   localStateSchema,
 } from '../shared/schemas/room';
 import { updateStateSchema } from '../shared/schemas/update';
+import { chatHistorySchema, roomEventSchema } from '../shared/schemas/chat';
 
 const bridge: DesktopBridge = {
   getUpdateState: async () => {
@@ -119,6 +120,21 @@ const bridge: DesktopBridge = {
       commandSchema.parse(command),
     );
     return commandResultSchema.parse(result);
+  },
+  onRoomEvent: (listener) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      value: unknown,
+    ): void => {
+      const parsed = roomEventSchema.safeParse(value);
+      if (parsed.success) listener(parsed.data);
+    };
+    ipcRenderer.on(IPC.roomEvent, handler);
+    return () => ipcRenderer.removeListener(IPC.roomEvent, handler);
+  },
+  getChatHistory: async () => {
+    const result: unknown = await ipcRenderer.invoke(IPC.chatHistory);
+    return chatHistorySchema.parse(result);
   },
   getAppInfo: async () => {
     const result: unknown = await ipcRenderer.invoke(IPC.getAppInfo);

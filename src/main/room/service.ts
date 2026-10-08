@@ -8,7 +8,19 @@ import type {
   LocalState,
   RoomCommand,
   RoomState,
+  VoiceState,
 } from '../../shared/schemas/room';
+import type {
+  ChatHistory,
+  ChatMessage,
+  RoomEvent,
+} from '../../shared/schemas/chat';
+import type { RoomEvents } from './events';
+
+type LifecycleCommand = Exclude<
+  RoomCommand,
+  { type: 'COPY_INVITE' | 'UPDATE_VOICE' | 'SEND_CHAT' }
+>;
 
 export function localAddresses(): LocalState['addresses'] {
   const addresses: LocalState['addresses'] = [];
@@ -38,7 +50,44 @@ export class RoomService {
   private busy = false;
   private inbox: Signal[] = [];
   private inboxBytes = 0;
+  private readonly listeners = new Set<(event: RoomEvent) => void>();
   constructor(private readonly identityStore: IdentityStore) {}
+  subscribe(listener: (event: RoomEvent) => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+  private emit(event: RoomEvent): void {
+    for (const listener of this.listeners) {
+      try {
+        listener(event);
+      } catch {
+        // A broken observer must not interrupt room handling.
+      }
+    }
+  }
+  private roomEvents(owner: () => boolean): RoomEvents {
+    return {
+      onChange: () => {
+        if (owner()) this.emit({ type: 'STATE' });
+      },
+      onChat: (message) => {
+        const roomId = this.activeRoomId();
+        if (owner() && roomId)
+          this.emit({ type: 'CHAT_MESSAGE', roomId, message });
+      },
+      onChatRejected: (id, reason) => {
+        const roomId = this.activeRoomId();
+        if (owner() && roomId)
+          this.emit({ type: 'CHAT_REJECTED', roomId, id, reason });
+      },
+    };
+  }
+  private activeRoomId(): string | null {
+    const room = this.snapshot().room;
+    return room.status === 'HOSTING' || room.status === 'JOINED'
+      ? room.room.roomId
+      : null;
+  }
   snapshot(): LocalState {
     let room = this.state;
     if (this.host?.invite)
@@ -55,88 +104,94 @@ export class RoomService {
       addresses: localAddresses(),
     };
   }
-  async execute(
-    command: Exclude<RoomCommand, { type: 'COPY_INVITE' }>,
-  ): Promise<void> {
+  async execute(command: LifecycleCommand): Promise<void> {
     if (this.busy) throw new Error('Aguarde a operação atual.');
     this.busy = true;
     try {
-      if (command.type === 'LEAVE_ROOM') {
-        await this.close();
-        return;
-      }
-      if (this.host || this.client)
+      await this.run(command);
+    } finally {
+      this.busy = false;
+      this.emit({ type: 'STATE' });
+    }
+  }
+  private async run(command: LifecycleCommand): Promise<void> {
+    if (command.type === 'LEAVE_ROOM') {
+      await this.close();
+      return;
+    }
+    if (this.host || this.client)
+      throw new Error(
+        'Saia da sala antes de alterar o perfil ou entrar em outra.',
+      );
+    if (command.type === 'SAVE_IDENTITY') {
+      await this.identityStore.save(command.displayName);
+      return;
+    }
+    const identity = this.identityStore.get();
+    this.inbox = [];
+    this.inboxBytes = 0;
+    if (!identity)
+      throw new Error('Defina seu nome antes de entrar em uma sala.');
+    if (command.type === 'CREATE_ROOM') {
+      if (!localAddresses().some((a) => a.address === command.address))
+        throw new Error('Selecione um endereço local disponível.');
+      const host: RoomHost = new RoomHost(
+        identity,
+        command.name,
+        () => {
+          if (this.host === host) {
+            this.host = null;
+            this.state = {
+              status: 'DISCONNECTED',
+              message: 'O host encontrou um erro de rede. Crie uma nova sala.',
+            };
+            void host.close();
+            this.emit({ type: 'STATE' });
+          }
+        },
+        (signal) => this.receiveSignal(signal),
+        this.roomEvents(() => this.host === host),
+      );
+      this.host = host;
+      try {
+        await host.listen(command.address);
+      } catch {
+        await host.close();
+        this.host = null;
         throw new Error(
-          'Saia da sala antes de alterar o perfil ou entrar em outra.',
+          'Não foi possível criar a sala. Confira a interface de rede.',
         );
-      if (command.type === 'SAVE_IDENTITY') {
-        await this.identityStore.save(command.displayName);
-        return;
       }
-      const identity = this.identityStore.get();
-      this.inbox = [];
-      this.inboxBytes = 0;
-      if (!identity)
-        throw new Error('Defina seu nome antes de entrar em uma sala.');
-      if (command.type === 'CREATE_ROOM') {
-        if (!localAddresses().some((a) => a.address === command.address))
-          throw new Error('Selecione um endereço local disponível.');
-        const host = new RoomHost(
+    } else {
+      const invite = decodeInvite(command.invite);
+      const client: RoomClient = new RoomClient(
+        this.roomEvents(() => this.client === client),
+      );
+      this.client = client;
+      this.state = { status: 'CONNECTING' };
+      try {
+        await client.join(
+          invite,
           identity,
-          command.name,
           () => {
-            if (this.host === host) {
-              this.host = null;
-              this.state = {
-                status: 'DISCONNECTED',
-                message:
-                  'O host encontrou um erro de rede. Crie uma nova sala.',
-              };
-              void host.close();
-            }
+            if (this.client !== client) return;
+            this.client = null;
+            this.state = {
+              status: 'DISCONNECTED',
+              message:
+                'A conexão com o host foi encerrada ou expirou. Entre novamente com um convite válido.',
+            };
+            console.info('[Room] Disconnected');
+            this.emit({ type: 'STATE' });
           },
           (signal) => this.receiveSignal(signal),
         );
-        this.host = host;
-        try {
-          await host.listen(command.address);
-        } catch {
-          await host.close();
-          this.host = null;
-          throw new Error(
-            'Não foi possível criar a sala. Confira a interface de rede.',
-          );
-        }
-      } else {
-        const invite = decodeInvite(command.invite);
-        const client = new RoomClient();
-        this.client = client;
-        this.state = { status: 'CONNECTING' };
-        try {
-          await client.join(
-            invite,
-            identity,
-            () => {
-              if (this.client !== client) return;
-              this.client = null;
-              this.state = {
-                status: 'DISCONNECTED',
-                message:
-                  'A conexão com o host foi encerrada ou expirou. Entre novamente com um convite válido.',
-              };
-              console.info('[Room] Disconnected');
-            },
-            (signal) => this.receiveSignal(signal),
-          );
-        } catch (error: unknown) {
-          client.close();
-          this.client = null;
-          this.state = { status: 'IDLE' };
-          throw error;
-        }
+      } catch (error: unknown) {
+        client.close();
+        this.client = null;
+        this.state = { status: 'IDLE' };
+        throw error;
       }
-    } finally {
-      this.busy = false;
     }
   }
   async close(): Promise<void> {
@@ -148,6 +203,27 @@ export class RoomService {
     this.client = null;
     this.state = { status: 'IDLE' };
     await host?.close();
+  }
+  /** Presence is idempotent and bypasses the lifecycle lock. */
+  updateVoice(voice: VoiceState): void {
+    if (!this.host && !this.client?.room)
+      throw new Error('Entre em uma sala para usar a voz.');
+    if (this.host) this.host.updateVoice(voice);
+    else this.client?.updateVoice(voice);
+  }
+  sendChat(id: string, text: string): void {
+    if (this.host) this.host.sendChat(id, text);
+    else if (this.client?.room) this.client.sendChat(id, text);
+    else throw new Error('Entre em uma sala para enviar mensagens.');
+  }
+  chatHistory(): ChatHistory {
+    const roomId = this.activeRoomId();
+    const messages: ChatMessage[] = !roomId
+      ? []
+      : this.host
+        ? this.host.chatHistory()
+        : (this.client?.chatHistory() ?? []);
+    return { roomId, messages };
   }
   private receiveSignal(signal: Signal): void {
     const size = Buffer.byteLength(JSON.stringify(signal));

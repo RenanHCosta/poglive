@@ -7,11 +7,14 @@ import type {
 } from './schemas/capture';
 import type { Signal, SignalBatch } from './protocols/signaling';
 import type { UpdateState } from './schemas/update';
+import type { ChatHistory, RoomEvent } from './schemas/chat';
 
 export const IPC = {
   getAppInfo: 'app:get-info',
   getState: 'room:get-state',
   command: 'room:command',
+  roomEvent: 'room:event',
+  chatHistory: 'room:chat-history',
   captureSources: 'capture:sources',
   captureSelect: 'capture:select',
   captureCancel: 'capture:cancel',
@@ -42,6 +45,8 @@ export interface DesktopBridge {
   getAppInfo: () => Promise<AppInfo>;
   getState: () => Promise<LocalState>;
   command: (command: RoomCommand) => Promise<CommandResult>;
+  onRoomEvent: (listener: (event: RoomEvent) => void) => () => void;
+  getChatHistory: () => Promise<ChatHistory>;
   captureSources: () => Promise<CaptureSourcesResult>;
   captureSelect: (
     id: string,

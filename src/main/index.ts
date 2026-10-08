@@ -11,6 +11,7 @@ import { randomUUID } from 'node:crypto';
 import { CaptureService } from './capture/service';
 import { ProcessAudioService } from './capture/process-audio';
 import { UpdateService } from './update/service';
+import { IPC } from '../shared/contracts';
 
 const WEBRTC_MDNS_FEATURE = 'WebRtcHideLocalIpsWithMdns';
 const WEBRTC_UDP_PORT_RANGE = { min: 52000, max: 52100 } as const;
@@ -55,6 +56,19 @@ else if (profile)
 if (!app.requestSingleInstanceLock()) app.exit(0);
 const identities = new IdentityStore(app.getPath('userData'));
 const rooms = new RoomService(identities);
+rooms.subscribe((event) => {
+  const contents = window?.webContents;
+  if (contents && !contents.isDestroyed()) contents.send(IPC.roomEvent, event);
+  // Draw attention to new messages from others while the window is in the background.
+  if (
+    event.type === 'CHAT_MESSAGE' &&
+    window &&
+    !window.isDestroyed() &&
+    !window.isFocused() &&
+    event.message.authorId !== identities.get()?.peerId
+  )
+    window.flashFrame(true);
+});
 app.on('second-instance', () => {
   window?.restore();
   window?.focus();
@@ -175,6 +189,7 @@ async function createWindow(): Promise<void> {
   window.webContents.on('render-process-gone', () =>
     console.error('[App] Renderer process stopped'),
   );
+  window.on('focus', () => window?.flashFrame(false));
   window.on('closed', () => {
     capture.cancel();
     processAudio.stop();

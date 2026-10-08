@@ -3,11 +3,20 @@ import { signalSchema } from './signaling';
 import {
   identitySchema,
   participantSchema,
+  PROTOCOL_VERSION,
   roomSnapshotSchema,
+  voiceStateSchema,
 } from '../schemas/room';
+import {
+  CHAT_HISTORY_LIMIT,
+  chatMessageSchema,
+  chatRejectionSchema,
+  chatTextSchema,
+} from '../schemas/chat';
 
-const envelope = { version: z.literal(1) };
-// Room/signaling transport only. Media control uses mediaMessageSchema over WebRTC.
+const envelope = { version: z.literal(PROTOCOL_VERSION) };
+// Room, presence, chat and signaling transport. Media control uses
+// mediaMessageSchema over WebRTC and never travels through the host.
 export const networkMessageSchema = z.discriminatedUnion('type', [
   z
     .object({
@@ -47,6 +56,46 @@ export const networkMessageSchema = z.discriminatedUnion('type', [
       ...envelope,
       type: z.literal('ROOM_STATE'),
       room: roomSnapshotSchema,
+    })
+    .strict(),
+  // Member → host. The host binds the update to the authenticated connection.
+  z
+    .object({
+      ...envelope,
+      type: z.literal('VOICE_STATE'),
+      voice: voiceStateSchema,
+    })
+    .strict(),
+  // Member → host. The host stamps author, name and time before relaying.
+  z
+    .object({
+      ...envelope,
+      type: z.literal('CHAT_SEND'),
+      id: z.uuid(),
+      text: chatTextSchema,
+    })
+    .strict(),
+  // Host → members.
+  z
+    .object({
+      ...envelope,
+      type: z.literal('CHAT_MESSAGE'),
+      message: chatMessageSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...envelope,
+      type: z.literal('CHAT_HISTORY'),
+      messages: z.array(chatMessageSchema).max(CHAT_HISTORY_LIMIT),
+    })
+    .strict(),
+  z
+    .object({
+      ...envelope,
+      type: z.literal('CHAT_REJECTED'),
+      id: z.uuid(),
+      reason: chatRejectionSchema,
     })
     .strict(),
   ...signalSchema.options,

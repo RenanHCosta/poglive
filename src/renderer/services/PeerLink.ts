@@ -1,4 +1,5 @@
 import type { Signal } from '../../shared/protocols/signaling';
+import { PROTOCOL_VERSION } from '../../shared/schemas/room';
 import { mediaMessageSchema } from '../../shared/protocols/media';
 import type { MediaMessage } from '../../shared/protocols/media';
 import { PeerMedia } from './PeerMedia';
@@ -101,7 +102,7 @@ export class PeerLink {
   }
   private route() {
     return {
-      version: 1 as const,
+      version: PROTOCOL_VERSION,
       roomId: this.roomId,
       fromPeerId: this.selfId,
       toPeerId: this.peerId,

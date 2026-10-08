@@ -2,8 +2,10 @@ import { createHash, randomBytes } from 'node:crypto';
 import { inviteSchema } from '../../shared/schemas/room';
 import type { Invite } from '../../shared/schemas/room';
 
-const PREFIX = 'PL1.';
-const LEGACY_PREFIX = 'VS1.';
+// PL2 carries the same 70-byte payload as PL1; the prefix marks room protocol v2
+// so older builds reject the invite up front instead of failing mid-handshake.
+const PREFIX = 'PL2.';
+const LEGACY_PREFIXES = ['PL1.', 'VS1.'];
 const PAYLOAD_BYTES = 70;
 
 function roomIdFromSecret(secret: string): string {
@@ -38,23 +40,13 @@ export function encodeInvite(invite: Invite): string {
   return PREFIX + payload.toString('base64url');
 }
 export function decodeInvite(code: string): Invite {
+  const normalized = code.trim();
+  if (LEGACY_PREFIXES.some((prefix) => normalized.startsWith(prefix)))
+    throw new Error(
+      'Este convite é de uma versão anterior do Poglive. Atualize o app de quem criou a sala e gere um novo convite.',
+    );
   try {
-    const normalized = code.trim();
-    if (normalized.startsWith(LEGACY_PREFIX)) {
-      if (!/^VS1\.[A-Za-z0-9_-]+$/.test(normalized)) throw new Error();
-      const encoded = normalized.slice(LEGACY_PREFIX.length);
-      const bytes = Buffer.from(encoded, 'base64url');
-      if (bytes.toString('base64url') !== encoded) throw new Error();
-      const value: unknown = JSON.parse(bytes.toString('utf8'));
-      const invite = inviteSchema.parse(value);
-      if (
-        Buffer.from(invite.secret, 'base64url').toString('base64url') !==
-        invite.secret
-      )
-        throw new Error();
-      return invite;
-    }
-    if (!/^PL1\.[A-Za-z0-9_-]{94}$/.test(normalized)) throw new Error();
+    if (!/^PL2\.[A-Za-z0-9_-]{94}$/.test(normalized)) throw new Error();
     const encoded = normalized.slice(PREFIX.length);
     const bytes = Buffer.from(encoded, 'base64url');
     if (

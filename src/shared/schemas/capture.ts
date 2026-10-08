@@ -5,12 +5,14 @@ export const captureOptionsSchema = z.strictObject({
   quality: z.enum(['720p', '1080p']),
   frameRate: z.union([z.literal(30), z.literal(60)]),
   adaptiveQuality: z.boolean(),
-  audioMode: z.enum(['NONE', 'SYSTEM', 'WINDOW', 'SYSTEM_EXCEPT_DISCORD']),
+  // SYSTEM is all output except Poglive's own process tree (voice, players),
+  // so participants never hear themselves back through a stream.
+  audioMode: z.enum(['NONE', 'SYSTEM', 'WINDOW']),
 });
 export type CaptureOptions = z.infer<typeof captureOptionsSchema>;
 export const processAudioTargetSchema = z.discriminatedUnion('mode', [
   z.strictObject({ mode: z.literal('WINDOW'), sourceId: sourceIdSchema }),
-  z.strictObject({ mode: z.literal('SYSTEM_EXCEPT_DISCORD') }),
+  z.strictObject({ mode: z.literal('SYSTEM') }),
 ]);
 export type ProcessAudioTarget = z.infer<typeof processAudioTargetSchema>;
 export const CAPTURE_PROFILES = {

@@ -1,5 +1,4 @@
 #include <Windows.h>
-#include <TlHelp32.h>
 #include <audioclient.h>
 #include <audioclientactivationparams.h>
 #include <mmdeviceapi.h>
@@ -7,6 +6,7 @@
 #include <io.h>
 #include <wrl.h>
 
+#include <cerrno>
 #include <cstdio>
 #include <cstdint>
 #include <cwchar>
@@ -53,63 +53,43 @@ static int Fail(const char* code) {
   return 1;
 }
 
-struct ProcessEntry {
-  DWORD id;
-  DWORD parent_id;
-};
-
-static bool IsDiscordExecutable(const wchar_t* name) {
-  return _wcsicmp(name, L"Discord.exe") == 0 ||
-         _wcsicmp(name, L"DiscordCanary.exe") == 0 ||
-         _wcsicmp(name, L"DiscordPTB.exe") == 0 ||
-         _wcsicmp(name, L"DiscordDevelopment.exe") == 0;
+static bool ParseUnsigned(const wchar_t* text, unsigned long long* value) {
+  if (!text || !*text) return false;
+  for (const wchar_t* cursor = text; *cursor; ++cursor)
+    if (*cursor < L'0' || *cursor > L'9') return false;
+  wchar_t* end = nullptr;
+  errno = 0;
+  *value = std::wcstoull(text, &end, 10);
+  return errno == 0 && end && *end == 0 && *value != 0;
 }
 
-static DWORD FindDiscordRootProcess() {
-  const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-  if (snapshot == INVALID_HANDLE_VALUE) return 0;
-  std::vector<ProcessEntry> discord_processes;
-  PROCESSENTRY32W entry{};
-  entry.dwSize = sizeof(entry);
-  if (Process32FirstW(snapshot, &entry)) {
-    do {
-      if (IsDiscordExecutable(entry.szExeFile))
-        discord_processes.push_back(
-            {entry.th32ProcessID, entry.th32ParentProcessID});
-    } while (Process32NextW(snapshot, &entry));
-  }
-  CloseHandle(snapshot);
-  if (discord_processes.empty()) return 0;
-  for (const auto& process : discord_processes) {
-    bool parent_is_discord = false;
-    for (const auto& candidate : discord_processes) {
-      if (process.parent_id == candidate.id) {
-        parent_is_discord = true;
-        break;
-      }
-    }
-    if (!parent_is_discord) return process.id;
-  }
-  return discord_processes.front().id;
-}
-
+// Usage:
+//   --include-window <HWND>        capture the window's process tree only
+//   --exclude-process-tree <PID>   capture everything except that tree
+// The caller passes its own PID so the app never captures its own voice
+// playback or stream players back into a share.
 int wmain(int argc, wchar_t** argv) {
-  if (argc != 2) return Fail("INVALID_ARGUMENTS");
+  if (argc != 3) return Fail("INVALID_ARGUMENTS");
+  unsigned long long raw_value = 0;
+  if (!ParseUnsigned(argv[2], &raw_value)) return Fail("INVALID_ARGUMENTS");
   DWORD process_id = 0;
   PROCESS_LOOPBACK_MODE loopback_mode =
       PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE;
-  if (std::wcscmp(argv[1], L"--exclude-discord") == 0) {
-    process_id = FindDiscordRootProcess();
-    if (!process_id) process_id = GetCurrentProcessId();
+  if (std::wcscmp(argv[1], L"--exclude-process-tree") == 0) {
+    if (raw_value > MAXDWORD) return Fail("INVALID_PROCESS");
+    process_id = static_cast<DWORD>(raw_value);
+    const HANDLE process =
+        OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, process_id);
+    if (!process) return Fail("PROCESS_NOT_FOUND");
+    CloseHandle(process);
     loopback_mode = PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE;
-  } else {
-    wchar_t* end = nullptr;
-    const unsigned long long raw_handle = std::wcstoull(argv[1], &end, 10);
-    if (!raw_handle || !end || *end != L'\0') return Fail("INVALID_WINDOW");
+  } else if (std::wcscmp(argv[1], L"--include-window") == 0) {
     const HWND window =
-        reinterpret_cast<HWND>(static_cast<uintptr_t>(raw_handle));
+        reinterpret_cast<HWND>(static_cast<uintptr_t>(raw_value));
     if (!IsWindow(window)) return Fail("WINDOW_CLOSED");
     GetWindowThreadProcessId(window, &process_id);
+  } else {
+    return Fail("INVALID_ARGUMENTS");
   }
   if (!process_id) return Fail("PROCESS_NOT_FOUND");
 

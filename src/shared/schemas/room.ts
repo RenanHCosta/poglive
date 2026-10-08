@@ -1,19 +1,35 @@
 import { z } from 'zod';
+import { chatTextSchema } from './chat';
+import { displayNameSchema } from './common';
 
 export const MAX_PEERS = 8;
-export const displayNameSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .max(32)
-  .regex(/^[^\p{Cc}\p{Cf}]+$/u);
+// Room/signaling wire version. Bump on any incompatible TLS protocol change.
+export const PROTOCOL_VERSION = 2 as const;
+export { displayNameSchema };
 export const identitySchema = z
   .object({ peerId: z.uuid(), displayName: displayNameSchema })
   .strict();
 export type Identity = z.infer<typeof identitySchema>;
+export const voiceStateSchema = z
+  .object({
+    connected: z.boolean(),
+    muted: z.boolean(),
+    deafened: z.boolean(),
+    streaming: z.boolean(),
+  })
+  .strict();
+export type VoiceState = z.infer<typeof voiceStateSchema>;
+export const DISCONNECTED_VOICE: VoiceState = Object.freeze({
+  connected: false,
+  muted: false,
+  deafened: false,
+  streaming: false,
+});
 export const participantSchema = identitySchema.extend({
   role: z.enum(['HOST', 'MEMBER']),
+  voice: voiceStateSchema,
 });
+export type Participant = z.infer<typeof participantSchema>;
 export const ipv4Schema = z.ipv4().refine((value) => {
   const first = Number(value.split('.')[0]);
   return first > 0 && first < 224 && value !== '255.255.255.255';
@@ -103,6 +119,16 @@ export const commandSchema = z.discriminatedUnion('type', [
     .strict(),
   z.object({ type: z.literal('LEAVE_ROOM') }).strict(),
   z.object({ type: z.literal('COPY_INVITE') }).strict(),
+  z
+    .object({ type: z.literal('UPDATE_VOICE'), voice: voiceStateSchema })
+    .strict(),
+  z
+    .object({
+      type: z.literal('SEND_CHAT'),
+      id: z.uuid(),
+      text: chatTextSchema,
+    })
+    .strict(),
 ]);
 export type RoomCommand = z.infer<typeof commandSchema>;
 export const commandResultSchema = z.discriminatedUnion('status', [

@@ -3,6 +3,7 @@ import type { BrowserWindow, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 import { appInfoSchema, IPC } from '../shared/contracts';
 import { commandSchema, localStateSchema } from '../shared/schemas/room';
+import { chatHistorySchema } from '../shared/schemas/chat';
 import type { CommandResult } from '../shared/schemas/room';
 import type { RoomService } from './room/service';
 import type { CaptureService } from './capture/service';
@@ -102,10 +103,8 @@ export function registerIpc(
       if (!parsed.success)
         return { status: 'ERROR', message: 'Fonte inválida.' };
       try {
-        capture.select(
-          parsed.data[0].id,
-          parsed.data[0].options.audioMode === 'SYSTEM',
-        );
+        // Audio never comes from Chromium's loopback: it would include Poglive itself.
+        capture.select(parsed.data[0].id);
         return { status: 'OK' };
       } catch {
         return {
@@ -131,9 +130,11 @@ export function registerIpc(
         const target = parsed.data[0];
         processAudio.start(
           target.mode === 'WINDOW'
-            ? capture.windowHandle(target.sourceId)
-            : null,
-          target.mode === 'SYSTEM_EXCEPT_DISCORD',
+            ? {
+                mode: 'INCLUDE_WINDOW',
+                windowHandle: capture.windowHandle(target.sourceId),
+              }
+            : { mode: 'EXCLUDE_PROCESS_TREE', processId: process.pid },
           event.sender,
         );
         return { status: 'OK' };
@@ -160,6 +161,11 @@ export function registerIpc(
       arch: process.arch,
     });
   });
+  ipcMain.handle(IPC.chatHistory, (event, ...args: unknown[]) => {
+    authorize(event);
+    noArguments.parse(args);
+    return chatHistorySchema.parse(rooms.chatHistory());
+  });
   ipcMain.handle(IPC.getState, (event, ...args: unknown[]) => {
     authorize(event);
     noArguments.parse(args);
@@ -182,7 +188,11 @@ export function registerIpc(
           if (state.status !== 'HOSTING')
             throw new Error('Crie uma sala para copiar o convite.');
           await clipboard.writeText(state.invite);
-        } else await rooms.execute(command);
+        } else if (command.type === 'UPDATE_VOICE')
+          rooms.updateVoice(command.voice);
+        else if (command.type === 'SEND_CHAT')
+          rooms.sendChat(command.id, command.text);
+        else await rooms.execute(command);
         return { status: 'OK' };
       } catch (error: unknown) {
         return {

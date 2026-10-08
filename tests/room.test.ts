@@ -167,12 +167,12 @@ test('real TLS room: invite, 3 peers, duplicate refusal, wrong secret, leave and
     await host.listen('127.0.0.1');
     const invite = decodeInvite(host.invite);
     assert.equal(encodeInvite(invite), host.invite);
-    assert.match(host.invite, /^PL1\.[A-Za-z0-9_-]{94}$/);
+    assert.match(host.invite, /^PL2\.[A-Za-z0-9_-]{94}$/);
     assert.equal(host.invite.length, 98);
     assert.equal(Buffer.from(invite.secret, 'base64url').length, 32);
     const legacyCode =
       'VS1.' + Buffer.from(JSON.stringify(invite)).toString('base64url');
-    assert.deepEqual(decodeInvite(legacyCode), invite);
+    assert.throws(() => decodeInvite(legacyCode), /versão anterior/);
     let cDisconnected = false;
     const bIdentity = identity('B');
     await b.join(invite, bIdentity, () => {});
@@ -218,13 +218,13 @@ test('untrusted schemas reject extra fields, malformed invitation and oversized 
       quality: '720p',
       frameRate: 30,
       adaptiveQuality: true,
-      audioMode: 'SYSTEM_EXCEPT_DISCORD',
+      audioMode: 'SYSTEM',
     }).success,
     true,
   );
   assert.equal(
     processAudioTargetSchema.safeParse({
-      mode: 'SYSTEM_EXCEPT_DISCORD',
+      mode: 'SYSTEM',
       sourceId: 'not-allowed',
     }).success,
     false,
@@ -538,7 +538,7 @@ test(
       socket.resume();
       socket.write(
         frame({
-          version: 1,
+          version: 2,
           type: 'ROOM_JOIN',
           roomId: invite.roomId,
           identity: identity('Silent'),

@@ -100,30 +100,33 @@ export function useCapture() {
       };
       const media = await navigator.mediaDevices.getDisplayMedia({
         video: constraints,
-        audio:
-          options.audioMode === 'SYSTEM'
-            ? {
-                echoCancellation: false,
-                noiseSuppression: false,
-                autoGainControl: false,
-              }
-            : false,
+        audio: false,
       });
       if (generation.current !== current) {
         release(media);
         return;
       }
-      if (options.audioMode === 'WINDOW') {
-        if (source.kind !== 'window')
-          throw new Error('Window audio requires a window source');
-        media.addTrack(
-          await startProcessAudio({ mode: 'WINDOW', sourceId: source.id }),
-        );
-      }
-      if (options.audioMode === 'SYSTEM_EXCEPT_DISCORD') {
-        media.addTrack(
-          await startProcessAudio({ mode: 'SYSTEM_EXCEPT_DISCORD' }),
-        );
+      // Audio is optional: a failure keeps the video share running with a warning.
+      let audioWarning: string | null = null;
+      if (options.audioMode !== 'NONE') {
+        try {
+          if (options.audioMode === 'WINDOW' && source.kind !== 'window')
+            throw new Error('Window audio requires a window source');
+          const audioTrack = await startProcessAudio(
+            options.audioMode === 'WINDOW'
+              ? { mode: 'WINDOW', sourceId: source.id }
+              : { mode: 'SYSTEM' },
+          );
+          if (generation.current !== current) {
+            audioTrack.stop();
+            release(media);
+            return;
+          }
+          media.addTrack(audioTrack);
+        } catch {
+          audioWarning =
+            'Não foi possível capturar o áudio (requer Windows 10 build 20348 ou mais recente). A transmissão segue somente com vídeo.';
+        }
       }
       stream.current = media;
       const track = media.getVideoTracks()[0];
@@ -153,10 +156,7 @@ export function useCapture() {
         sourceName: source.name,
         quality: `${settings.width ?? '?'} × ${settings.height ?? '?'} · ${settings.frameRate === undefined ? '?' : Math.round(settings.frameRate)} FPS (configuração da captura; solicitado ${options.frameRate})`,
         options,
-        warning:
-          options.audioMode !== 'NONE' && !audio
-            ? 'O sistema não forneceu áudio. A transmissão segue somente com vídeo.'
-            : null,
+        warning: audioWarning,
       };
       if (audio)
         audio.onended = () => {

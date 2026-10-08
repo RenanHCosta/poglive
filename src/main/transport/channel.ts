@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { TLSSocket } from 'node:tls';
 import { networkMessageSchema } from '../../shared/protocols/network';
 import type { NetworkMessage } from '../../shared/protocols/network';
+import { PROTOCOL_VERSION } from '../../shared/schemas/room';
 
 export const MAX_FRAME = 65536;
 export const HEARTBEAT_MS = 4000;
@@ -43,7 +44,11 @@ export class Channel {
           this.buffer = this.buffer.subarray(size + 4);
           const message = networkMessageSchema.parse(raw);
           if (message.type === 'PING')
-            this.send({ version: 1, type: 'PONG', nonce: message.nonce });
+            this.send({
+              version: PROTOCOL_VERSION,
+              type: 'PONG',
+              nonce: message.nonce,
+            });
           else if (message.type === 'PONG') {
             if (message.nonce !== this.pendingPing?.nonce)
               throw new Error('Unexpected pong');
@@ -60,7 +65,11 @@ export class Channel {
         if (Date.now() - this.pendingPing.time > DEADLINE_MS) socket.destroy();
       } else {
         this.pendingPing = { nonce: randomUUID(), time: Date.now() };
-        this.send({ version: 1, type: 'PING', nonce: this.pendingPing.nonce });
+        this.send({
+          version: PROTOCOL_VERSION,
+          type: 'PING',
+          nonce: this.pendingPing.nonce,
+        });
       }
     }, HEARTBEAT_MS);
     this.heartbeat.unref();

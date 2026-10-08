@@ -5,24 +5,46 @@ import type { Server } from 'node:tls';
 import type { Socket } from 'node:net';
 import { Channel, TLS_OPTIONS } from '../transport/channel';
 import { encodeInvite, newRoomAccess } from './invite';
-import { MAX_PEERS } from '../../shared/schemas/room';
-import type { Identity, RoomSnapshot } from '../../shared/schemas/room';
+import {
+  DISCONNECTED_VOICE,
+  MAX_PEERS,
+  PROTOCOL_VERSION,
+} from '../../shared/schemas/room';
+import type {
+  Identity,
+  RoomSnapshot,
+  VoiceState,
+} from '../../shared/schemas/room';
 import type { NetworkMessage } from '../../shared/protocols/network';
 import { signalSchema } from '../../shared/protocols/signaling';
 import type { Signal } from '../../shared/protocols/signaling';
 import { SignalRouter } from '../signaling/router';
 import { LanStunServer } from '../networking/lan-stun-server';
+import { ChatLog, RateWindow } from './chat';
+import type { RoomEvents } from './events';
+
+// Presence changes are human-driven; anything faster is a misbehaving client.
+const VOICE_UPDATES_PER_SECOND = 10;
+
+interface Member {
+  identity: Identity;
+  channel: Channel;
+  voice: VoiceState;
+  chatRate: RateWindow;
+  voiceRate: RateWindow;
+}
 
 export class RoomHost {
   private readonly access = newRoomAccess();
   private readonly server: Server;
   private readonly sockets = new Set<Socket>();
   private readonly channels = new Set<Channel>();
-  private readonly admitted = new Set<Channel>();
-  private readonly members = new Map<string, Identity>();
-  private readonly memberChannels = new Map<string, Channel>();
+  private readonly members = new Map<string, Member>();
   private readonly router: SignalRouter;
   private readonly stun: LanStunServer;
+  private readonly chat = new ChatLog();
+  private readonly hostChatRate = RateWindow.chat();
+  private hostVoice: VoiceState = DISCONNECTED_VOICE;
   private rtcEndpoint: { host: string; port: number } | null = null;
   private closing = false;
   invite = '';
@@ -31,6 +53,7 @@ export class RoomHost {
     private readonly name: string,
     onFailure: () => void,
     onSignal: (signal: Signal) => void = () => {},
+    private readonly events: RoomEvents = {},
   ) {
     this.stun = new LanStunServer(onFailure);
     this.router = new SignalRouter(
@@ -38,7 +61,7 @@ export class RoomHost {
       () => new Set([this.identity.peerId, ...this.members.keys()]),
       (signal) => {
         if (signal.toPeerId === this.identity.peerId) onSignal(signal);
-        else this.memberChannels.get(signal.toPeerId)?.send(signal);
+        else this.members.get(signal.toPeerId)?.channel.send(signal);
       },
     );
     this.server = createServer(
@@ -52,15 +75,10 @@ export class RoomHost {
         const admissionTimer = setTimeout(() => socket.destroy(), 5000);
         const channel = new Channel(socket, (message) => {
           if (memberId) {
-            const parsed = signalSchema.safeParse(message);
-            if (!parsed.success) {
-              channel.close();
-              return;
-            }
-            this.router.route(memberId, parsed.data);
+            this.receiveFromMember(memberId, channel, message);
             return;
           }
-          if (rejected || memberId || message.type !== 'ROOM_JOIN') {
+          if (rejected || message.type !== 'ROOM_JOIN') {
             channel.close();
             return;
           }
@@ -79,25 +97,46 @@ export class RoomHost {
                   : null;
           if (reason) {
             rejected = true;
-            channel.send({ version: 1, type: 'ROOM_JOIN_REJECTED', reason });
+            channel.send({
+              version: PROTOCOL_VERSION,
+              type: 'ROOM_JOIN_REJECTED',
+              reason,
+            });
             socket.end();
             return;
           }
           clearTimeout(admissionTimer);
           memberId = message.identity.peerId;
-          this.admitted.add(channel);
-          this.members.set(memberId, message.identity);
-          this.memberChannels.set(memberId, channel);
+          this.members.set(memberId, {
+            identity: message.identity,
+            channel,
+            voice: DISCONNECTED_VOICE,
+            chatRate: RateWindow.chat(),
+            voiceRate: new RateWindow(VOICE_UPDATES_PER_SECOND, 1000),
+          });
           channel.send({
-            version: 1,
+            version: PROTOCOL_VERSION,
             type: 'ROOM_JOIN_ACCEPTED',
             room: this.snapshot(),
           });
-          this.broadcast({
-            version: 1,
-            type: 'PEER_JOINED',
-            peer: { ...message.identity, role: 'MEMBER' },
-          });
+          for (const messages of this.chat.historyBatches())
+            channel.send({
+              version: PROTOCOL_VERSION,
+              type: 'CHAT_HISTORY',
+              messages,
+            });
+          this.broadcast(
+            {
+              version: PROTOCOL_VERSION,
+              type: 'PEER_JOINED',
+              peer: {
+                ...message.identity,
+                role: 'MEMBER',
+                voice: DISCONNECTED_VOICE,
+              },
+            },
+            memberId,
+          );
           this.broadcastState();
           console.info('[Room] Peer joined');
         });
@@ -105,11 +144,13 @@ export class RoomHost {
         socket.once('close', () => {
           clearTimeout(admissionTimer);
           this.channels.delete(channel);
-          this.admitted.delete(channel);
           if (memberId && this.members.delete(memberId) && !this.closing) {
-            this.memberChannels.delete(memberId);
             this.router.remove(memberId);
-            this.broadcast({ version: 1, type: 'PEER_LEFT', peerId: memberId });
+            this.broadcast({
+              version: PROTOCOL_VERSION,
+              type: 'PEER_LEFT',
+              peerId: memberId,
+            });
             this.broadcastState();
             console.info('[Room] Peer left');
           }
@@ -126,6 +167,61 @@ export class RoomHost {
     this.server.on('error', () => {
       if (!this.closing) onFailure();
     });
+  }
+  private receiveFromMember(
+    memberId: string,
+    channel: Channel,
+    message: NetworkMessage,
+  ): void {
+    const member = this.members.get(memberId);
+    if (!member) {
+      channel.close();
+      return;
+    }
+    switch (message.type) {
+      case 'VOICE_STATE':
+        if (!member.voiceRate.take()) {
+          channel.close();
+          return;
+        }
+        this.setMemberVoice(member, message.voice);
+        return;
+      case 'CHAT_SEND':
+        if (!member.chatRate.take()) {
+          channel.send({
+            version: PROTOCOL_VERSION,
+            type: 'CHAT_REJECTED',
+            id: message.id,
+            reason: 'RATE_LIMITED',
+          });
+          return;
+        }
+        this.publishChat(member.identity, message.id, message.text);
+        return;
+      default: {
+        const parsed = signalSchema.safeParse(message);
+        if (!parsed.success) {
+          channel.close();
+          return;
+        }
+        this.router.route(memberId, parsed.data);
+      }
+    }
+  }
+  private setMemberVoice(member: Member, voice: VoiceState): void {
+    if (sameVoice(member.voice, voice)) return;
+    member.voice = voice;
+    this.broadcastState();
+  }
+  private publishChat(author: Identity, id: string, text: string): void {
+    const message = this.chat.append(author, id, text);
+    if (!message) return; // Duplicate ID: the first delivery already went out.
+    this.broadcast({
+      version: PROTOCOL_VERSION,
+      type: 'CHAT_MESSAGE',
+      message,
+    });
+    this.events.onChat?.(message);
   }
   async listen(address: string): Promise<void> {
     const certificate = await createCertificate();
@@ -166,22 +262,45 @@ export class RoomHost {
       hostPeerId: this.identity.peerId,
       rtcEndpoint: this.rtcEndpoint,
       participants: [
-        { ...this.identity, role: 'HOST' },
-        ...[...this.members.values()].map((peer) => ({
-          ...peer,
+        { ...this.identity, role: 'HOST', voice: this.hostVoice },
+        ...[...this.members.values()].map((member) => ({
+          ...member.identity,
           role: 'MEMBER' as const,
+          voice: member.voice,
         })),
       ],
     };
   }
+  chatHistory() {
+    return this.chat.messages();
+  }
+  updateVoice(voice: VoiceState): void {
+    if (sameVoice(this.hostVoice, voice)) return;
+    this.hostVoice = voice;
+    this.broadcastState();
+  }
+  sendChat(id: string, text: string): void {
+    if (!this.hostChatRate.take()) {
+      this.events.onChatRejected?.(id, 'RATE_LIMITED');
+      return;
+    }
+    this.publishChat(this.identity, id, text);
+  }
   sendSignal(signal: Signal): void {
     this.router.route(this.identity.peerId, signal);
   }
-  private broadcast(message: NetworkMessage): void {
-    for (const channel of this.admitted) channel.send(message);
+  private broadcast(message: NetworkMessage, except?: string): void {
+    for (const [id, member] of this.members)
+      if (id !== except) member.channel.send(message);
   }
   private broadcastState(): void {
-    this.broadcast({ version: 1, type: 'ROOM_STATE', room: this.snapshot() });
+    if (this.closing || !this.rtcEndpoint) return;
+    this.broadcast({
+      version: PROTOCOL_VERSION,
+      type: 'ROOM_STATE',
+      room: this.snapshot(),
+    });
+    this.events.onChange?.();
   }
   async close(): Promise<void> {
     this.closing = true;
@@ -193,4 +312,13 @@ export class RoomHost {
     ]);
     this.members.clear();
   }
+}
+
+function sameVoice(a: VoiceState, b: VoiceState): boolean {
+  return (
+    a.connected === b.connected &&
+    a.muted === b.muted &&
+    a.deafened === b.deafened &&
+    a.streaming === b.streaming
+  );
 }
