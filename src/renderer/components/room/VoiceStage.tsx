@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Participant } from '../../../shared/schemas/room';
 import type { PeerConnectionView } from '../../services/PeerMesh';
 import type { RoomSession } from '../../services/RoomSession';
@@ -9,6 +9,8 @@ import { Avatar } from '../common/Avatar';
 import { Equalizer } from '../common/Equalizer';
 import { Icon } from '../Icon';
 import { LocalPreview, StreamPlayer } from './StreamPlayer';
+
+const IDLE_MS = 2500;
 
 type TileKey = `stream:${string}` | `voice:${string}` | 'self-stream';
 
@@ -31,6 +33,11 @@ export function VoiceStage({
   const outputDeviceId =
     settings.status === 'READY' ? settings.settings.audio.outputDeviceId : null;
   const [focusChoice, setFocus] = useState<TileKey | null>(null);
+  const [stripHidden, setStripHidden] = useState(false);
+  const [idle, setIdle] = useState(false);
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const connected = voice.status !== 'DISCONNECTED';
   const links = new Map(mesh.peers.map((peer) => [peer.peerId, peer]));
   const inVoice = participants.filter(
@@ -86,8 +93,13 @@ export function VoiceStage({
           focused={focus === key}
           deafened={voice.deafened}
           outputDeviceId={outputDeviceId}
+          inVoice={connected}
           onFocus={() => setFocus(focus === key ? null : key)}
-          onWatch={() => session.watch(peer.peerId)}
+          onWatch={() => {
+            session.watch(peer.peerId);
+            // Opening a stream brings it to the front, like a theatre view.
+            setFocus(key);
+          }}
           onLeave={() => {
             session.stopWatching(peer.peerId);
             if (focus === key) setFocus(null);
@@ -138,8 +150,25 @@ export function VoiceStage({
   };
   const focusedTile = focus ? renderTile(focus) : null;
   const others = keys.filter((key) => key !== focus);
+  // While a stream is in focus, controls fade out after the mouse rests so
+  // nothing covers the picture.
+  const watchingFocus =
+    !!focus && focus !== 'self-stream' && focus.startsWith('stream:');
+  const wake = () => {
+    setIdle(false);
+    clearTimeout(idleTimer.current);
+    if (watchingFocus)
+      idleTimer.current = setTimeout(() => setIdle(true), IDLE_MS);
+  };
+  useEffect(() => () => clearTimeout(idleTimer.current), []);
   return (
-    <div className="stage">
+    <div
+      className={`stage${watchingFocus && idle ? ' idle' : ''}`}
+      onMouseMove={wake}
+      onMouseLeave={() => {
+        if (watchingFocus) setIdle(true);
+      }}
+    >
       {keys.length === 0 ? (
         <div className="stage-empty">
           <span className="stage-empty-icon">
@@ -152,9 +181,27 @@ export function VoiceStage({
           </p>
         </div>
       ) : focusedTile ? (
-        <div className="stage-focus">
+        <div
+          className={`stage-focus${stripHidden || others.length === 0 ? ' strip-hidden' : ''}`}
+        >
           <div className="stage-focus-main">{focusedTile}</div>
           {others.length > 0 && (
+            <button
+              type="button"
+              className="strip-toggle"
+              aria-expanded={!stripHidden}
+              onClick={() => setStripHidden(!stripHidden)}
+            >
+              <Icon
+                name={stripHidden ? 'chevronUp' : 'chevronDown'}
+                size={16}
+              />
+              {stripHidden
+                ? `Mostrar participantes (${others.length})`
+                : 'Ocultar participantes'}
+            </button>
+          )}
+          {others.length > 0 && !stripHidden && (
             <div className="stage-strip">{others.map(renderTile)}</div>
           )}
         </div>
@@ -269,10 +316,12 @@ function StreamTile({
   focused,
   deafened,
   outputDeviceId,
+  inVoice,
   onFocus,
   onWatch,
   onLeave,
 }: {
+  inVoice: boolean;
   peer: PeerConnectionView;
   focused: boolean;
   deafened: boolean;
@@ -329,7 +378,9 @@ function StreamTile({
             ? 'Conectando…'
             : peer.watchState === 'ERROR'
               ? 'Tentar novamente'
-              : 'Assistir transmissão'}
+              : inVoice
+                ? 'Assistir transmissão'
+                : 'Entrar na voz e assistir'}
         </button>
       </div>
     </div>

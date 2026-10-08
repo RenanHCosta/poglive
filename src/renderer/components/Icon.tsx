@@ -23,6 +23,7 @@ export type IconName =
   | 'logout'
   | 'close'
   | 'chevronDown'
+  | 'chevronUp'
   | 'chevronRight'
   | 'pip'
   | 'crown'
@@ -76,6 +77,7 @@ const paths: Record<IconName, string> = {
   logout: 'M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11',
   close: 'M6 6l12 12M18 6 6 18',
   chevronDown: 'm6 9 6 6 6-6',
+  chevronUp: 'm6 15 6-6 6 6',
   chevronRight: 'm9 6 6 6-6 6',
   pip: 'M3 5h18v14H3zM12 12h6.5v4.5H12z',
   crown: 'M3.5 8 8 12l4-6.5 4 6.5 4.5-4-2 11h-13l-2-11Z',

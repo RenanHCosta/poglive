@@ -2362,6 +2362,52 @@ input[type='range'] {
   gap: 10px;
   padding: 18px 18px 104px;
 }
+/* With the strip hidden the stream takes the whole stage under the dock. */
+.stage-focus.strip-hidden {
+  padding-bottom: 18px;
+}
+.strip-toggle {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 13px;
+  background: rgba(17, 17, 19, 0.9);
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: opacity 0.25s ease;
+}
+.strip-toggle:hover {
+  color: var(--bone);
+  border-color: var(--bone);
+}
+.stage-focus.strip-hidden .strip-toggle {
+  position: absolute;
+  bottom: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+.stage-controls,
+.stage-notice {
+  transition: opacity 0.25s ease;
+}
+.stage.idle {
+  cursor: none;
+}
+.stage.idle .stage-controls,
+.stage.idle .strip-toggle,
+.stage.idle .stage-strip {
+  opacity: 0;
+  pointer-events: none;
+}
 .stage-focus-main {
   flex: 1;
   min-height: 0;

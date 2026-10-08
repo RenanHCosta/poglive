@@ -206,6 +206,34 @@ export async function runE2E(
     await new Promise((done) => setTimeout(done, 400));
     const shot = await window.webContents.capturePage();
     await writeFile(resolve(directory, `${role}.png`), shot.toPNG());
+    if (role === 'guest') {
+      // Opening the stream focused it; the participant strip can be hidden.
+      await until(window, 'hide strip', click('.strip-toggle', 'Ocultar'));
+      await until(
+        window,
+        'strip hidden',
+        `!document.querySelector('.stage-strip') && !!document.querySelector('.stage-focus.strip-hidden .stream-player')`,
+      );
+      step('participant strip hidden');
+      await new Promise((done) => setTimeout(done, 300));
+      const focused = await window.webContents.capturePage();
+      await writeFile(resolve(directory, 'guest-focus.png'), focused.toPNG());
+      // Leaving voice closes streams being watched.
+      await until(window, 'leave voice', click('[aria-label="Sair da voz"]'));
+      await until(
+        window,
+        'stream closed',
+        `!document.querySelector('.stream-player')`,
+      );
+      step('left voice, stream closed');
+    } else {
+      await until(
+        window,
+        'viewer left',
+        `document.querySelector('.stream-tile.self .viewer-count')?.textContent.trim() === '0'`,
+      );
+      step('viewer count back to 0');
+    }
     // Let the other side finish before the room closes.
     await new Promise((done) =>
       setTimeout(done, role === 'host' ? 4000 : 1000),

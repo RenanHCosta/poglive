@@ -93,6 +93,10 @@ export class PeerMesh {
   stopWatching(peerId: string): void {
     this.links.get(peerId)?.media.stopWatching();
   }
+  stopWatchingAll(): void {
+    for (const link of this.links.values())
+      if (link.media.watchState !== 'IDLE') link.media.stopWatching();
+  }
   /**
    * Manual retry from the UI, regardless of backoff. Only the offerer (lower
    * UUID) can renegotiate; the other side waits for its new offer.

@@ -36,6 +36,7 @@ export class RoomSession {
   private lastPresenceAt = 0;
   private roster: RoomSnapshot['participants'] | null = null;
   private streamIds = new Map<string, string>();
+  private wasInVoice = false;
   private closed = false;
 
   constructor(
@@ -56,10 +57,23 @@ export class RoomSession {
     );
     this.unsubscribe.push(
       this.share.capture.subscribe(() => {
-        this.peerMesh.setCapture(this.share.capture.get());
+        const capture = this.share.capture.get();
+        this.peerMesh.setCapture(capture);
+        // Going live happens in the voice channel, as viewers expect.
+        if (capture) this.ensureVoice();
         this.syncPresence();
       }),
-      this.voice.view.subscribe(() => this.syncPresence()),
+      this.voice.view.subscribe(() => {
+        const inVoice = this.voice.connected;
+        // Leaving voice leaves the call entirely: streams being watched and
+        // the user's own share end with it.
+        if (this.wasInVoice && !inVoice) {
+          this.peerMesh.stopWatchingAll();
+          if (this.share.state.get().status !== 'IDLE') this.share.stop();
+        }
+        this.wasInVoice = inVoice;
+        this.syncPresence();
+      }),
     );
     this.peerMesh.start();
     void this.chat.load();
@@ -95,7 +109,12 @@ export class RoomSession {
     this.voice.applySettings(settings);
   }
 
+  /** Joins the voice channel if needed; watching and streaming happen there. */
+  ensureVoice(): void {
+    if (!this.voice.connected) void this.voice.join();
+  }
   watch(peerId: string): void {
+    this.ensureVoice();
     this.peerMesh.watch(peerId);
   }
   stopWatching(peerId: string): void {
