@@ -33,8 +33,13 @@ um convite e voz e vídeo trafegam por conexões WebRTC diretas entre os partici
   indicador de quem está falando, volume por pessoa, silenciar e desativar áudio.
 - Atalhos globais para silenciar e desativar o áudio mesmo com um jogo em foco.
 - Chat de texto com menções, formatação, links e histórico enquanto a sala existe.
-- Transmissão de monitor ou janela em 720p/1080p e 30/60 FPS, com áudio estéreo do
-  computador que nunca inclui o próprio Poglive (sem eco da voz da sala).
+- Transmissão de monitor ou janela em 720p, 1080p ou resolução nativa (até 4K), 30/60
+  FPS, codificada em H.264 pela GPU quando disponível, com áudio estéreo do computador
+  que nunca inclui o próprio Poglive nem o Discord.
+- Clipes: salve os últimos 15, 30 ou 60 segundos de uma transmissão com um clique ou
+  atalho global.
+- Reações ao vivo por cima da transmissão e miniatura antes de começar a assistir.
+- Chat com respostas, edição, exclusão e moderação do anfitrião.
 - Qualidade adaptativa por espectador, com redução rápida e recuperação gradual.
 - Várias transmissões abertas simultaneamente, com foco, tela cheia e picture-in-picture.
 - Reconexão automática das conexões diretas entre participantes.

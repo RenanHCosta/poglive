@@ -61,7 +61,7 @@ Selecione **Entrar com convite**, cole o convite e confirme. Um convite válido 
 entrada automática enquanto houver espaço e o mesmo identificador não estiver conectado.
 O limite atual é de oito participantes.
 
-Convites começam com `PL2.`. Um convite `PL1.` vem de uma versão anterior: quem criou
+Convites começam com `PL3.`. Um convite `PL1.` ou `PL2.` vem de uma versão anterior: quem criou
 a sala precisa atualizar o Poglive e gerar um convite novo. Todos os participantes devem
 usar a mesma versão.
 
@@ -118,6 +118,9 @@ O canal `#chat` aceita mensagens de até 2.000 caracteres. `Enter` envia e
 - Links `http`/`https` abrem no navegador padrão, após uma confirmação que mostra o
   destino.
 - Abaixo da caixa de mensagem aparece quem está digitando.
+- Passe o mouse sobre uma mensagem para **Responder**, **Editar** (as suas) ou
+  **Apagar**. Com a caixa vazia, seta para cima edita a sua última mensagem. O
+  anfitrião pode apagar qualquer mensagem; Shift ao clicar apaga sem confirmar.
 - Mensagens ainda não confirmadas pelo anfitrião aparecem em cinza; se falharem, use
   **Reenviar**. O anfitrião aceita até cinco mensagens a cada cinco segundos por pessoa.
 
@@ -135,9 +138,34 @@ recebe as últimas 100. Encerrar a sala apaga tudo; nada é gravado em disco.
 Seu nome ganha a marca **AO VIVO** e um bloco com a prévia da transmissão aparece no
 palco, com o número de pessoas assistindo. Clique de novo no botão de tela para parar.
 
-Os demais participantes veem o bloco da transmissão e decidem se querem assistir.
-Clique em um bloco para destacá-lo; duplo clique abre tela cheia. Passe o mouse para
-ver o volume, o mini player (picture-in-picture), tela cheia e **Parar de assistir**. É possível
+Os demais participantes veem uma miniatura da transmissão, atualizada a cada 10
+segundos, e decidem se querem assistir. Assistir ou transmitir entra na sala de voz
+automaticamente, e sair da voz encerra as transmissões abertas e a sua própria.
+
+Ao abrir uma transmissão, ela vai para o foco. **Ocultar participantes** deixa só a
+transmissão no palco, e os controles somem quando o mouse fica parado. Duplo clique
+abre tela cheia. Passe o mouse para ver o volume, as reações, clipes, mini player
+(picture-in-picture), tela cheia e **Parar de assistir**.
+
+### Resolução nativa
+
+Além de 720p e 1080p, **Nativa** transmite no tamanho real da tela ou janela (por
+exemplo, um monitor 2K), até 4K. Usa mais rede: cerca de 20 Mbps por pessoa a 60 FPS
+ou 10 Mbps a 30 FPS. Se a rede não aguentar, a qualidade adaptativa desce para 1080p.
+
+### Reações ao vivo
+
+Quem assiste pode enviar 🔥 😂 👏 😮 ❤️ 💀 🎉 👀 pela barra no topo da transmissão. As
+reações sobem por cima do vídeo para todos que estão assistindo e para quem transmite.
+
+### Clipes
+
+Enquanto você assiste, o Poglive guarda na memória os últimos segundos da
+transmissão. O botão de tesoura no player, o atalho global (`Alt + Shift + C` por
+padrão) ou o menu da bandeja salvam um clipe de 15, 30 ou 60 segundos em
+`Vídeos\Poglive`. Quem transmite recebe um aviso de que alguém salvou um clipe. Em
+**Configurações > Clipes**, você ajusta a duração, ativa clipes da sua própria
+transmissão ou desativa o recurso, que usa um pouco de CPU por transmissão aberta. É possível
 assistir a várias transmissões ao mesmo tempo, usar tela cheia ou picture-in-picture e
 ajustar o volume de cada player. Sair de um player não encerra a transmissão na origem.
 
@@ -158,7 +186,9 @@ espectadores:
 1080p60 → 1080p30 → 720p30 → 540p30 → 540p15
 ```
 
-Uma origem limitada a 720p ou 30 FPS começa no degrau correspondente. O Poglive mede a
+Desde a versão 0.4, nenhum degrau fica abaixo de 720p30. Escolhendo 60 FPS, a
+fluidez é preservada até o fim; cada escada reduz primeiro o bitrate e só depois a
+resolução. Uma origem limitada a 720p ou 30 FPS começa no degrau correspondente. O Poglive mede a
 cada dois segundos perda, jitter, atraso do jitter buffer, round-trip time, frames
 descartados, congelamentos e limitações de CPU/banda informadas pelo WebRTC. Dois
 intervalos ruins reduzem um degrau; a recuperação exige cerca de dez amostras estáveis e
@@ -230,5 +260,10 @@ assim, remova qualquer informação adicional sensível antes de publicar uma is
 - Sem push-to-talk global, edição ou exclusão de mensagens e anexos no chat.
 - Certificados temporários da sala expiram; recrie a sala quando necessário.
 - Qualidade real depende de captura, encoder, decoder, CPU/GPU, rede e número de viewers.
+
+### Moderação
+
+O anfitrião pode abrir o perfil de alguém e usar **Remover da sala**. A pessoa é
+desconectada e não consegue voltar com o mesmo perfil enquanto a sala existir.
 
 Detalhes dos protocolos e do modelo de segurança estão em [architecture.md](architecture.md).

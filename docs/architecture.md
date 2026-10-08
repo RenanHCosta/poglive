@@ -127,31 +127,40 @@ Não há mudança global em TLS, Chromium, CSP ou webSecurity.
 
 ## Protocolo e autoridade
 
-Todas as mensagens têm version=2 (`PROTOCOL_VERSION`) e type discriminado; Zod infere
-NetworkMessage. A versão 2 adicionou presença de voz e chat; builds anteriores são
-recusados já no convite (prefixo `PL2.`).
+Todas as mensagens têm version=3 (`PROTOCOL_VERSION`) e type discriminado; Zod infere
+NetworkMessage. A versão 2 adicionou presença de voz e chat; a 3, respostas, edição e
+exclusão no chat, reações, miniaturas e remoção de membros. Builds anteriores são
+recusados já no convite (prefixo `PL3.`). A partir da v3, mensagens com a versão atual
+e um `type` desconhecido são ignoradas (contam no limite de taxa), tanto no canal TLS
+quanto no canal de controle WebRTC. Recursos aditivos não exigem nova versão; um tipo
+conhecido com formato inválido continua encerrando a conexão.
 Framing: 4 bytes unsigned big-endian de tamanho + JSON UTF-8, no máximo 64 KiB.
 Limites: 8 participantes, 16 conexões simultâneas, handshake/admissão de 5 s,
 120 frames por segundo por conexão (incluindo rajadas ICE), fila de saída limitada.
 Payloads malformados e mensagens fora do estado permitido encerram a conexão.
 Estas defesas limitam recursos, mas não prometem resistir a DoS de rede dedicado.
 
-| Mensagem                     | Uso                                                        |
-| ---------------------------- | ---------------------------------------------------------- |
-| ROOM_JOIN                    | roomId, segredo e identidade; primeira mensagem de domínio |
-| ROOM_JOIN_ACCEPTED           | Snapshot completo após autenticação                        |
-| ROOM_JOIN_REJECTED           | INVALID_SECRET, WRONG_ROOM, DUPLICATE_ID ou FULL           |
-| PEER_JOINED / PEER_LEFT      | Notificações emitidas somente pelo host                    |
-| ROOM_STATE                   | Snapshot autoritativo, IDs únicos e exatamente um host     |
-| PING / PONG                  | Nonce novo e resposta correspondente para liveness         |
-| WEBRTC_OFFER / WEBRTC_ANSWER | Sala, remetente, destino e negotiationId validados no M4   |
-| ICE_CANDIDATE                | Candidato limitado, inclusive null; negociação validada    |
-| VOICE_STATE                  | Membro → host: a própria presença de voz                   |
-| CHAT_SEND                    | Membro → host: id UUID e texto validado                    |
-| CHAT_MESSAGE                 | Host → membros: mensagem carimbada pelo host               |
-| CHAT_HISTORY                 | Host → novo membro: até 100 mensagens em lotes ≤ 48 KiB    |
-| CHAT_REJECTED                | Host → autor: RATE_LIMITED ou UNAVAILABLE                  |
-| TYPING / PEER_TYPING         | Membro → host / host → demais: aviso de digitação          |
+| Mensagem                      | Uso                                                        |
+| ----------------------------- | ---------------------------------------------------------- |
+| ROOM_JOIN                     | roomId, segredo e identidade; primeira mensagem de domínio |
+| ROOM_JOIN_ACCEPTED            | Snapshot completo após autenticação                        |
+| ROOM_JOIN_REJECTED            | INVALID_SECRET, WRONG_ROOM, DUPLICATE_ID ou FULL           |
+| PEER_JOINED / PEER_LEFT       | Notificações emitidas somente pelo host                    |
+| ROOM_STATE                    | Snapshot autoritativo, IDs únicos e exatamente um host     |
+| PING / PONG                   | Nonce novo e resposta correspondente para liveness         |
+| WEBRTC_OFFER / WEBRTC_ANSWER  | Sala, remetente, destino e negotiationId validados no M4   |
+| ICE_CANDIDATE                 | Candidato limitado, inclusive null; negociação validada    |
+| VOICE_STATE                   | Membro → host: a própria presença de voz                   |
+| CHAT_SEND                     | Membro → host: id UUID e texto validado                    |
+| CHAT_MESSAGE                  | Host → membros: mensagem carimbada pelo host               |
+| CHAT_HISTORY                  | Host → novo membro: até 100 mensagens em lotes ≤ 48 KiB    |
+| CHAT_REJECTED                 | Host → autor: RATE_LIMITED ou UNAVAILABLE                  |
+| TYPING / PEER_TYPING          | Membro → host / host → demais: aviso de digitação          |
+| CHAT_EDIT / CHAT_DELETE       | Membro → host: editar (autor) ou apagar (autor ou host)    |
+| CHAT_UPDATED / CHAT_DELETED   | Host → membros: resultado da edição ou exclusão            |
+| REACT / PEER_REACTION         | Reação a uma transmissão; 8 a cada 2 s, lista fixa         |
+| STREAM_PREVIEW / PEER_PREVIEW | Miniatura JPEG da transmissão (até 40 KB), 1 a cada 2,5 s  |
+| KICKED                        | Host → membro removido, antes de fechar a conexão          |
 
 O host não aceita roster, identidade alheia ou eventos de mídia enviados por
 participantes neste marco. Um cliente aceita estados somente da conexão ao host
@@ -205,6 +214,37 @@ blocos de código, links e menções a nomes da sala. Apenas URLs http(s) sem cr
 com até 2.048 caracteres, viram links. Abri-los passa pelo IPC `app:open-external`,
 que revalida a URL antes de `shell.openExternal`; a navegação da janela continua
 bloqueada.
+
+### Moderação, reações e miniaturas
+
+O host remove um membro enviando KICKED e fechando a conexão; o `peerId` entra numa
+lista de bloqueio que dura enquanto a sala existir (ROOM_JOIN_REJECTED `KICKED`). O
+UUID é declarado pelo cliente, então isso afasta quem usa o app normalmente, não um
+adversário que troque de perfil.
+
+Reações aceitam apenas oito emojis e alvos presentes na sala. O host as retransmite a
+todos exceto ao remetente, que já as mostra localmente. Miniaturas são data URLs JPEG
+validadas por regex e tamanho, desenhadas como `<img>` (CSP `img-src data:`). O host
+não as armazena: quem entra recebe a próxima atualização, em até 10 s. A edição
+preserva `sentAt` e define `editedAt`. `replyTo` aponta para um id existente no log,
+ou vira null.
+
+## Clipes
+
+`ClipRecorder` grava cada transmissão assistida com MediaRecorder (H.264 em WebM,
+preferido por usar o encoder da GPU e cerca de um terço da CPU do VP8; fallback VP8),
+quadros-chave a cada 2 s e fatias de 500 ms. `WebmClipBuffer` interpreta o WebM ao
+vivo, com Segment e Clusters de tamanho desconhecido, de forma incremental. Ele guarda
+o cabeçalho (EBML, Info, Tracks) e os clusters recentes (duração do clipe + 8 s) e
+classifica cada bloco: SimpleBlock com flag de chave, ou BlockGroup sem ReferenceBlock,
+é quadro-chave de vídeo. O clipe começa no último quadro-chave antes do início da
+janela, em um Cluster novo, com Timecodes rebaseados para zero. Entrada corrompida
+desativa o buffer em vez de gerar arquivos inválidos.
+
+O main grava em `Vídeos\Poglive` com nome sanitizado, verificação do número mágico
+EBML, limite de 512 MiB e `wx` contra sobrescrita. O renderer só pode revelar arquivos
+salvos por este processo. Quem assiste avisa quem transmite com `CLIP_SAVED` no canal
+de controle; o aviso aparece no máximo uma vez a cada 10 s por espectador.
 
 ## Saída e falhas
 
@@ -447,9 +487,34 @@ jitter buffer e atividade do decoder e envia QUALITY_REPORT pelo DataChannel val
 O transmissor combina esse relatório com RTT, bitrate de saída disponível e
 `qualityLimitationReason` do sender.
 
-A escolha do usuário é o teto da escada. Duas amostras ruins reduzem um degrau; dez
-amostras estáveis permitem subir um degrau. Cooldowns e limiares diferentes para queda e
-recuperação fornecem histerese. `maxBitrate`, `maxFramerate` e
+A escolha do usuário é o teto da escada, e nenhuma escada desce abaixo de 720p30.
+Com 60 FPS, a escada preserva a fluidez: 1080p60 → 1080p60 econômico → 720p60 → 720p60
+econômico → 720p30 econômico. Com 30 FPS, reduz o bitrate antes da resolução. A opção
+Nativa começa no tamanho da fonte (até 4K) e desce para 1080p.
+
+Só sinais reais rebaixam:
+
+- `qualityLimitationReason` igual a `bandwidth` ou `cpu`;
+- perda acima de 3%, jitter acima de 80 ms, buffer acima de 300 ms ou RTT acima de
+  400 ms;
+- decodificação parada, descarte de quadros acima de 15%, ou congelamentos
+  acompanhados de perda.
+
+A estimativa de banda disponível não é mais usada: ela fica perto do que já está sendo
+enviado (cerca de 5 Mbps num link ocioso), o que rebaixava toda transmissão 1080p60 e
+impedia a recuperação. Congelamentos isolados também não contam, porque a captura de
+tela só gera quadros quando a imagem muda.
+
+As 3 primeiras amostras (6 s) são aquecimento. Duas amostras ruins reduzem um degrau.
+Seis estáveis permitem subir; se uma subida falha em até 30 s, a espera dobra (até
+48 amostras) e volta ao normal após um longo período saudável. Dentro de um degrau, o
+sender usa `degradationPreference: balanced`.
+
+O vídeo da transmissão prefere H.264 (`setCodecPreferences`: High, Main e Baseline com
+packetization-mode=1, depois os demais codecs). No Windows, o Chromium o envia ao
+encoder de hardware por Media Foundation: numa máquina de teste, 1080p de tela ficou em
+29 FPS com H.264 contra 14 FPS com VP8 por software. O codec negociado aparece no selo
+do player. `maxBitrate`, `maxFramerate` e
 `scaleResolutionDownBy` mudam no RTCRtpSender sem substituir a captura. Cada PeerLink
 mantém estado independente, portanto um receptor ruim não reduz os demais.
 
