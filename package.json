@@ -1,6 +1,6 @@
 {
   "name": "poglive",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Compartilhamento de tela P2P em salas privadas",
   "license": "MIT",
