@@ -4,6 +4,7 @@ import { settingsStore, updateSettings } from '../../services/settings';
 import { useStore } from '../../services/store';
 import { Avatar } from '../common/Avatar';
 import { Popover } from '../common/Popover';
+import { Slider } from '../common/Slider';
 import type { Anchor } from '../common/Popover';
 import { Icon } from '../Icon';
 
@@ -93,16 +94,16 @@ export function MemberPopover({
                   Volume do usuário
                   <output>{preference.volume}%</output>
                 </span>
-                <input
-                  type="range"
+                <Slider
                   min={0}
                   max={200}
                   step={5}
                   value={preference.volume}
-                  onChange={(event) =>
+                  label="Volume do usuário"
+                  onChange={(value) =>
                     setPreference({
                       ...preference,
-                      volume: Number(event.target.value),
+                      volume: value,
                     })
                   }
                 />

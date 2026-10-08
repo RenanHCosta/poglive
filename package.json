@@ -32,6 +32,7 @@
     "release": "node scripts/release.mjs",
     "start": "electron .",
     "smoke": "electron . --smoke-test",
+    "e2e": "node scripts/e2e.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",

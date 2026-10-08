@@ -14,6 +14,7 @@ import { UpdateService } from './update/service';
 import { IPC } from '../shared/contracts';
 import { SettingsStore } from './settings/store';
 import { ShortcutService } from './settings/shortcuts';
+import { e2eOptions, prepareE2E, runE2E } from './e2e';
 
 const WEBRTC_MDNS_FEATURE = 'WebRtcHideLocalIpsWithMdns';
 const WEBRTC_UDP_PORT_RANGE = { min: 52000, max: 52100 } as const;
@@ -45,7 +46,9 @@ const profile = process.argv
   ?.slice(10);
 if (profile && !/^[a-zA-Z0-9_-]{1,24}$/.test(profile))
   throw new Error('Invalid profile name');
-if (smoke)
+const e2e = e2eOptions();
+if (e2e) prepareE2E(e2e);
+else if (smoke)
   app.setPath(
     'userData',
     resolve(app.getAppPath(), '.artifacts/smoke-profile'),
@@ -208,8 +211,9 @@ async function createWindow(): Promise<void> {
     window = null;
   });
   await window.loadURL(rendererUrl);
-  if (!smoke) window.show();
+  if (!smoke && !e2e) window.show();
   console.info('[App] Window ready');
+  if (e2e) void runE2E(window, e2e);
   if (smoke) {
     // Fixed local diagnostic only; no user-supplied script is evaluated.
     const passed: unknown = await window.webContents.executeJavaScript(`

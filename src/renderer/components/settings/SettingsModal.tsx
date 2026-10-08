@@ -15,6 +15,7 @@ import { useStore } from '../../services/store';
 import { pushToast } from '../../services/toasts';
 import { Avatar } from '../common/Avatar';
 import { Toggle } from '../common/Toggle';
+import { Slider } from '../common/Slider';
 import { Icon } from '../Icon';
 import { UpdatePanel } from './UpdatePanel';
 import { MicrophoneTest } from './MicrophoneTest';
@@ -309,30 +310,26 @@ function VoiceSection({ settings }: { settings: Settings }) {
           <span className="field-label">
             Volume de entrada <output>{audio.inputVolume}%</output>
           </span>
-          <input
-            type="range"
+          <Slider
             min={0}
             max={200}
             step={5}
             value={audio.inputVolume}
-            onChange={(event) =>
-              setAudio({ inputVolume: Number(event.target.value) })
-            }
+            label="Volume de entrada"
+            onChange={(value) => setAudio({ inputVolume: value })}
           />
         </label>
         <label className="field">
           <span className="field-label">
             Volume de saída <output>{audio.outputVolume}%</output>
           </span>
-          <input
-            type="range"
+          <Slider
             min={0}
             max={200}
             step={5}
             value={audio.outputVolume}
-            onChange={(event) =>
-              setAudio({ outputVolume: Number(event.target.value) })
-            }
+            label="Volume de saída"
+            onChange={(value) => setAudio({ outputVolume: value })}
           />
         </label>
       </div>
@@ -349,15 +346,13 @@ function VoiceSection({ settings }: { settings: Settings }) {
           <span className="field-label">
             Limite manual <output>{Math.round(audio.sensitivityDb)} dB</output>
           </span>
-          <input
-            type="range"
+          <Slider
             min={-100}
             max={0}
             step={1}
             value={audio.sensitivityDb}
-            onChange={(event) =>
-              setAudio({ sensitivityDb: Number(event.target.value) })
-            }
+            label="Limite manual de sensibilidade"
+            onChange={(value) => setAudio({ sensitivityDb: value })}
           />
         </label>
       )}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RemoteVideoQuality } from '../../../shared/protocols/media';
 import { Icon } from '../Icon';
+import { Slider } from '../common/Slider';
 
 type SinkVideo = HTMLVideoElement & {
   setSinkId?: (sinkId: string) => Promise<void>;
@@ -137,13 +138,12 @@ export function StreamPlayer({
                 name={deafened || volume === 0 ? 'speakerOff' : 'speaker'}
                 size={18}
               />
-              <input
-                type="range"
+              <Slider
                 min={0}
                 max={100}
                 value={volume}
-                aria-label="Volume da transmissão"
-                onChange={(event) => setVolume(Number(event.target.value))}
+                label="Volume da transmissão"
+                onChange={(value) => setVolume(value)}
               />
             </label>
           )}

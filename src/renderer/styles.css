@@ -1057,6 +1057,37 @@ input[type='range'] {
   accent-color: var(--brand);
   cursor: pointer;
 }
+.slider {
+  appearance: none;
+  height: 8px;
+  margin: 6px 0;
+  border-radius: 4px;
+  background:
+    linear-gradient(var(--brand), var(--brand)) 0 / var(--fill, 50%) 100%
+      no-repeat,
+    #4e5058;
+}
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 10px;
+  height: 24px;
+  border-radius: 3px;
+  background: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  border: 1px solid #dcddde;
+}
+.stream-volume .slider {
+  height: 4px;
+  background:
+    linear-gradient(white, white) 0 / var(--fill, 50%) 100% no-repeat,
+    rgba(255, 255, 255, 0.3);
+}
+.stream-volume .slider::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 0;
+}
 
 .check-row {
   display: flex;
