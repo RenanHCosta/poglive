@@ -1,22 +1,30 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { LocalState, RoomCommand } from '../../shared/schemas/room';
+import { pushToast } from '../services/toasts';
 
 type View =
   | { status: 'LOADING' }
   | { status: 'READY'; data: LocalState }
   | { status: 'ERROR'; message: string };
-type ActionState =
-  | { status: 'IDLE' }
-  | { status: 'BUSY' }
-  | { status: 'ERROR'; message: string }
-  | { status: 'DONE'; message: string };
+
+// Main pushes a STATE event on every change; the poll is only a safety net.
+const FALLBACK_POLL_MS = 3000;
+
 export function useRoom() {
   const [view, setView] = useState<View>({ status: 'LOADING' });
-  const [action, setAction] = useState<ActionState>({ status: 'IDLE' });
+  const [busy, setBusy] = useState(false);
   useEffect(() => {
     let active = true;
     let timer: ReturnType<typeof setTimeout>;
-    async function poll(): Promise<void> {
+    let inFlight = false;
+    let again = false;
+    async function refresh(): Promise<void> {
+      if (inFlight) {
+        again = true;
+        return;
+      }
+      inFlight = true;
+      clearTimeout(timer);
       try {
         const data = await window.pogLive.getState();
         if (active) setView({ status: 'READY', data });
@@ -26,39 +34,45 @@ export function useRoom() {
             status: 'ERROR',
             message: 'Falha ao consultar o aplicativo. Feche e abra novamente.',
           });
+      } finally {
+        inFlight = false;
       }
-      if (active)
+      if (!active) return;
+      if (again) {
+        again = false;
+        void refresh();
+      } else
         timer = setTimeout(() => {
-          void poll();
-        }, 750);
+          void refresh();
+        }, FALLBACK_POLL_MS);
     }
-    void poll();
+    const unsubscribe = window.pogLive.onRoomEvent((event) => {
+      if (event.type === 'STATE') void refresh();
+    });
+    void refresh();
     return () => {
       active = false;
       clearTimeout(timer);
+      unsubscribe();
     };
   }, []);
-  const command = useCallback(async (value: RoomCommand): Promise<void> => {
-    setAction({ status: 'BUSY' });
+  /** Resolves true on success; failures surface as a toast. */
+  const command = useCallback(async (value: RoomCommand): Promise<boolean> => {
+    setBusy(true);
     try {
       const result = await window.pogLive.command(value);
-      if (result.status === 'ERROR') setAction(result);
-      else {
-        setView({ status: 'READY', data: await window.pogLive.getState() });
-        setAction({
-          status: 'DONE',
-          message:
-            value.type === 'COPY_INVITE'
-              ? 'Código copiado. Compartilhe apenas com quem pode entrar.'
-              : 'Pronto.',
-        });
+      if (result.status === 'ERROR') {
+        pushToast(result.message, 'error');
+        return false;
       }
+      setView({ status: 'READY', data: await window.pogLive.getState() });
+      return true;
     } catch {
-      setAction({
-        status: 'ERROR',
-        message: 'Não foi possível concluir a operação.',
-      });
+      pushToast('Não foi possível concluir a operação.', 'error');
+      return false;
+    } finally {
+      setBusy(false);
     }
   }, []);
-  return { view, action, command };
+  return { view, busy, command };
 }

@@ -160,11 +160,11 @@ function configureProtocol(): void {
 
 async function createWindow(): Promise<void> {
   window = new BrowserWindow({
-    width: 1120,
-    height: 780,
-    minWidth: 760,
+    width: 1280,
+    height: 800,
+    minWidth: 940,
     minHeight: 600,
-    backgroundColor: '#0d0f14',
+    backgroundColor: '#1e1f22',
     title: 'Poglive',
     frame: false,
     show: false,
@@ -254,16 +254,65 @@ async function createWindow(): Promise<void> {
       testPeer.room?.participants.length !== 2
     )
       throw new Error('Electron room join failed');
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // The renderer must learn about the new member from a pushed event.
+    const rendered: unknown = await window.webContents.executeJavaScript(`
+      new Promise((resolve) => {
+        const deadline = Date.now() + 3000;
+        const check = () => {
+          if (document.body.textContent.includes("2/8 na sala")) resolve(true);
+          else if (Date.now() > deadline) resolve(document.body.textContent.slice(0, 400));
+          else setTimeout(check, 50);
+        };
+        check();
+      })
+    `);
+    if (rendered !== true)
+      throw new Error(`Room state not rendered: ${String(rendered)}`);
+    await new Promise((resolve) => setTimeout(resolve, 500));
     const artifactDirectory = resolve(app.getAppPath(), '.artifacts');
     await mkdir(artifactDirectory, { recursive: true });
-    const screenshot = await window.webContents.capturePage();
-    await writeFile(
-      resolve(artifactDirectory, 'milestone-2.png'),
-      screenshot.toPNG(),
+    const capture = async (name: string): Promise<void> => {
+      const image = await window!.webContents.capturePage();
+      await writeFile(resolve(artifactDirectory, name), image.toPNG());
+    };
+    await capture('milestone-2.png');
+    // Chat round trip: a member's message reaches the host UI through the room.
+    testPeer.sendChat(
+      randomUUID(),
+      'Olá do **teste** com `código` e @Teste local',
     );
+    const chatted: unknown = await window.webContents.executeJavaScript(`
+      new Promise((resolve) => {
+        [...document.querySelectorAll('button.channel')]
+          .find((button) => button.textContent.trim() === 'chat')?.click();
+        const deadline = Date.now() + 3000;
+        const check = () => {
+          const message = document.querySelector('.message.mentioned strong');
+          if (message?.textContent === 'teste') resolve(true);
+          else if (Date.now() > deadline) resolve(false);
+          else setTimeout(check, 50);
+        };
+        check();
+      })
+    `);
+    if (chatted !== true) throw new Error('Chat message not rendered');
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await capture('smoke-chat.png');
+    // Hidden smoke windows do not advance CSS animations.
+    await window.webContents.insertCSS(
+      '*, *::before, *::after { animation: none !important; transition: none !important; }',
+    );
+    await window.webContents.executeJavaScript(`
+      document.querySelector('[aria-label="Configurações de usuário"]')?.click();
+      new Promise((resolve) => setTimeout(() => {
+        [...document.querySelectorAll('.settings-nav-item')]
+          .find((button) => button.textContent === 'Voz e áudio')?.click();
+        setTimeout(resolve, 300);
+      }, 200));
+    `);
+    await capture('smoke-settings.png');
     console.info(
-      '[App] Smoke passed: renderer, styles, preload, IPC, Node isolation, CSP, TLS room join',
+      '[App] Smoke passed: renderer, styles, preload, IPC, Node isolation, CSP, TLS room join, chat',
     );
     testPeer.close();
     await rooms.close();
@@ -275,7 +324,7 @@ if (smoke)
   setTimeout(() => {
     console.error('[App] Smoke timeout');
     app.exit(1);
-  }, 15000).unref();
+  }, 25000).unref();
 
 app
   .whenReady()

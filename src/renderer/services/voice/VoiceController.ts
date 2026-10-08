@@ -3,6 +3,7 @@ import { playSound } from '../sounds';
 import { sameSet, Store } from '../store';
 import { MicrophoneError, MicrophoneInput } from './MicrophoneInput';
 import { VoicePlayback } from './VoicePlayback';
+import { voicePrefs } from './prefs';
 
 const TICK_MS = 40;
 
@@ -24,6 +25,16 @@ export interface RemoteVoiceSource {
   inVoice: boolean;
 }
 
+/** Stand-ins for components rendered without a room session. */
+export const IDLE_VOICE_VIEW = new Store<VoiceView>({
+  status: 'DISCONNECTED',
+  selfMuted: false,
+  deafened: false,
+  micUnavailable: false,
+  error: null,
+});
+export const IDLE_SPEAKING = new Store<ReadonlySet<string>>(new Set());
+
 export function effectiveMuted(view: VoiceView): boolean {
   return view.selfMuted || view.deafened || view.micUnavailable;
 }
@@ -36,8 +47,7 @@ export function effectiveMuted(view: VoiceView): boolean {
 export class VoiceController {
   readonly view = new Store<VoiceView>({
     status: 'DISCONNECTED',
-    selfMuted: false,
-    deafened: false,
+    ...voicePrefs.get(),
     micUnavailable: false,
     error: null,
   });
@@ -134,6 +144,12 @@ export class VoiceController {
     }
     this.applyMute();
     this.applyOutput();
+    this.savePrefs();
+  }
+
+  private savePrefs(): void {
+    const { selfMuted, deafened } = this.view.get();
+    voicePrefs.set({ selfMuted, deafened });
   }
 
   toggleDeafen(): void {
@@ -142,6 +158,7 @@ export class VoiceController {
     void playSound(view.deafened ? 'undeafen' : 'deafen');
     this.applyMute();
     this.applyOutput();
+    this.savePrefs();
   }
 
   /** Retries the microphone after a listen-only join (e.g. device plugged in). */
