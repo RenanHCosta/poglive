@@ -501,6 +501,14 @@ possível: `globalShortcut` não informa quando a tecla é solta.
 
 ## Interface
 
+Fechar a janela com uma sala ativa a oculta e cria um ícone na bandeja (`TrayService`),
+com menu para reabrir, alternar mudo e ensurdecer (as mesmas ações dos atalhos) e sair.
+O ícone vem de `build/icon.ico`, empacotado como `tray.ico`. Sair pelo menu, pelo
+encerramento do Windows ou pelo atualizador define `quitting` e fecha normalmente.
+`window-state.json` guarda posição, tamanho e maximização. É validado por schema e
+ignorado quando não cabe em um monitor conectado. Smoke e e2e usam tamanho fixo e
+não criam bandeja.
+
 O renderer segue o layout de aplicativos de voz: barra de salas, barra lateral da sala
 (canal `#chat`, sala de voz com participantes, painel de conexão de voz e painel do
 usuário), palco da voz com blocos de participantes e transmissões, chat, lista de

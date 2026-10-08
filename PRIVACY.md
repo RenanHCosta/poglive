@@ -10,7 +10,8 @@ mídia são diretas entre os participantes escolhidos pelo usuário.
 
 O aplicativo salva no perfil local um identificador aleatório (`peerId`) e o nome de
 exibição informado pelo usuário (`identity.json`), além das preferências do aplicativo
-(`settings.json`): dispositivos de áudio escolhidos, volumes, sensibilidade do
+(`settings.json`) e a posição da janela (`window-state.json`): dispositivos de áudio
+escolhidos, volumes, sensibilidade do
 microfone, atalhos, sons, opções de transmissão e, quando ajustados, o volume e o
 silêncio local definidos para outros participantes, associados ao `peerId` deles.
 Electron também pode manter dados técnicos de cache.

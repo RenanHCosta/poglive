@@ -34,6 +34,11 @@ A janela segue o layout de aplicativos de voz conhecidos:
 Clique em um participante (ou use o botão direito) para ver o estado da conexão direta,
 ajustar o volume dele só para você, silenciá-lo localmente e abrir o diagnóstico.
 
+Fechar a janela durante uma sala não derruba a chamada: o Poglive vai para a área de
+notificação do Windows (bandeja). Pelo ícone, você reabre a janela, silencia o
+microfone, desativa o áudio ou sai da sala e fecha o aplicativo. Fora de uma sala,
+fechar a janela encerra o Poglive. O tamanho e a posição da janela são lembrados.
+
 ## Criar uma sala
 
 1. Selecione **Criar uma sala** (ou o **+** da barra de salas).
