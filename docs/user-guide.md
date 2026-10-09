@@ -76,7 +76,8 @@ enviada diretamente a cada participante que também estiver no canal de voz.
 
 - **Silenciar** (microfone) e **Desativar áudio** ficam no painel do usuário e nos
   controles do palco. Desativar o áudio também silencia o microfone; ativar o microfone
-  de novo reativa o áudio.
+  de novo reativa o áudio. O áudio das transmissões que você assiste não é afetado;
+  use o volume de cada player.
 - Um contorno verde indica quem está falando.
 - Sem microfone disponível, você entra só para ouvir; conecte o dispositivo e use
   **Tentar de novo**.

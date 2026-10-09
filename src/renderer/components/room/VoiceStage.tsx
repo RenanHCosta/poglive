@@ -127,7 +127,6 @@ export function VoiceStage({
           key={key}
           peer={peer}
           focused={focus === key}
-          deafened={voice.deafened}
           outputDeviceId={outputDeviceId}
           inVoice={connected}
           clip={clipFor(peer.peerId)}
@@ -353,7 +352,6 @@ function ShareButton({
 function StreamTile({
   peer,
   focused,
-  deafened,
   outputDeviceId,
   inVoice,
   onFocus,
@@ -369,7 +367,6 @@ function StreamTile({
   inVoice: boolean;
   peer: PeerConnectionView;
   focused: boolean;
-  deafened: boolean;
   outputDeviceId: string | null;
   onFocus: () => void;
   onWatch: () => void;
@@ -385,7 +382,6 @@ function StreamTile({
           stream={peer.media}
           name={peer.displayName}
           quality={peer.quality}
-          deafened={deafened}
           outputDeviceId={outputDeviceId}
           focused={focused}
           onFocus={onFocus}

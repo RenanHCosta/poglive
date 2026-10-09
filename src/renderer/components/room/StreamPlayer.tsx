@@ -33,7 +33,6 @@ export function StreamPlayer({
   stream,
   name,
   quality,
-  deafened,
   outputDeviceId,
   focused,
   onFocus,
@@ -44,7 +43,6 @@ export function StreamPlayer({
   stream: MediaStream;
   name: string;
   quality: RemoteVideoQuality | null;
-  deafened: boolean;
   outputDeviceId: string | null;
   focused: boolean;
   onFocus: () => void;
@@ -93,8 +91,8 @@ export function StreamPlayer({
     const element = video.current;
     if (!element) return;
     element.volume = Math.min(1, volume / 100);
-    element.muted = deafened || volume === 0;
-  }, [volume, deafened]);
+    element.muted = volume === 0;
+  }, [volume]);
   useEffect(() => {
     void video.current?.setSinkId?.(outputDeviceId ?? '').catch(() => {});
   }, [outputDeviceId]);
@@ -139,10 +137,7 @@ export function StreamPlayer({
         <div className="stream-controls">
           {hasAudio && (
             <label className="stream-volume" title="Volume da transmissão">
-              <Icon
-                name={deafened || volume === 0 ? 'speakerOff' : 'speaker'}
-                size={18}
-              />
+              <Icon name={volume === 0 ? 'speakerOff' : 'speaker'} size={18} />
               <Slider
                 min={0}
                 max={100}
