@@ -9,8 +9,7 @@ import { PeerMedia } from './PeerMedia';
 import { MEDIA_SECTION, tuneOpus } from './sdp';
 import { preferHardwareVideo } from './codecs';
 
-// Bumped with the voice transceiver so mismatched builds fail with a clear reason.
-export const CONTROL_CHANNEL = 'poglive-control-v3';
+export const CONTROL_CHANNEL = 'poglive-control-v4';
 // One short-lived data channel per shared file, opened by the sender.
 export const FILE_CHANNEL_PREFIX = 'poglive-file-v1:';
 const FILE_CHANNEL_PATTERN =
@@ -248,6 +247,9 @@ export class PeerLink {
     );
     this.pc.addTransceiver('audio', { direction: 'sendrecv' });
     this.pc.addTransceiver('audio', { direction: 'sendrecv' });
+    preferHardwareVideo(
+      this.pc.addTransceiver('video', { direction: 'sendrecv' }),
+    );
     this.attach(this.pc.createDataChannel(CONTROL_CHANNEL));
     console.info('[WebRTC] Creating offer');
     const created = await this.pc.createOffer();
@@ -293,13 +295,15 @@ export class PeerLink {
       const kinds = this.pc
         .getTransceivers()
         .map((item) => item.receiver.track.kind);
-      if (kinds.join(',') !== 'video,audio,audio')
+      if (kinds.join(',') !== 'video,audio,audio,video')
         throw new Error('Unexpected media configuration');
       const transceivers = this.pc.getTransceivers();
       for (const transceiver of transceivers)
         transceiver.direction = 'sendrecv';
-      const video = transceivers[MEDIA_SECTION.video];
-      if (video) preferHardwareVideo(video);
+      for (const index of [MEDIA_SECTION.video, MEDIA_SECTION.camera]) {
+        const video = transceivers[index];
+        if (video) preferHardwareVideo(video);
+      }
       console.info('[WebRTC] Creating answer');
       const created = await this.pc.createAnswer();
       if (this.closed) return;

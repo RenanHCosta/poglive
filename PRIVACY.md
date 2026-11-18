@@ -36,7 +36,9 @@ entrar enquanto aquela sala existir.
 O microfone só é aberto quando o usuário entra no canal de voz ou inicia o teste de
 microfone nas configurações. A voz é enviada por WebRTC diretamente aos participantes
 que também estão no canal de voz; enquanto o usuário fala abaixo da sensibilidade ou
-está silenciado, nada além de silêncio é transmitido. A câmera nunca é solicitada.
+está silenciado, nada além de silêncio é transmitido. A câmera só é aberta quando
+ativada na sala de voz. O vídeo segue diretamente por WebRTC aos participantes da
+voz e para ao desativar a câmera ou sair da voz.
 
 O estado de voz (conectado, silenciado, áudio desativado e transmitindo) e as mensagens
 do chat passam pelo anfitrião da sala, que os repassa aos demais participantes. O

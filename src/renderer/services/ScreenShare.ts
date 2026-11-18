@@ -118,7 +118,7 @@ export class ScreenShare {
           const audio = await startProcessAudio(
             options.audioMode === 'WINDOW'
               ? { mode: 'WINDOW', sourceId: source.id }
-              : { mode: 'SYSTEM' },
+              : { mode: options.audioMode },
           );
           if (this.generation !== current) {
             audio.stop();

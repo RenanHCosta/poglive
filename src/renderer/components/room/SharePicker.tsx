@@ -190,6 +190,7 @@ export function SharePicker({
                 if (
                   audioMode === 'NONE' ||
                   audioMode === 'SYSTEM' ||
+                  audioMode === 'SYSTEM_WITH_DISCORD' ||
                   audioMode === 'WINDOW'
                 )
                   setOptions({ ...options, audioMode });
@@ -198,6 +199,7 @@ export function SharePicker({
               <option value="SYSTEM">
                 Áudio do computador (sem Poglive e Discord)
               </option>
+              <option value="SYSTEM_WITH_DISCORD">Transmitir áudio</option>
               <option value="WINDOW">Somente o aplicativo</option>
               <option value="NONE">Sem áudio</option>
             </select>
@@ -224,9 +226,11 @@ export function SharePicker({
             ? '“Somente o aplicativo” exige uma janela. Escolha uma janela ou outro modo de áudio.'
             : options.audioMode === 'SYSTEM'
               ? 'Transmite o som dos aplicativos do computador, exceto o Poglive e o Discord: nenhuma chamada volta pela transmissão.'
-              : options.audioMode === 'WINDOW'
-                ? 'Transmite apenas o som do aplicativo escolhido e dos processos dele.'
-                : 'A transmissão terá somente vídeo.'}
+              : options.audioMode === 'SYSTEM_WITH_DISCORD'
+                ? 'Inclui o áudio do Discord e dos demais aplicativos. O som do Poglive fica de fora.'
+                : options.audioMode === 'WINDOW'
+                  ? 'Transmite apenas o som do aplicativo escolhido e dos processos dele.'
+                  : 'A transmissão terá somente vídeo.'}
         </p>
       </div>
     </Modal>

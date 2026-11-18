@@ -20,7 +20,7 @@ import {
   CHAT_LOG_LIMIT,
   roomEventSchema,
 } from '../src/shared/schemas/chat';
-import { commandSchema } from '../src/shared/schemas/room';
+import { commandSchema, PROTOCOL_VERSION } from '../src/shared/schemas/room';
 import type { ChatMessage } from '../src/shared/schemas/chat';
 
 const identity = (displayName: string) => ({
@@ -265,7 +265,7 @@ test('members cannot send host-only messages', async () => {
     socket.resume();
     const memberIdentity = identity('Forger');
     send({
-      version: 3,
+      version: PROTOCOL_VERSION,
       type: 'ROOM_JOIN',
       roomId: invite.roomId,
       identity: memberIdentity,
@@ -273,7 +273,7 @@ test('members cannot send host-only messages', async () => {
     });
     await until(() => host.snapshot().participants.length === 2);
     send({
-      version: 3,
+      version: PROTOCOL_VERSION,
       type: 'CHAT_MESSAGE',
       message: {
         id: randomUUID(),
@@ -317,7 +317,7 @@ test('chat log is bounded and history batches fit the transport frame', () => {
   assert.equal(small.historyBatches().flat().length, CHAT_HISTORY_LIMIT);
   for (const batch of batches) {
     const frame = JSON.stringify({
-      version: 3,
+      version: PROTOCOL_VERSION,
       type: 'CHAT_HISTORY',
       messages: batch,
     });
@@ -373,7 +373,8 @@ test('legacy invitations explain that the host must update', () => {
     () => decodeInvite(`PL2.${'A'.repeat(94)}`),
     /versão anterior do Poglive/,
   );
-  assert.throws(() => decodeInvite('PL3.abc'), /inválido/);
+  assert.throws(() => decodeInvite('PL3.abc'), /versão anterior/);
+  assert.throws(() => decodeInvite('PL4.abc'), /inválido/);
 });
 
 test('typing notices reach others, never the sender, and are throttled', async () => {

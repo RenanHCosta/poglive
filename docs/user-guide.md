@@ -61,9 +61,8 @@ Selecione **Entrar com convite**, cole o convite e confirme. Um convite válido 
 entrada automática enquanto houver espaço e o mesmo identificador não estiver conectado.
 O limite atual é de oito participantes.
 
-Convites começam com `PL3.`. Um convite `PL1.` ou `PL2.` vem de uma versão anterior: quem criou
-a sala precisa atualizar o Poglive e gerar um convite novo. Todos os participantes devem
-usar a mesma versão.
+Convites começam com `PL4.`. Para usar a versão com câmera, todos os participantes
+precisam atualizar o Poglive e o anfitrião precisa gerar um convite novo.
 
 O convite é uma credencial temporária. Base64url não é criptografia: quem tiver o código
 completo poderá tentar entrar enquanto a sala existir. Nomes e identificadores são
@@ -74,11 +73,14 @@ declarados pelos participantes e não comprovam a identidade de uma pessoa.
 Clique em **Sala de voz** na barra da sala, ou em **Entrar na voz** no palco. A voz é
 enviada diretamente a cada participante que também estiver no canal de voz.
 
-- **Silenciar** (microfone) e **Desativar áudio** ficam no painel do usuário e nos
+- **Silenciar** (microfone) e **Desativar áudio da chamada** ficam no painel do usuário e nos
   controles do palco. Desativar o áudio também silencia o microfone; ativar o microfone
   de novo reativa o áudio. O áudio das transmissões que você assiste não é afetado;
   use o volume de cada player.
 - Um contorno verde indica quem está falando.
+- Use **Ativar câmera** para mostrar seu vídeo no seu bloco a quem estiver na voz.
+  A câmera pode ficar ligada durante uma transmissão de tela. Use **Desativar câmera**
+  para fechá-la ou saia da voz.
 - Sem microfone disponível, você entra só para ouvir; conecte o dispositivo e use
   **Tentar de novo**.
 - Para sair só da voz, use o botão vermelho. Você continua na sala e no chat.
@@ -205,20 +207,19 @@ ainda possa reduzir bitrate quando a rede não comportar a transmissão.
 
 ## Modos de áudio da transmissão
 
-| Modo                 | Conteúdo enviado                                          |
-| -------------------- | --------------------------------------------------------- |
-| Áudio do computador  | Som dos aplicativos, exceto o Poglive e o Discord         |
-| Somente o aplicativo | Áudio da árvore de processos associada à janela escolhida |
-| Sem áudio            | Somente vídeo                                             |
+| Modo                 | Conteúdo enviado                                             |
+| -------------------- | ------------------------------------------------------------ |
+| Áudio do computador  | Som dos aplicativos, exceto o Poglive e o Discord            |
+| Transmitir áudio     | Som dos aplicativos, incluindo Discord, com Poglive filtrado |
+| Somente o aplicativo | Áudio da árvore de processos associada à janela escolhida    |
+| Sem áudio            | Somente vídeo                                                |
 
-“Áudio do computador” captura cada aplicativo que está tocando som, exceto o Poglive
-(voz da sala, sons e transmissões que você assiste) e o Discord (Stable, PTB, Canary).
-Nenhuma chamada volta pela transmissão, mesmo assistindo e transmitindo ao mesmo tempo
-ou com uma call do Discord aberta. Aplicativos que começam a tocar durante a
-transmissão entram em cerca de dois segundos. Sons de notificação do Windows não são
-incluídos.
+Os dois modos de áudio do computador filtram a voz, os sons e as transmissões tocados
+pelo Poglive. Escolha **Transmitir áudio** para enviar também o som da chamada do Discord.
+Aplicativos que começam a tocar durante a transmissão entram em cerca de dois segundos.
+Sons de notificação do Windows ficam fora da captura.
 
-Os dois modos com áudio usam um helper nativo e requerem Windows build 20348 ou
+Os modos com áudio usam um helper nativo e requerem Windows build 20348 ou
 superior. Se o áudio não puder ser capturado, a transmissão continua somente com vídeo
 e o aviso aparece no palco. O áudio da transmissão é estéreo; a voz usa o microfone e é
 enviada separadamente.

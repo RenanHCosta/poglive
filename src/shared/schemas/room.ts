@@ -8,8 +8,8 @@ import {
 import { displayNameSchema } from './common';
 
 export const MAX_PEERS = 8;
-// Room/signaling wire version. Bump on any incompatible TLS protocol change.
-export const PROTOCOL_VERSION = 3 as const;
+// Room/signaling wire version. Bump on incompatible room or media changes.
+export const PROTOCOL_VERSION = 4 as const;
 export { displayNameSchema };
 export const identitySchema = z
   .object({ peerId: z.uuid(), displayName: displayNameSchema })

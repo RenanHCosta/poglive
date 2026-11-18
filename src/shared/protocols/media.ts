@@ -30,6 +30,11 @@ export const videoQualityReasonSchema = z.enum([
 ]);
 // The authenticated PeerLink supplies identity: never trust an ID in a payload.
 export const mediaMessageSchema = z.discriminatedUnion('type', [
+  z.strictObject({
+    version: z.literal(1),
+    type: z.literal('CAMERA_STATE'),
+    active: z.boolean(),
+  }),
   z.strictObject({ ...stream, type: z.literal('STREAM_STARTED') }),
   z.strictObject({ ...stream, type: z.literal('STREAM_STOPPED') }),
   z.strictObject({ ...stream, type: z.literal('WATCH_REQUEST') }),

@@ -1,13 +1,13 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { inviteSchema } from '../../shared/schemas/room';
+import { inviteSchema, PROTOCOL_VERSION } from '../../shared/schemas/room';
 import type { Invite } from '../../shared/schemas/room';
 
 // Every PL prefix carries the same 70-byte payload; the number marks the room
 // protocol, so older builds reject the invite up front instead of failing
 // mid-handshake. From v3 on, unknown message types are ignored, so additive
 // features no longer need a new prefix.
-const PREFIX = 'PL3.';
-const LEGACY_PREFIXES = ['PL1.', 'PL2.', 'VS1.'];
+const PREFIX = `PL${PROTOCOL_VERSION}.`;
+const LEGACY_PREFIXES = ['PL1.', 'PL2.', 'PL3.', 'VS1.'];
 const PAYLOAD_BYTES = 70;
 
 function roomIdFromSecret(secret: string): string {
@@ -48,8 +48,9 @@ export function decodeInvite(code: string): Invite {
       'Este convite é de uma versão anterior do Poglive. Atualize o app de quem criou a sala e gere um novo convite.',
     );
   try {
-    if (!/^PL3\.[A-Za-z0-9_-]{94}$/.test(normalized)) throw new Error();
+    if (!normalized.startsWith(PREFIX)) throw new Error();
     const encoded = normalized.slice(PREFIX.length);
+    if (!/^[A-Za-z0-9_-]{94}$/.test(encoded)) throw new Error();
     const bytes = Buffer.from(encoded, 'base64url');
     if (
       bytes.length !== PAYLOAD_BYTES ||

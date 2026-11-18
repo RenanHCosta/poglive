@@ -77,8 +77,16 @@ export function UserPanel({
           type="button"
           className={`panel-button${view.deafened ? ' danger' : ''}`}
           aria-pressed={view.deafened}
-          aria-label={view.deafened ? 'Ativar áudio' : 'Desativar áudio'}
-          data-tooltip={view.deafened ? 'Ativar áudio' : 'Desativar áudio'}
+          aria-label={
+            view.deafened
+              ? 'Ativar áudio da chamada'
+              : 'Desativar áudio da chamada'
+          }
+          data-tooltip={
+            view.deafened
+              ? 'Ativar áudio da chamada'
+              : 'Desativar áudio da chamada'
+          }
           onClick={() =>
             session ? session.voice.toggleDeafen() : toggleDeafenPref()
           }

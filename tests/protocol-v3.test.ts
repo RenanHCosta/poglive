@@ -10,6 +10,7 @@ import { TLS_OPTIONS } from '../src/main/transport/channel';
 import { matchesCertificate } from '../src/main/transport/certificate';
 import { networkMessageSchema } from '../src/shared/protocols/network';
 import { previewImageSchema } from '../src/shared/schemas/chat';
+import { PROTOCOL_VERSION } from '../src/shared/schemas/room';
 import type { ChatMessage } from '../src/shared/schemas/chat';
 
 const identity = (displayName: string) => ({
@@ -126,7 +127,7 @@ test('reactions reach everyone else, are whitelisted and rate limited', async ()
     assert.equal(watcherSaw.length, 8);
     assert.equal(
       networkMessageSchema.safeParse({
-        version: 3,
+        version: PROTOCOL_VERSION,
         type: 'REACT',
         targetPeerId: randomUUID(),
         emoji: '💩',
@@ -229,19 +230,19 @@ test('unknown message types from newer builds are ignored, not fatal', async () 
     };
     socket.resume();
     send({
-      version: 3,
+      version: PROTOCOL_VERSION,
       type: 'ROOM_JOIN',
       roomId: invite.roomId,
       identity: identity('Futurista'),
       secret: invite.secret,
     });
     await until(() => host.snapshot().participants.length === 2);
-    send({ version: 3, type: 'HOLOGRAM_CALL', anything: true });
+    send({ version: PROTOCOL_VERSION, type: 'HOLOGRAM_CALL', anything: true });
     await pause(200);
     assert.equal(socket.destroyed, false);
     assert.equal(host.snapshot().participants.length, 2);
     // A known type with a bad shape is still a protocol violation.
-    send({ version: 3, type: 'CHAT_SEND', id: 'x' });
+    send({ version: PROTOCOL_VERSION, type: 'CHAT_SEND', id: 'x' });
     await until(() => socket?.destroyed === true);
   } finally {
     socket?.destroy();
@@ -271,7 +272,7 @@ test('clip attachments are relayed as descriptions only', async () => {
     assert.deepEqual(seen[0]?.attachment, attachment);
     assert.equal(
       networkMessageSchema.safeParse({
-        version: 3,
+        version: PROTOCOL_VERSION,
         type: 'CHAT_SEND',
         id: randomUUID(),
         text: 'grande demais',

@@ -17,6 +17,7 @@ import { IdentityStore } from '../src/main/room/identity';
 import { RoomService } from '../src/main/room/service';
 import { MAX_FRAME, TLS_OPTIONS } from '../src/main/transport/channel';
 import { networkMessageSchema } from '../src/shared/protocols/network';
+import { PROTOCOL_VERSION } from '../src/shared/schemas/room';
 import type { Invite } from '../src/shared/schemas/room';
 import {
   captureOptionsSchema,
@@ -160,7 +161,7 @@ test('real TLS room: invite, 3 peers, duplicate refusal, wrong secret, leave and
     await host.listen('127.0.0.1');
     const invite = decodeInvite(host.invite);
     assert.equal(encodeInvite(invite), host.invite);
-    assert.match(host.invite, /^PL3.[A-Za-z0-9_-]{94}$/);
+    assert.match(host.invite, /^PL4\.[A-Za-z0-9_-]{94}$/);
     assert.equal(host.invite.length, 98);
     assert.equal(Buffer.from(invite.secret, 'base64url').length, 32);
     const legacyCode =
@@ -211,9 +212,15 @@ test('untrusted schemas reject extra fields, malformed invitation and oversized 
       quality: '720p',
       frameRate: 30,
       adaptiveQuality: true,
-      audioMode: 'SYSTEM',
+      audioMode: 'SYSTEM_WITH_DISCORD',
     }).success,
     true,
+  );
+  assert.deepEqual(
+    processAudioTargetSchema.parse({ mode: 'SYSTEM_WITH_DISCORD' }),
+    {
+      mode: 'SYSTEM_WITH_DISCORD',
+    },
   );
   assert.equal(
     processAudioTargetSchema.safeParse({
@@ -451,7 +458,7 @@ test(
       socket.resume();
       socket.write(
         frame({
-          version: 3,
+          version: PROTOCOL_VERSION,
           type: 'ROOM_JOIN',
           roomId: invite.roomId,
           identity: identity('Silent'),

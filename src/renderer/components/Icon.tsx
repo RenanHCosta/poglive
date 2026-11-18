@@ -15,6 +15,8 @@ export type IconName =
   | 'screen'
   | 'screenShare'
   | 'screenOff'
+  | 'camera'
+  | 'cameraOff'
   | 'hash'
   | 'speaker'
   | 'speakerOff'
@@ -74,6 +76,8 @@ const paths: Record<IconName, string> = {
   screen: 'M3 5h18v11H3zM8 20h8M12 16v4',
   screenShare: 'M3 5h18v11H3zM8 20h8M12 16v4M12 13V8.5M9.5 11 12 8.5l2.5 2.5',
   screenOff: 'M3 5h18v11H3zM8 20h8M12 16v4M9.5 8.5l5 5m0-5-5 5',
+  camera: 'M3 6h12v12H3zM15 10l6-3v10l-6-3',
+  cameraOff: 'M6 6h9v5M3 9v9h12v-2M17 9l4-2v10l-2-1M3 3l18 18',
   hash: 'M9.5 3 7.5 21M16.5 3l-2 18M4.5 8.5h16M3.5 15.5h16',
   speaker:
     'M4 9.5h3.5L12 5.5v13l-4.5-4H4v-5ZM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11',

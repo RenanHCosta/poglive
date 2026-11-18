@@ -35,7 +35,8 @@ um convite e voz e vídeo trafegam por conexões WebRTC diretas entre os partici
 - Chat de texto com menções, formatação, links e histórico enquanto a sala existe.
 - Transmissão de monitor ou janela em 720p, 1080p ou resolução nativa (até 4K), 30/60
   FPS, codificada em H.264 pela GPU quando disponível, com áudio estéreo do computador
-  que nunca inclui o próprio Poglive nem o Discord.
+  e opção de incluir o Discord. Os modos de áudio do computador filtram o Poglive.
+- Câmera no canal de voz, inclusive durante uma transmissão de tela.
 - Clipes: salve os últimos 15, 30 ou 60 segundos de uma transmissão com um clique ou
   atalho global.
 - Reações ao vivo por cima da transmissão e miniatura antes de começar a assistir.
@@ -95,8 +96,8 @@ relay público; fora de uma rede roteável em comum, use uma VPN como o Radmin.
 ## Privacidade e segurança
 
 - Tela e áudio só são capturados depois de uma escolha explícita.
-- O microfone só é aberto ao entrar na voz ou testar o microfone; a câmera nunca é
-  solicitada.
+- O microfone só é aberto ao entrar na voz ou testar o microfone. A câmera só é
+  aberta quando você a ativa na sala de voz.
 - O chat existe apenas na memória da sala e some quando ela é encerrada.
 - Identidade e preferências ficam no perfil local do Windows.
 - Convites, mídia e descrições WebRTC não são armazenados pelo Poglive após a sala.

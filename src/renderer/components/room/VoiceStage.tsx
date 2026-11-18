@@ -30,6 +30,7 @@ export function VoiceStage({
   const voice = useStore(session.voice.view);
   const mesh = useStore(session.mesh);
   const share = useStore(session.share.state);
+  const camera = useStore(session.camera.state);
   const speaking = useStore(session.voice.speaking);
   const clips = useStore(session.clips.view);
   const previews = useStore(session.previews);
@@ -43,6 +44,12 @@ export function VoiceStage({
     undefined,
   );
   const connected = voice.status !== 'DISCONNECTED';
+  const cameraLabel =
+    camera.status === 'ON'
+      ? 'Desativar câmera'
+      : camera.status === 'STARTING'
+        ? 'Cancelar ativação da câmera'
+        : 'Ativar câmera';
   const links = new Map(mesh.peers.map((peer) => [peer.peerId, peer]));
   const inVoice = participants.filter(
     (peer) => peer.voice.connected || (peer.peerId === selfId && connected),
@@ -151,17 +158,32 @@ export function VoiceStage({
     const muted = self ? effectiveMuted(voice) : peer.voice.muted;
     const deafened = self ? voice.deafened : peer.voice.deafened;
     const link = links.get(peer.peerId);
+    const cameraStream = self
+      ? camera.status === 'ON'
+        ? camera.stream
+        : null
+      : connected && link?.status === 'CONNECTED'
+        ? link.camera
+        : null;
     return (
       <div
         key={key}
         className={`tile voice-tile${speaking.has(peer.peerId) ? ' speaking' : ''}${focus === key ? ' focused' : ''}`}
         onClick={() => setFocus(focus === key ? null : key)}
       >
-        <Avatar
-          peerId={peer.peerId}
-          name={peer.displayName}
-          size={focus === key ? 112 : 80}
-        />
+        {cameraStream ? (
+          <CameraVideo
+            stream={cameraStream}
+            name={peer.displayName}
+            self={self}
+          />
+        ) : (
+          <Avatar
+            peerId={peer.peerId}
+            name={peer.displayName}
+            size={focus === key ? 112 : 80}
+          />
+        )}
         <div className="tile-footer">
           <span className="tile-name">
             <Equalizer active={speaking.has(peer.peerId)} />
@@ -269,6 +291,12 @@ export function VoiceStage({
           <span>{share.warning}</span>
         </div>
       )}
+      {connected && camera.status === 'ERROR' && (
+        <div className="stage-notice" role="status">
+          <Icon name="alert" size={16} />
+          <span>{camera.message}</span>
+        </div>
+      )}
       <div className="stage-controls">
         {connected ? (
           <>
@@ -290,12 +318,34 @@ export function VoiceStage({
               type="button"
               className={`control-button${voice.deafened ? ' danger' : ''}`}
               aria-pressed={voice.deafened}
-              aria-label={voice.deafened ? 'Ativar áudio' : 'Desativar áudio'}
-              data-tooltip={voice.deafened ? 'Ativar áudio' : 'Desativar áudio'}
+              aria-label={
+                voice.deafened
+                  ? 'Ativar áudio da chamada'
+                  : 'Desativar áudio da chamada'
+              }
+              data-tooltip={
+                voice.deafened
+                  ? 'Ativar áudio da chamada'
+                  : 'Desativar áudio da chamada'
+              }
               onClick={() => session.voice.toggleDeafen()}
             >
               <Icon
                 name={voice.deafened ? 'headphonesOff' : 'headphones'}
+                size={24}
+              />
+            </button>
+            <button
+              type="button"
+              className={`control-button${camera.status === 'ON' ? ' active' : ''}`}
+              aria-pressed={camera.status === 'ON'}
+              aria-label={cameraLabel}
+              data-tooltip={cameraLabel}
+              disabled={voice.status !== 'CONNECTED'}
+              onClick={() => session.toggleCamera()}
+            >
+              <Icon
+                name={camera.status === 'ON' ? 'camera' : 'cameraOff'}
                 size={24}
               />
             </button>
@@ -326,6 +376,36 @@ export function VoiceStage({
         )}
       </div>
     </div>
+  );
+}
+
+function CameraVideo({
+  stream,
+  name,
+  self,
+}: {
+  stream: MediaStream;
+  name: string;
+  self: boolean;
+}) {
+  const video = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const element = video.current;
+    if (!element) return;
+    element.srcObject = stream;
+    return () => {
+      element.srcObject = null;
+    };
+  }, [stream]);
+  return (
+    <video
+      ref={video}
+      className={`camera-video${self ? ' self' : ''}`}
+      aria-label={self ? 'Sua câmera' : `Câmera de ${name}`}
+      autoPlay
+      playsInline
+      muted
+    />
   );
 }
 

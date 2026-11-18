@@ -36,6 +36,7 @@ export interface PeerConnectionView {
   streamId: string | null;
   media: MediaStream | null;
   voiceTrack: MediaStreamTrack | null;
+  camera: MediaStream | null;
   watchState: WatchState;
   quality: RemoteVideoQuality | null;
   watchingLocal: boolean;
@@ -55,6 +56,7 @@ export class PeerMesh {
   private stopped = false;
   private capture: LocalStream | null = null;
   private voiceTrack: MediaStreamTrack | null = null;
+  private cameraTrack: MediaStreamTrack | null = null;
   private voiceConnected = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private outbox = Promise.resolve();
@@ -94,7 +96,12 @@ export class PeerMesh {
     if (this.stopped) return;
     this.voiceTrack = track;
     this.voiceConnected = connected;
-    this.routeVoice();
+    this.routeCallMedia();
+  }
+  setCamera(track: MediaStreamTrack | null): void {
+    if (this.stopped) return;
+    this.cameraTrack = track;
+    this.routeCallMedia();
   }
   watch(peerId: string): void {
     const target = this.links.get(peerId);
@@ -136,18 +143,18 @@ export class PeerMesh {
       at: 0,
     });
   }
-  private routeVoice(): void {
+  private routeCallMedia(): void {
     const presence = new Map(
       (this.room?.participants ?? []).map((peer) => [
         peer.peerId,
         peer.voice.connected,
       ]),
     );
-    for (const [peerId, link] of this.links)
-      link.media.setVoice(
-        this.voiceTrack,
-        this.voiceConnected && presence.get(peerId) === true,
-      );
+    for (const [peerId, link] of this.links) {
+      const routed = this.voiceConnected && presence.get(peerId) === true;
+      link.media.setVoice(this.voiceTrack, routed);
+      link.media.setCamera(routed ? this.cameraTrack : null);
+    }
   }
   private publish(error: string | null = null): void {
     if (this.stopped) return;
@@ -168,6 +175,7 @@ export class PeerMesh {
             streamId: link?.media.remoteId ?? null,
             media: link?.media.remoteStream ?? null,
             voiceTrack: link?.media.remoteVoice ?? null,
+            camera: link?.media.remoteCamera ?? null,
             watchState: link?.media.watchState ?? 'IDLE',
             quality: link?.media.remoteQuality ?? null,
             watchingLocal: link?.media.watchingLocal ?? false,
@@ -217,7 +225,7 @@ export class PeerMesh {
     );
     this.links.set(peerId, link);
     link.media.setCapture(this.capture);
-    this.routeVoice();
+    this.routeCallMedia();
     return link;
   }
   private changed(peerId: string, link: PeerLink): void {
@@ -310,7 +318,7 @@ export class PeerMesh {
           );
         }
       }
-      this.routeVoice();
+      this.routeCallMedia();
       this.publish();
     } catch {
       this.publish(
@@ -327,6 +335,7 @@ export class PeerMesh {
     this.stopped = true;
     this.capture = null;
     this.voiceTrack = null;
+    this.cameraTrack = null;
     clearTimeout(this.timer);
     for (const link of this.links.values()) link.close();
     this.links.clear();

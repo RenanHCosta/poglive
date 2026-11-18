@@ -660,6 +660,7 @@ function StreamSection({ settings }: { settings: Settings }) {
               if (
                 audioMode === 'NONE' ||
                 audioMode === 'SYSTEM' ||
+                audioMode === 'SYSTEM_WITH_DISCORD' ||
                 audioMode === 'WINDOW'
               )
                 setStream({ audioMode });
@@ -668,6 +669,7 @@ function StreamSection({ settings }: { settings: Settings }) {
             <option value="SYSTEM">
               Áudio do computador (sem Poglive e Discord)
             </option>
+            <option value="SYSTEM_WITH_DISCORD">Transmitir áudio</option>
             <option value="WINDOW">Somente o aplicativo transmitido</option>
             <option value="NONE">Sem áudio</option>
           </select>

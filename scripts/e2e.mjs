@@ -1,7 +1,7 @@
 // Two-instance end-to-end test: room, chat, voice and screen share over real
 // WebRTC on loopback. Requires `npm run build` first and a desktop session.
 import { spawn } from 'node:child_process';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
@@ -10,6 +10,17 @@ const require = createRequire(import.meta.url);
 const electron = require('electron');
 const directory = await mkdtemp(join(tmpdir(), 'poglive-e2e-'));
 const keep = process.argv.includes('--keep');
+for (const role of ['host', 'guest']) {
+  const profile = join(directory, role);
+  await mkdir(profile);
+  await writeFile(
+    join(profile, 'settings.json'),
+    JSON.stringify({
+      notifications: { sounds: false },
+      stream: { audioMode: 'NONE' },
+    }),
+  );
+}
 
 function launch(role) {
   const child = spawn(

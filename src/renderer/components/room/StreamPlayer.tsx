@@ -55,13 +55,39 @@ export function StreamPlayer({
   );
   const [volume, setVolume] = useState(100);
   const [pictureInPicture, setPictureInPicture] = useState(false);
-  const hasAudio = stream.getAudioTracks().length > 0;
+  const audioTrack = stream.getAudioTracks()[0];
   useEffect(() => {
     const element = video.current;
     const player = container.current;
     if (!element) return;
     let active = true;
-    element.srcObject = stream;
+    let playback = stream;
+    let context: AudioContext | undefined;
+    let keepAlive: HTMLAudioElement | undefined;
+    let playbackTrack: MediaStreamTrack | undefined;
+    // Render live audio through its own track so Chromium's native WebRTC
+    // audio renderer cannot share its playout with the muted call elements.
+    if (audioTrack) {
+      const audio = new MediaStream([audioTrack]);
+      try {
+        context = new AudioContext({ latencyHint: 'interactive' });
+        const destination = context.createMediaStreamDestination();
+        context.createMediaStreamSource(audio).connect(destination);
+        playbackTrack = destination.stream.getAudioTracks()[0];
+        if (!playbackTrack)
+          throw new Error('Stream playback track unavailable');
+        keepAlive = new Audio();
+        keepAlive.muted = true;
+        keepAlive.srcObject = audio;
+        playback = new MediaStream([...stream.getVideoTracks(), playbackTrack]);
+        void Promise.all([keepAlive.play(), context.resume()]).catch(() => {
+          if (active) element.srcObject = stream;
+        });
+      } catch {
+        playback = stream;
+      }
+    }
+    element.srcObject = playback;
     const timeout = setTimeout(() => {
       if (active) setPlayback('ERROR');
     }, 15000);
@@ -85,8 +111,14 @@ export function StreamPlayer({
       if (document.fullscreenElement === player)
         void document.exitFullscreen().catch(() => {});
       element.srcObject = null;
+      if (keepAlive) {
+        keepAlive.pause();
+        keepAlive.srcObject = null;
+      }
+      playbackTrack?.stop();
+      void context?.close().catch(() => {});
     };
-  }, [stream]);
+  }, [stream, audioTrack]);
   useEffect(() => {
     const element = video.current;
     if (!element) return;
@@ -135,7 +167,7 @@ export function StreamPlayer({
       <div className="stream-bottom">
         <span className="tile-name">{name}</span>
         <div className="stream-controls">
-          {hasAudio && (
+          {audioTrack && (
             <label className="stream-volume" title="Volume da transmissão">
               <Icon name={volume === 0 ? 'speakerOff' : 'speaker'} size={18} />
               <Slider

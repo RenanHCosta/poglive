@@ -6,6 +6,7 @@ export const MEDIA_SECTION = {
   video: 0,
   streamAudio: 1,
   voice: 2,
+  camera: 3,
 } as const;
 
 type OpusParameters = Record<string, string>;

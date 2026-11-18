@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PROTOCOL_VERSION } from '../../../shared/schemas/room';
 import type { LocalState, RoomCommand } from '../../../shared/schemas/room';
 import { Modal } from '../common/Modal';
 
@@ -135,7 +136,7 @@ export function JoinRoomModal({
             rows={3}
             spellCheck={false}
             autoComplete="off"
-            placeholder="PL2.…"
+            placeholder={`PL${PROTOCOL_VERSION}.…`}
             onChange={(event) => setInvite(event.target.value)}
           />
           <span className="field-hint">

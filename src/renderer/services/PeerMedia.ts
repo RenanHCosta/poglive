@@ -22,13 +22,16 @@ const STATS_INTERVAL_MS = 2000;
 type Role = keyof typeof MEDIA_SECTION;
 
 /**
- * Three pre-negotiated senders per peer: shared-screen video, its audio, and
- * voice. Capture ownership stays in useCapture and the voice engine.
+ * Separate senders for the screen, its audio, voice, and the camera.
  */
 export class PeerMedia {
   remoteId: string | null = null;
   remoteStream: MediaStream | null = null;
   remoteVoice: MediaStreamTrack | null = null;
+  private remoteCameraStream: MediaStream | null = null;
+  private remoteCameraActive = false;
+  private cameraTrack: MediaStreamTrack | null = null;
+  private cameraSending = false;
   remoteQuality: RemoteVideoQuality | null = null;
   /** Round-trip time of the selected ICE pair, refreshed with the stats. */
   roundTripMs: number | null = null;
@@ -63,6 +66,14 @@ export class PeerMedia {
       this.sendingId === this.subscribedId
     );
   }
+  get remoteCamera(): MediaStream | null {
+    const track = this.remoteCameraStream?.getVideoTracks()[0];
+    return this.remoteCameraActive &&
+      track?.readyState === 'live' &&
+      !track.muted
+      ? this.remoteCameraStream
+      : null;
+  }
   constructor(
     private readonly pc: RTCPeerConnection,
     private readonly send: (message: MediaMessage) => void,
@@ -76,6 +87,18 @@ export class PeerMedia {
       const role = this.roleOf(transceiver);
       if (role === 'voice' && track.kind === 'audio' && !this.remoteVoice) {
         this.remoteVoice = track;
+        this.changed();
+        return;
+      }
+      if (
+        role === 'camera' &&
+        track.kind === 'video' &&
+        !this.remoteCameraStream
+      ) {
+        this.remoteCameraStream = new MediaStream([track]);
+        track.onunmute = this.changed;
+        track.onmute = this.changed;
+        track.onended = this.changed;
         this.changed();
         return;
       }
@@ -157,9 +180,17 @@ export class PeerMedia {
     this.voiceRouted = routed;
     this.syncSenders();
   }
+  setCamera(track: MediaStreamTrack | null): void {
+    if (this.closed || this.cameraTrack === track) return;
+    this.cameraTrack = track;
+    this.syncSenders();
+  }
   receive(message: MediaMessage): void {
     if (this.closed) return;
     switch (message.type) {
+      case 'CAMERA_STATE':
+        this.remoteCameraActive = message.active;
+        break;
       case 'STREAM_STARTED':
         if (message.streamId === this.remoteId) return;
         this.stopWatching();
@@ -288,6 +319,7 @@ export class PeerMedia {
       .then(async () => {
         await this.syncVoice();
         await this.syncStream();
+        await this.syncCamera();
       })
       .catch(() => {
         if (!this.closed) this.fail();
@@ -311,6 +343,17 @@ export class PeerMedia {
       await configureVoiceSender(sender);
       this.voiceConfigured = true;
     }
+  }
+  private async syncCamera(): Promise<void> {
+    if (this.closed) return;
+    const sender = this.sender('camera');
+    if (!sender) throw new Error('Camera sender unavailable');
+    const track =
+      this.cameraTrack?.readyState === 'live' ? this.cameraTrack : null;
+    if (sender.track !== track) await sender.replaceTrack(track);
+    if (this.closed || this.cameraSending === !!track) return;
+    this.cameraSending = !!track;
+    this.send({ version: 1, type: 'CAMERA_STATE', active: this.cameraSending });
   }
   private async syncStream(): Promise<void> {
     if (this.closed) return;
@@ -491,6 +534,7 @@ export class PeerMedia {
     clearInterval(this.statsTimer);
     this.local = null;
     this.voiceTrack = null;
+    this.cameraTrack = null;
     this.sendingId = null;
     this.remoteId = null;
     this.watchState = 'IDLE';
@@ -502,6 +546,13 @@ export class PeerMedia {
     this.remoteStream = null;
     this.remoteVoice?.stop();
     this.remoteVoice = null;
+    this.remoteCameraStream?.getTracks().forEach((track) => {
+      track.onunmute = null;
+      track.onmute = null;
+      track.onended = null;
+      track.stop();
+    });
+    this.remoteCameraStream = null;
     this.remoteQuality = null;
     this.resetSenderQuality();
   }

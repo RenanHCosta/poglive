@@ -2716,6 +2716,17 @@ input[type='range'] {
 .voice-tile .avatar {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
+.camera-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--ink-0);
+}
+.camera-video.self {
+  transform: scaleX(-1);
+}
 .tile-footer {
   position: absolute;
   left: 10px;

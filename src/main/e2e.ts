@@ -61,6 +61,25 @@ function click(selector: string, text?: string): string {
   })()`;
 }
 
+async function expectAudible(
+  window: BrowserWindow,
+  audible: boolean,
+): Promise<void> {
+  const deadline = Date.now() + 5000;
+  let matchingSince = Date.now();
+  for (;;) {
+    const now = Date.now();
+    if (window.webContents.isCurrentlyAudible() !== audible)
+      matchingSince = now;
+    else if (now - matchingSince >= 700) return;
+    if (now > deadline)
+      throw new Error(
+        `Expected stream playback to be ${audible ? 'audible' : 'silent'}`,
+      );
+    await new Promise((done) => setTimeout(done, 100));
+  }
+}
+
 export async function runE2E(
   window: BrowserWindow,
   options: { role: E2ERole; directory: string },
@@ -96,8 +115,23 @@ export async function runE2E(
         'invite',
         `window.pogLive.getState().then((state) => state.room.status === 'HOSTING' ? state.room.invite : '')`,
       );
-      await writeFile(resolve(directory, 'invite.txt'), invite);
       step('room created');
+      await until(
+        window,
+        'host joins voice',
+        click('.stage-controls .button.success', 'Entrar na voz'),
+      );
+      await until(
+        window,
+        'enable camera',
+        click('[aria-label="Ativar câmera"]'),
+      );
+      await until(
+        window,
+        'local camera',
+        `document.querySelector('.camera-video.self')?.videoWidth > 0`,
+      );
+      await writeFile(resolve(directory, 'invite.txt'), invite);
     } else {
       const invite = await (async () => {
         const deadline = Date.now() + 30000;
@@ -118,12 +152,12 @@ export async function runE2E(
       if ((joined as { status?: string }).status !== 'OK')
         throw new Error(`Join failed: ${JSON.stringify(joined)}`);
       step('joined room');
+      await until(
+        window,
+        'guest joins voice',
+        click('.stage-controls .button.success', 'Entrar na voz'),
+      );
     }
-    await until(
-      window,
-      'stage',
-      click('.stage-controls .button.success', 'Entrar na voz'),
-    );
     await until(
       window,
       'voice connected',
@@ -156,6 +190,32 @@ export async function runE2E(
     );
     step('chat delivered');
     if (role === 'host') {
+      await until(
+        window,
+        'mute streamer microphone',
+        click('.stage-controls [aria-label="Silenciar"]'),
+      );
+      // Feed a continuous tone through the screen capture without relying on
+      // WASAPI or a separate Windows app on the test machine.
+      await window.webContents.executeJavaScript(`
+        (() => {
+          const devices = navigator.mediaDevices;
+          const capture = devices.getDisplayMedia.bind(devices);
+          devices.getDisplayMedia = async (options) => {
+            const stream = await capture(options);
+            const context = new AudioContext();
+            const tone = context.createOscillator();
+            const gain = context.createGain();
+            const output = context.createMediaStreamDestination();
+            gain.gain.value = 0.12;
+            tone.connect(gain).connect(output);
+            tone.start();
+            await context.resume();
+            stream.addTrack(output.stream.getAudioTracks()[0]);
+            return stream;
+          };
+        })()
+      `);
       await until(
         window,
         'share button',
@@ -210,6 +270,11 @@ export async function runE2E(
         30000,
       );
       step('reaction received');
+      await until(
+        window,
+        'disable camera',
+        click('[aria-label="Desativar câmera"]'),
+      );
     } else {
       // The streamer's thumbnail shows up before anyone starts watching.
       await until(
@@ -218,6 +283,12 @@ export async function runE2E(
         `!!document.querySelector('.stream-tile.preview .stream-thumbnail')`,
       );
       step('stream thumbnail visible');
+      await expectAudible(window, false);
+      await until(
+        window,
+        'mute before watching',
+        click('.stage-controls [aria-label="Silenciar"]'),
+      );
       await until(window, 'watch', click('.stream-invite .button.primary'));
       await until(
         window,
@@ -225,6 +296,45 @@ export async function runE2E(
         `(() => { const video = document.querySelector('.stream-player video'); return !!video && video.readyState >= 2 && video.videoWidth > 0; })()`,
       );
       step('stream video playing');
+      await until(
+        window,
+        'remote camera and stream',
+        `(() => {
+        const camera = document.querySelector('.camera-video[aria-label="Câmera de Anfitriã E2E"]');
+        return camera?.videoWidth > 0 && !!document.querySelector('.stream-player video');
+      })()`,
+      );
+      step('camera and screen playing together');
+      await expectAudible(window, true);
+      await until(
+        window,
+        'mute call output while watching',
+        click('.stage-controls [aria-label="Desativar áudio da chamada"]'),
+      );
+      await expectAudible(window, true);
+      await until(
+        window,
+        'restore call output',
+        click('.stage-controls [aria-label="Ativar áudio da chamada"]'),
+      );
+      await until(
+        window,
+        'unmute while watching',
+        click('.stage-controls [aria-label="Ativar microfone"]'),
+      );
+      await expectAudible(window, true);
+      await until(
+        window,
+        'mute while watching',
+        click('.stage-controls [aria-label="Silenciar"]'),
+      );
+      await expectAudible(window, true);
+      await until(
+        window,
+        'restore microphone',
+        click('.stage-controls [aria-label="Ativar microfone"]'),
+      );
+      step('stream audio independent of microphone and call mute');
       // Screen video goes out as H.264 so senders can use the GPU encoder.
       await until(
         window,
@@ -277,6 +387,13 @@ export async function runE2E(
       step('clip saved and playable');
       await until(window, 'react', click('.reaction-bar button'));
       step('reacted');
+      await until(
+        window,
+        'camera stopped while screen stays live',
+        `
+        !document.querySelector('.camera-video') && !!document.querySelector('.stream-player video')
+      `,
+      );
     }
     // Mute must reach the other side through host presence.
     if (role === 'guest') {

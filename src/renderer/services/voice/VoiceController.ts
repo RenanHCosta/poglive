@@ -140,13 +140,13 @@ export class VoiceController {
     if (view.deafened) {
       // Unmuting while deafened also undeafens, as users expect.
       this.view.set({ ...view, deafened: false, selfMuted: false });
+      this.applyOutput();
       void playSound('unmute');
     } else {
       this.view.set({ ...view, selfMuted: !view.selfMuted });
       void playSound(view.selfMuted ? 'unmute' : 'mute');
     }
     this.applyMute();
-    this.applyOutput();
     this.savePrefs();
   }
 

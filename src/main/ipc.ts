@@ -155,7 +155,7 @@ export function registerIpc(
               {
                 mode: 'SYSTEM_EXCEPT',
                 processId: process.pid,
-                excludeDiscord: true,
+                excludeDiscord: parsed.data[0].mode === 'SYSTEM',
               },
           event.sender,
         );

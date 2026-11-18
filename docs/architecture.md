@@ -127,10 +127,11 @@ Não há mudança global em TLS, Chromium, CSP ou webSecurity.
 
 ## Protocolo e autoridade
 
-Todas as mensagens têm version=3 (`PROTOCOL_VERSION`) e type discriminado; Zod infere
+Todas as mensagens têm version=4 (`PROTOCOL_VERSION`) e type discriminado; Zod infere
 NetworkMessage. A versão 2 adicionou presença de voz e chat; a 3, respostas, edição e
 exclusão no chat, reações, miniaturas e remoção de membros. Builds anteriores são
-recusados já no convite (prefixo `PL3.`). A partir da v3, mensagens com a versão atual
+recusados já no convite (prefixo `PL4.`). A versão 4 acrescenta uma faixa WebRTC
+para câmera. A partir da v3, mensagens com a versão atual
 e um `type` desconhecido são ignoradas (contam no limite de taxa), tanto no canal TLS
 quanto no canal de controle WebRTC. Recursos aditivos não exigem nova versão; um tipo
 conhecido com formato inválido continua encerrando a conexão.
@@ -283,8 +284,8 @@ negadas, exceto tela cheia e display-capture para o mainFrame do renderer local;
 captura exige seleção pendente válida. Tela cheia usa gesto no botão do player.
 O handler de captura mantém
 compatibilidade com Electron 44: a permissão antiga media com mediaTypes vazio
-também é aceita somente no mainFrame confiável e com seleção ainda válida. Pedidos
-de câmera/microfone (mediaTypes preenchido) continuam negados. Essa diferença foi
+também é aceita somente no mainFrame confiável e com seleção ainda válida. A
+captura de tela passou a usar uma permissão distinta no Electron 45. Essa diferença foi
 corrigida no Electron 45 ([PR oficial](https://github.com/electron/electron/pull/52824)).
 O handler específico de captura exige
 mainFrame, gesto do usuário, fonte previamente selecionada e autorização de uso
@@ -413,17 +414,14 @@ STUN público e TURN continuam ausentes. Presets e áudio opcional são descrito
 
 CAPTURE_PROFILES centraliza 720p (1280×720) e 1080p (1920×1080).
 captureOptionsSchema valida frameRate como 30 ou 60 e audioMode como
-NONE/SYSTEM/WINDOW/SYSTEM_EXCEPT_DISCORD, ponta a ponta no IPC.
+NONE/SYSTEM/SYSTEM_WITH_DISCORD/WINDOW, ponta a ponta no IPC.
 CapturePanel seleciona opções antes da fonte; useCapture aplica constraints máximas
 e mostra getSettings (configuração da captura, não estatística do RTP remoto).
 Sem upscale garantido; uma captura nova mantém o fluxo de anúncio/subscription existente.
 60 FPS foi adicionado e exige validação manual de desempenho.
 
-captureSelectionSchema valida id + opções no preload e main. A autorização de
-uso único inclui o pedido de áudio global; pedido divergente é recusado. Permissões de câmera
-e microfone continuam negadas: a compatibilidade media/empty mediaTypes do Electron
-44 foi mantida, sem liberar pedidos de dispositivos de áudio.
-No Windows, o handler usa audio: loopback apenas com consentimento explícito.
+captureSelectionSchema valida id + opções no preload e main. A autorização da
+captura de tela é de uso único e o áudio é capturado pelo helper nativo.
 Referência: [Electron setDisplayMediaRequestHandler](https://www.electronjs.org/docs/latest/api/session#sessetdisplaymediarequesthandlerhandler-opts).
 Nenhum modo de áudio pede áudio ao Chromium: `getDisplayMedia` sempre usa
 `audio: false` e o handler recusa pedidos com `audioRequested`. O loopback global do
@@ -448,9 +446,9 @@ o modo mixer do helper (`--system-except <PID> --except-discord`):
   pré-buffer e no máximo 100 ms em fila; underruns refazem o pré-buffer, excessos
   descartam o mais antigo, e as somas são saturadas em 16 bits.
 
-O PID vem do main (`process.pid`), nunca do renderer. Sons de notificação do Windows
-não entram, porque a sessão do sistema não pertence a um processo capturável. Este
-modo substitui os antigos SYSTEM (loopback global) e SYSTEM_EXCEPT_DISCORD.
+O modo SYSTEM_WITH_DISCORD usa o mesmo mixer e omite `--except-discord`. O PID do
+Poglive vem do main (`process.pid`). Sons de notificação do Windows ficam fora
+dos dois modos porque a sessão do sistema não pertence a um processo capturável.
 
 WINDOW não solicita áudio ao Chromium. O ID `window:HWND:...` documentado pelo Electron
 é validado contra a lista recém-autorizada e encaminhado como argumento numérico fixo
@@ -472,14 +470,18 @@ para Rust/Tauri. É compilado via CMake/MSVC antes do empacotamento e incluído 
 extraResources. A API requer Windows build 20348+. Uma falha do helper não interrompe a
 transmissão: o vídeo continua e a UI mostra um aviso.
 
-PeerLink pré-negocia três transceivers sendrecv em ordem fixa — vídeo da transmissão,
-áudio da transmissão e voz — e o DataChannel `poglive-control-v3`. O respondente
-verifica exatamente `video,audio,audio`; o índice do transceiver (`MEDIA_SECTION`)
+PeerLink pré-negocia quatro transceivers sendrecv em ordem fixa para vídeo da
+transmissão, áudio da transmissão, voz e câmera, além do DataChannel
+`poglive-control-v4`. O respondente verifica exatamente `video,audio,audio,video`.
+O índice do transceiver (`MEDIA_SECTION`)
 identifica o papel de cada track em `ontrack`. Antes de `setLocalDescription`, `tuneOpus`
 ajusta o fmtp do Opus por seção: estéreo, `sprop-stereo` e 128 kbps médios no áudio da
 transmissão; DTX e FEC na voz. Seções sem Opus ficam intactas. PeerMedia mantém um
 MediaStream remoto com os receivers da transmissão; só liga tracks locais após
 WATCH_REQUEST válido. WATCH_STOP/encerramento desliga ambos os senders com null.
+A câmera é roteada entre participantes da voz, com estado enviado no canal de
+controle. Cada player de transmissão reproduz sua faixa de áudio por uma saída
+separada da renderização WebRTC usada pela chamada.
 mediaSender.ts configura os limites iniciais: 2,5 Mbps para 720p30, 5 Mbps para
 720p60/1080p30 e 10 Mbps para 1080p60. Áudio usa 128 kbps por espectador. Esses valores
 não incluem todo overhead nem garantem throughput/resolução.
@@ -577,10 +579,9 @@ incompatíveis não tentam de novo. A UI também oferece uma nova tentativa manu
 ### Permissões
 
 O handler de permissões continua negando tudo por padrão. Além de tela cheia e da
-captura de tela de uso único, permite `media` apenas quando `mediaTypes` é exatamente
-`['audio']`, `speaker-selection` e a checagem `media` com `mediaType` igual a `audio`
-(rótulos de dispositivos), sempre para o mainFrame do renderer confiável. Câmera e
-pedidos combinados de áudio e vídeo continuam negados.
+captura de tela de uso único, permite `media` para um único dispositivo
+(`['audio']` ou `['video']`), `speaker-selection` e a checagem `media` para os
+rótulos desses dispositivos, sempre para o mainFrame do renderer confiável.
 
 ## Configurações e atalhos
 

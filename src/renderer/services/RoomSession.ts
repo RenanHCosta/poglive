@@ -7,6 +7,7 @@ import type { Reaction, RoomEvent } from '../../shared/schemas/chat';
 import { capturePreview } from './preview';
 import type { Settings } from '../../shared/schemas/settings';
 import { ChatController } from './ChatController';
+import { Camera } from './Camera';
 import { ClipManager, SELF_CLIP } from './clips/ClipManager';
 import { ClipShare } from './clips/ClipShare';
 import { WebmClipBuffer } from './clips/webm';
@@ -47,6 +48,7 @@ export class RoomSession {
   readonly mesh = new Store<MeshView>({ peers: [], error: null });
   readonly voice: VoiceController;
   readonly share = new ScreenShare();
+  readonly camera = new Camera();
   readonly chat: ChatController;
   readonly clips: ClipManager;
   readonly clipShare: ClipShare;
@@ -104,6 +106,14 @@ export class RoomSession {
       },
     );
     this.unsubscribe.push(
+      this.camera.state.subscribe(() => {
+        const camera = this.camera.state.get();
+        this.peerMesh.setCamera(
+          camera.status === 'ON'
+            ? (camera.stream.getVideoTracks()[0] ?? null)
+            : null,
+        );
+      }),
       this.share.capture.subscribe(() => {
         const capture = this.share.capture.get();
         this.peerMesh.setCapture(capture);
@@ -119,6 +129,7 @@ export class RoomSession {
         // the user's own share end with it.
         if (this.wasInVoice && !inVoice) {
           this.peerMesh.stopWatchingAll();
+          this.camera.stop();
           if (this.share.state.get().status !== 'IDLE') this.share.stop();
         }
         this.wasInVoice = inVoice;
@@ -227,6 +238,12 @@ export class RoomSession {
   /** Joins the voice channel if needed; watching and streaming happen there. */
   ensureVoice(): void {
     if (!this.voice.connected) void this.voice.join();
+  }
+  toggleCamera(): void {
+    if (this.closed || this.voice.view.get().status !== 'CONNECTED') return;
+    const { status } = this.camera.state.get();
+    if (status === 'ON' || status === 'STARTING') this.camera.stop();
+    else void this.camera.start();
   }
   watch(peerId: string): void {
     this.ensureVoice();
@@ -377,6 +394,7 @@ export class RoomSession {
     this.clips.close();
     this.clipShare.close();
     this.share.close();
+    this.camera.stop();
     this.voice.close();
     this.chat.close();
     this.peerMesh.stop();
