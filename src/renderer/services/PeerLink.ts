@@ -62,6 +62,10 @@ export class PeerLink {
   ) {
     this.pc = new RTCPeerConnection({
       iceServers: [{ urls: `stun:${rtcEndpoint.host}:${rtcEndpoint.port}` }],
+      // Every peer is a Poglive build, so one shared transport is always
+      // supported. Without it the offerer gathers per media section, which
+      // multiplies candidates on PCs with many adapters (Radmin, Hyper-V, IPv6).
+      bundlePolicy: 'max-bundle',
     });
     this.media = new PeerMedia(
       this.pc,
@@ -89,13 +93,11 @@ export class PeerLink {
             sdpMLineIndex: candidate.sdpMLineIndex,
           }
         : null;
-      if (!this.localReady) {
-        if (this.localIce.length >= 64) {
-          this.fail();
-          return;
-        }
-        this.localIce.push(value);
-      } else void this.sendIce(value).catch(() => this.fail());
+      // Local candidates come from our own Chromium, not from the network, so
+      // they are buffered without a cap: a fixed cap killed the link on PCs
+      // with many network adapters before the offer finished sending.
+      if (!this.localReady) this.localIce.push(value);
+      else void this.sendIce(value).catch(() => this.fail());
     };
     this.pc.ondatachannel = ({ channel }) => {
       const file = FILE_CHANNEL_PATTERN.exec(channel.label);
