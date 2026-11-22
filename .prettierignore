@@ -6,3 +6,4 @@ release
 .electron-cache
 native/process-audio/build
 package-lock.json
+.claude
