@@ -12,6 +12,7 @@ import type { ClipStore } from './clips';
 import { MAX_CLIP_BYTES } from './clips';
 import { commandSchema, localStateSchema } from '../shared/schemas/room';
 import { chatHistorySchema } from '../shared/schemas/chat';
+import { discoveredRoomsSchema } from '../shared/schemas/discovery';
 import type { CommandResult } from '../shared/schemas/room';
 import type { RoomService } from './room/service';
 import type { CaptureService } from './capture/service';
@@ -272,6 +273,11 @@ export function registerIpc(
     authorize(event);
     noArguments.parse(args);
     return chatHistorySchema.parse(rooms.chatHistory());
+  });
+  ipcMain.handle(IPC.discoveryScan, async (event, ...args: unknown[]) => {
+    authorize(event);
+    noArguments.parse(args);
+    return discoveredRoomsSchema.parse(await rooms.discoveredRooms());
   });
   ipcMain.handle(IPC.getState, (event, ...args: unknown[]) => {
     authorize(event);

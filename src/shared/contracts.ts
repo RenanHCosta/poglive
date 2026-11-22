@@ -8,6 +8,7 @@ import type {
 import type { Signal, SignalBatch } from './protocols/signaling';
 import type { UpdateState } from './schemas/update';
 import type { ChatHistory, RoomEvent } from './schemas/chat';
+import type { DiscoveredRoom } from './schemas/discovery';
 import type {
   Settings,
   SettingsResult,
@@ -20,6 +21,7 @@ export const IPC = {
   command: 'room:command',
   roomEvent: 'room:event',
   chatHistory: 'room:chat-history',
+  discoveryScan: 'room:discovery-scan',
   captureSources: 'capture:sources',
   captureSelect: 'capture:select',
   captureCancel: 'capture:cancel',
@@ -59,6 +61,7 @@ export interface DesktopBridge {
   command: (command: RoomCommand) => Promise<CommandResult>;
   onRoomEvent: (listener: (event: RoomEvent) => void) => () => void;
   getChatHistory: () => Promise<ChatHistory>;
+  scanRooms: () => Promise<DiscoveredRoom[]>;
   captureSources: () => Promise<CaptureSourcesResult>;
   captureSelect: (
     id: string,

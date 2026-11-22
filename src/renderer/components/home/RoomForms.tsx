@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { PROTOCOL_VERSION } from '../../../shared/schemas/room';
 import type { LocalState, RoomCommand } from '../../../shared/schemas/room';
 import { Modal } from '../common/Modal';
+import { Toggle } from '../common/Toggle';
 
 type Command = (command: RoomCommand) => Promise<boolean>;
 
@@ -23,6 +24,7 @@ export function CreateRoomModal({
     data.addresses.find((item) => item.address !== '127.0.0.1')?.address ??
     '127.0.0.1';
   const [address, setAddress] = useState(lan);
+  const [isPublic, setPublic] = useState(true);
   return (
     <Modal
       title="Crie sua sala"
@@ -49,7 +51,12 @@ export function CreateRoomModal({
         className="form-stack"
         onSubmit={(event) => {
           event.preventDefault();
-          void command({ type: 'CREATE_ROOM', name, address }).then((ok) => {
+          void command({
+            type: 'CREATE_ROOM',
+            name,
+            address,
+            public: isPublic,
+          }).then((ok) => {
             if (ok) onClose();
           });
         }}
@@ -81,6 +88,12 @@ export function CreateRoomModal({
             locais.
           </span>
         </label>
+        <Toggle
+          checked={isPublic}
+          onChange={setPublic}
+          label="Sala pública na rede"
+          description="Aparece na tela inicial de quem está na mesma rede ou VPN (Radmin), e qualquer pessoa dessa rede pode entrar. O convite continua disponível para compartilhar."
+        />
       </form>
     </Modal>
   );

@@ -48,7 +48,9 @@ fechar a janela encerra o Poglive. O tamanho e a posição da janela são lembra
    - Wi-Fi ou Ethernet para computadores na mesma LAN;
    - Radmin ou outra VPN para uma LAN virtual;
    - `127.0.0.1` somente para testes no mesmo computador.
-4. Abra **Convidar pessoas** no menu da sala, copie e envie o convite completo por um
+4. Deixe **Sala pública na rede** marcado (padrão) para que a sala apareça na tela inicial
+   de quem está na mesma rede ou VPN. Desmarque para que só entre quem receber o convite.
+5. Abra **Convidar pessoas** no menu da sala, copie e envie o convite completo por um
    canal confiável.
 
 O host abre uma porta disponível na interface selecionada. Encerrar a sala ou fechar o
@@ -56,6 +58,21 @@ host desconecta todos. Uma sala nova gera outro segredo, identificador e certifi
 convites antigos deixam de funcionar.
 
 ## Entrar em uma sala
+
+### Salas na rede
+
+A tela inicial procura salas públicas em todas as redes do computador (Wi-Fi, Ethernet e
+Radmin) e as lista em **Salas na rede**, com anfitrião e número de pessoas. Selecione
+**Entrar**; não é preciso colar convite. Salas de outra versão do Poglive aparecem como
+**Versão diferente** e não podem ser abertas. Uma sala some da lista alguns segundos depois
+de fechada.
+
+Sala pública significa que qualquer pessoa da mesma rede pode entrar. Em redes Radmin
+públicas, isso inclui desconhecidos: prefira uma sala privada nesses casos. Redes que
+bloqueiam broadcast (algumas Wi-Fi corporativas ou de convidados) não mostram salas; o
+convite continua funcionando.
+
+### Com convite
 
 Selecione **Entrar com convite**, cole o convite e confirme. Um convite válido permite a
 entrada automática enquanto houver espaço e o mesmo identificador não estiver conectado.
@@ -237,7 +254,8 @@ Em uma LAN virtual:
 3. Use a mesma versão do Poglive nos dois lados.
 4. Não desative o firewall; permita somente o aplicativo e a rede necessários.
 
-O WebRTC usa UDP na faixa `52000–52100`. O host executa também um STUN local na
+A descoberta de salas públicas usa UDP na porta `52110`. O WebRTC usa UDP na faixa
+`52000–52100`. O host executa também um STUN local na
 interface escolhida. Não existe STUN público, TURN ou relay de mídia operado pelo
 projeto.
 

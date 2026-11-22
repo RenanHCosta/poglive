@@ -3,6 +3,8 @@ import type { IdentityStore } from './identity';
 import { RoomHost } from './host';
 import { RoomClient } from './client';
 import { decodeInvite } from './invite';
+import { DiscoveryScanner } from '../networking/discovery';
+import type { DiscoveredRoom } from '../../shared/schemas/discovery';
 import type { Signal, SignalBatch } from '../../shared/protocols/signaling';
 import type {
   LocalState,
@@ -63,7 +65,10 @@ export class RoomService {
   private inbox: Signal[] = [];
   private inboxBytes = 0;
   private readonly listeners = new Set<(event: RoomEvent) => void>();
-  constructor(private readonly identityStore: IdentityStore) {}
+  constructor(
+    private readonly identityStore: IdentityStore,
+    private readonly scanner = new DiscoveryScanner(),
+  ) {}
   subscribe(listener: (event: RoomEvent) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
@@ -196,6 +201,7 @@ export class RoomService {
         },
         (signal) => this.receiveSignal(signal),
         this.roomEvents(() => this.host === host),
+        command.public ?? false,
       );
       this.host = host;
       try {
@@ -239,6 +245,14 @@ export class RoomService {
         throw error;
       }
     }
+  }
+  /** Public rooms on the local networks; empty while in a room. */
+  async discoveredRooms(): Promise<DiscoveredRoom[]> {
+    if (this.host || this.client) {
+      this.scanner.close();
+      return [];
+    }
+    return this.scanner.scan();
   }
   async close(): Promise<void> {
     this.inbox = [];

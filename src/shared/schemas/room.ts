@@ -114,6 +114,8 @@ export const commandSchema = z.discriminatedUnion('type', [
       type: z.literal('CREATE_ROOM'),
       name: displayNameSchema,
       address: ipv4Schema,
+      /** Listed to others on the same network; absent means private. */
+      public: z.boolean().optional(),
     })
     .strict(),
   z

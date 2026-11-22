@@ -21,6 +21,7 @@ import {
 } from '../shared/schemas/room';
 import { updateStateSchema } from '../shared/schemas/update';
 import { chatHistorySchema, roomEventSchema } from '../shared/schemas/chat';
+import { discoveredRoomsSchema } from '../shared/schemas/discovery';
 import {
   externalUrlSchema,
   settingsResultSchema,
@@ -197,6 +198,10 @@ const bridge: DesktopBridge = {
   getChatHistory: async () => {
     const result: unknown = await ipcRenderer.invoke(IPC.chatHistory);
     return chatHistorySchema.parse(result);
+  },
+  scanRooms: async () => {
+    const result: unknown = await ipcRenderer.invoke(IPC.discoveryScan);
+    return discoveredRoomsSchema.parse(result);
   },
   getAppInfo: async () => {
     const result: unknown = await ipcRenderer.invoke(IPC.getAppInfo);

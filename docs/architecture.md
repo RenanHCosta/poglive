@@ -93,11 +93,43 @@ O código contém os dados para conexão direta, não exige consulta externa.
 IPv4 literal evita resolução DNS. O parser limita tamanho, versão e campos,
 rejeita conteúdo adicional e verifica codificação canônica.
 Base64url é transporte, não confidencialidade. Compartilhar o código inteiro
-concede acesso à sala. Convites nunca são enviados em broadcast ou registrados.
+concede acesso à sala. Convites nunca são registrados nem enviados em broadcast; uma sala
+pública o entrega por unicast a quem a procurar na mesma sub-rede (abaixo).
 
 O host escuta apenas no endereço escolhido, em porta dinâmica; não em todas as
 interfaces. Loopback serve duas instâncias locais. IPv4 Wi-Fi/Ethernet serve a LAN.
-UDP/mDNS não traz benefício necessário porque o convite já identifica o endpoint.
+
+## Descoberta na rede
+
+Salas criadas como públicas (padrão na UI; `CREATE_ROOM.public`) aparecem na tela inicial
+de quem está na mesma rede, sem colar o convite. Não há servidor:
+`main/networking/discovery.ts` faz pergunta e resposta em UDP na porta fixa `52110`, fora
+da faixa WebRTC.
+
+- `DiscoveryScanner`: enquanto a tela inicial está aberta e fora de sala, o renderer chama
+  `room:discovery-scan` a cada 2,5 s. Cada chamada envia `PROBE` (nonce aleatório) ao
+  broadcast direcionado de cada interface IPv4 (endereço | ~máscara, por exemplo
+  `192.168.0.255` e `26.255.255.255` no Radmin) e a `127.0.0.1`. O Windows só envia
+  `255.255.255.255` pela interface principal, por isso um destino por adaptador. O socket
+  efêmero fecha após 10 s sem chamadas.
+- `DiscoveryResponder`: o host público escuta `0.0.0.0:52110` com `reuseAddr` (vários
+  perfis no mesmo PC). Responde por unicast com `ROOM` (nonce, versão do protocolo da sala,
+  roomId, nomes, ocupação e convite) somente a origens na sub-rede da interface da sala
+  (ou loopback, para sala em loopback), com limite de 100 respostas/s e 10/s por origem.
+  Falha ao abrir a porta não impede a sala; ela só não aparece.
+- Validação no cliente: pacote de até 1 KiB, schema Zod, nonce de um dos últimos 8
+  probes e convite decodificado cujo IPv4 seja o remetente e cujo roomId confira. Uma
+  resposta não consegue apontar para outra máquina. Entradas expiram em 8 s; a lista não
+  passa de 64. Salas com outra versão do protocolo aparecem sem convite e não podem ser
+  abertas. Os objetos descartam campos desconhecidos para versões futuras continuarem
+  listáveis.
+
+Entrar pela lista usa o mesmo `JOIN_ROOM` com o convite: TLS com pin, segredo e
+admissão não mudam. O efeito de segurança é deliberado: qualquer pessoa da sub-rede
+(inclusive membros desconhecidos de uma rede Radmin pública) recebe o convite de uma sala
+pública. Salas privadas não abrem a porta de descoberta. Redes que bloqueiam broadcast
+ou isolam clientes não mostram salas; o convite continua como alternativa. No mesmo PC,
+o probe unicast a `127.0.0.1` chega a apenas um dos sockets compartilhados.
 
 ## Transporte seguro
 

@@ -1,17 +1,106 @@
-import type { LocalState } from '../../../shared/schemas/room';
+import { useEffect, useState } from 'react';
+import type { LocalState, RoomCommand } from '../../../shared/schemas/room';
+import type { DiscoveredRoom } from '../../../shared/schemas/discovery';
 import { Icon } from '../Icon';
 import { settingsStore } from '../../services/settings';
 import { useStore } from '../../services/store';
 import { formatAccelerator } from '../../services/accelerators';
 
+const SCAN_INTERVAL_MS = 2500;
+
+function NetworkRooms({
+  busy,
+  command,
+}: {
+  busy: boolean;
+  command: (command: RoomCommand) => Promise<boolean>;
+}) {
+  const [rooms, setRooms] = useState<DiscoveredRoom[] | null>(null);
+  useEffect(() => {
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const scan = async (): Promise<void> => {
+      try {
+        const found = await window.pogLive.scanRooms();
+        if (active) setRooms(found);
+      } catch {
+        if (active) setRooms([]);
+      }
+      if (active) timer = setTimeout(() => void scan(), SCAN_INTERVAL_MS);
+    };
+    void scan();
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
+  return (
+    <section className="network-rooms" aria-labelledby="network-rooms-title">
+      <header className="network-rooms-header">
+        <h3 id="network-rooms-title">Salas na rede</h3>
+        <span className="network-rooms-scan" aria-hidden="true" />
+      </header>
+      {rooms && rooms.length > 0 ? (
+        <ul className="network-rooms-list">
+          {rooms.map((room) => {
+            const full = room.members >= room.max;
+            return (
+              <li key={room.roomId} className="network-room">
+                <span className="network-room-icon">
+                  <Icon name="signal" size={20} />
+                </span>
+                <span className="network-room-text">
+                  <span className="network-room-name">{room.name}</span>
+                  <span className="network-room-meta">
+                    {room.hostName} · {room.members}/{room.max} pessoas
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="button primary small"
+                  disabled={busy || full || !room.compatible}
+                  title={
+                    !room.compatible
+                      ? 'Essa sala usa outra versão do Poglive.'
+                      : undefined
+                  }
+                  onClick={() =>
+                    void command({ type: 'JOIN_ROOM', invite: room.invite })
+                  }
+                >
+                  {!room.compatible
+                    ? 'Versão diferente'
+                    : full
+                      ? 'Sala cheia'
+                      : 'Entrar'}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="network-rooms-empty">
+          {rooms === null
+            ? 'Procurando salas públicas…'
+            : 'Nenhuma sala pública encontrada na sua rede ou VPN. Continuamos procurando.'}
+        </p>
+      )}
+    </section>
+  );
+}
+
 export function HomeView({
   data,
   inRoom,
+  busy,
+  command,
   onCreate,
   onJoin,
 }: {
   data: LocalState;
   inRoom: boolean;
+  busy: boolean;
+  command: (command: RoomCommand) => Promise<boolean>;
   onCreate: () => void;
   onJoin: () => void;
 }) {
@@ -83,6 +172,7 @@ export function HomeView({
             </span>
           </button>
         </div>
+        {!inRoom && <NetworkRooms busy={busy} command={command} />}
         <ul className="home-tips">
           <li>
             <Icon name="mic" size={18} />

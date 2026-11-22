@@ -183,6 +183,8 @@ export function App() {
                   <HomeView
                     data={data}
                     inRoom={!!active}
+                    busy={busy}
+                    command={command}
                     onCreate={() => setDialog('create')}
                     onJoin={() => setDialog('join')}
                   />

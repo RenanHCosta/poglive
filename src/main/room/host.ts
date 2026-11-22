@@ -21,6 +21,7 @@ import { signalSchema } from '../../shared/protocols/signaling';
 import type { Signal } from '../../shared/protocols/signaling';
 import { SignalRouter } from '../signaling/router';
 import { LanStunServer } from '../networking/lan-stun-server';
+import { DiscoveryResponder } from '../networking/discovery';
 import { ChatLog, RateWindow } from './chat';
 import type { RoomEvents } from './events';
 
@@ -62,6 +63,7 @@ export class RoomHost {
   private readonly banned = new Set<string>();
   private hostVoice: VoiceState = DISCONNECTED_VOICE;
   private rtcEndpoint: { host: string; port: number } | null = null;
+  private discovery: DiscoveryResponder | null = null;
   private closing = false;
   invite = '';
   constructor(
@@ -70,6 +72,8 @@ export class RoomHost {
     onFailure: () => void,
     onSignal: (signal: Signal) => void = () => {},
     private readonly events: RoomEvents = {},
+    /** Public rooms answer LAN discovery probes with their invite. */
+    readonly isPublic = false,
   ) {
     this.stun = new LanStunServer(onFailure);
     this.router = new SignalRouter(
@@ -394,6 +398,23 @@ export class RoomHost {
       ...this.access,
       fingerprint: certificate.fingerprint,
     });
+    if (this.isPublic) {
+      const discovery = new DiscoveryResponder(bound.address, () =>
+        this.closing
+          ? null
+          : {
+              roomId: this.access.roomId,
+              name: this.name,
+              hostName: this.identity.displayName,
+              members: this.members.size + 1,
+              max: MAX_PEERS,
+              invite: this.invite,
+            },
+      );
+      this.discovery = discovery;
+      if (!(await discovery.start()))
+        console.warn('[Room] Discovery unavailable');
+    }
     console.info('[Room] Hosting');
   }
   snapshot(): RoomSnapshot {
@@ -475,6 +496,8 @@ export class RoomHost {
   }
   async close(): Promise<void> {
     this.closing = true;
+    this.discovery?.close();
+    this.discovery = null;
     for (const member of this.members.values())
       if (member.pendingVoice) clearTimeout(member.pendingVoice.timer);
     for (const channel of this.channels) channel.close();
